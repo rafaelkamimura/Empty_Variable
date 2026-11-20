@@ -1,6 +1,8 @@
 import { Controller, Get, Inject, Module } from "@nestjs/common";
 import { Integracao } from "../auth/decoradores.js";
 import { CONFIGURACAO, type Configuracao } from "../configuracao.js";
+import { PersonagensIntegracaoController } from "./personagens.controller.js";
+import { PersonagensIntegracaoService } from "./personagens.service.js";
 
 /**
  * API para outros sistemas do grupo (hoje, o bot nag4eyes). Tudo sob /api/integracao exige
@@ -19,5 +21,8 @@ export class IntegracaoController {
   }
 }
 
-@Module({ controllers: [IntegracaoController] })
+@Module({
+  controllers: [IntegracaoController, PersonagensIntegracaoController],
+  providers: [PersonagensIntegracaoService],
+})
 export class IntegracaoModule {}
