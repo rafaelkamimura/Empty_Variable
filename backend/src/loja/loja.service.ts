@@ -10,6 +10,7 @@ import type { StatusCompra, Usuario } from "@prisma/client";
 import { AuditoriaService } from "../auditoria/auditoria.service.js";
 import { motivoInelegivel } from "../estoque/elegibilidade.js";
 import { LedgerService } from "../ledger/ledger.service.js";
+import { NotificacoesService } from "../notificacoes/notificacoes.service.js";
 import { PrismaService, type Tx } from "../prisma/prisma.service.js";
 
 const DIA_MS = 86_400_000;
@@ -76,6 +77,7 @@ export class LojaService {
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
     private readonly auditoria: AuditoriaService,
+    private readonly notificacoes: NotificacoesService,
   ) {}
 
   /** D12: só membro com vínculo aprovado usa a loja. */
@@ -353,6 +355,7 @@ export class LojaService {
   async entregar(compraId: string, admin: Usuario) {
     return this.prisma.$transaction(async (tx) => {
       const compra = await this.travarPendente(tx, compraId);
+      const vendas = new Map<string, { quantidade: number; pontos: number }>();
       for (const linha of compra.lotes) {
         if (linha.lote.donoJogadorId === null || linha.valorVendedor === 0) continue;
         await this.ledger.lancar(tx, {
@@ -364,11 +367,32 @@ export class LojaService {
           compraLoteId: linha.id,
           observacao: `${linha.quantidade}× ${compra.item.nome}`,
         });
+        const venda = vendas.get(linha.lote.donoJogadorId) ?? { quantidade: 0, pontos: 0 };
+        vendas.set(linha.lote.donoJogadorId, {
+          quantidade: venda.quantidade + linha.quantidade,
+          pontos: venda.pontos + linha.valorVendedor,
+        });
       }
       await tx.compra.update({
         where: { id: compraId },
         data: { status: "ENTREGUE", entregueEm: new Date(), entreguePorId: admin.id },
       });
+      await this.notificacoes.registrar(tx, [
+        {
+          destinatario: { jogadorId: compra.compradorJogadorId },
+          evento: {
+            tipo: "COMPRA_ENTREGUE",
+            dados: { compraId, item: compra.item.nome, quantidade: compra.quantidade, total: compra.total },
+          },
+        },
+        ...[...vendas].map(([jogadorId, v]) => ({
+          destinatario: { jogadorId },
+          evento: {
+            tipo: "VENDA_CREDITADA" as const,
+            dados: { compraId, item: compra.item.nome, quantidade: v.quantidade, pontos: v.pontos },
+          },
+        })),
+      ]);
       await this.auditoria.registrar(
         { usuarioId: admin.id, acao: "LOJA_ENTREGA", entidade: "compra", entidadeId: compraId },
         tx,
@@ -423,6 +447,27 @@ export class LojaService {
           motivoCancelamento: motivo,
         },
       });
+      if (comoAdmin) {
+        await this.notificacoes.registrar(
+          tx,
+          [
+            {
+              destinatario: { jogadorId: compra.compradorJogadorId },
+              evento: {
+                tipo: "COMPRA_CANCELADA",
+                dados: {
+                  compraId,
+                  item: compra.item.nome,
+                  quantidade: compra.quantidade,
+                  total: compra.total,
+                  motivo,
+                },
+              },
+            },
+          ],
+          usuario.id,
+        );
+      }
       await this.auditoria.registrar(
         {
           usuarioId: usuario.id,

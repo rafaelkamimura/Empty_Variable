@@ -8,6 +8,7 @@ import {
 import type { StatusOferta, Usuario } from "@prisma/client";
 import { AuditoriaService } from "../auditoria/auditoria.service.js";
 import { motivoInelegivel } from "../estoque/elegibilidade.js";
+import { NotificacoesService } from "../notificacoes/notificacoes.service.js";
 import { PrismaService, type Tx } from "../prisma/prisma.service.js";
 
 const SELECAO_OFERTA = {
@@ -36,6 +37,7 @@ export class OfertasService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly notificacoes: NotificacoesService,
   ) {}
 
   private async jogadorDe(usuario: Usuario, tx: Tx | PrismaService = this.prisma): Promise<string> {
@@ -152,6 +154,19 @@ export class OfertasService {
         where: { id },
         data: { status: "APROVADA", analisadaPorId: admin.id, analisadaEm: new Date() },
       });
+      await this.notificacoes.registrar(
+        tx,
+        [
+          {
+            destinatario: { jogadorId: oferta.jogadorId },
+            evento: {
+              tipo: "OFERTA_APROVADA",
+              dados: { ofertaId: id, item: oferta.item.nome, quantidade: oferta.quantidade },
+            },
+          },
+        ],
+        admin.id,
+      );
       await this.auditoria.registrar(
         { usuarioId: admin.id, acao: "OFERTA_APROVADA", entidade: "oferta_venda", entidadeId: id },
         tx,
@@ -168,6 +183,19 @@ export class OfertasService {
         data: { status: "REJEITADA", motivo, analisadaPorId: admin.id, analisadaEm: new Date() },
         select: SELECAO_OFERTA,
       });
+      await this.notificacoes.registrar(
+        tx,
+        [
+          {
+            destinatario: { jogadorId: oferta.jogador.id },
+            evento: {
+              tipo: "OFERTA_REJEITADA",
+              dados: { ofertaId: id, item: oferta.item.nome, quantidade: oferta.quantidade, motivo },
+            },
+          },
+        ],
+        admin.id,
+      );
       await this.auditoria.registrar(
         {
           usuarioId: admin.id,

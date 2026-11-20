@@ -9,6 +9,7 @@ import {
 import type { PecaDoEstoque, StatusSolicitacaoNebula, Usuario } from "@prisma/client";
 import { AuditoriaService } from "../auditoria/auditoria.service.js";
 import { LedgerService } from "../ledger/ledger.service.js";
+import { NotificacoesService } from "../notificacoes/notificacoes.service.js";
 import { PrismaService, type Tx } from "../prisma/prisma.service.js";
 import { ReceitasService } from "./receitas.service.js";
 
@@ -88,6 +89,7 @@ export class NebulaService {
     private readonly ledger: LedgerService,
     private readonly auditoria: AuditoriaService,
     private readonly receitas: ReceitasService,
+    private readonly notificacoes: NotificacoesService,
   ) {}
 
   /** D12: só membro com vínculo aprovado. */
@@ -321,11 +323,17 @@ export class NebulaService {
   /** US-19: o admin entrega os materiais no jogo. O estoque já foi baixado na solicitação. */
   async entregar(id: string, admin: Usuario) {
     return this.prisma.$transaction(async (tx) => {
-      await this.travarPendente(tx, id);
+      const s = await this.travarPendente(tx, id);
       await tx.solicitacaoNebula.update({
         where: { id },
         data: { status: "ENTREGUE", entregueEm: new Date(), entreguePorId: admin.id },
       });
+      await this.notificacoes.registrar(tx, [
+        {
+          destinatario: { jogadorId: s.jogadorId },
+          evento: { tipo: "NEBULA_ENTREGUE", dados: { solicitacaoId: id, receita: s.receita.nome } },
+        },
+      ]);
       await this.auditoria.registrar(
         { usuarioId: admin.id, acao: "NEBULA_ENTREGA", entidade: "solicitacao_nebula", entidadeId: id },
         tx,
@@ -374,6 +382,21 @@ export class NebulaService {
           encerradaPorId: usuario.id,
         },
       });
+      if (comoAdmin) {
+        await this.notificacoes.registrar(
+          tx,
+          [
+            {
+              destinatario: { jogadorId: s.jogadorId },
+              evento: {
+                tipo: "NEBULA_REJEITADA",
+                dados: { solicitacaoId: id, receita: s.receita.nome, pontos: s.preco, motivo },
+              },
+            },
+          ],
+          usuario.id,
+        );
+      }
       await this.auditoria.registrar(
         {
           usuarioId: usuario.id,
