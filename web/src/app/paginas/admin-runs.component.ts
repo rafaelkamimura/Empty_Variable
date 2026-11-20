@@ -13,7 +13,7 @@ import type { StatusRun } from "@betel/scoring";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import type { Instancia } from "../core/instancias";
-import { ROTULO_STATUS } from "../core/runs";
+import { ROTULO_STATUS, type ResumoRascunhoNag4eyes } from "../core/runs";
 import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
 
 interface RunResumo {
@@ -56,6 +56,48 @@ const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as c
           <a class="botao-acao" routerLink="/gestao/runs/nova">Registrar run</a>
         </div>
       </div>
+      @if (rascunhos().length > 0) {
+        <section data-testid="rascunhos">
+          <h2>Rascunhos do nag4eyes</h2>
+          <p class="texto-secundario">
+            Grupos encerrados no Discord. Revise para registrar a run com os participantes já preenchidos, ou
+            descarte se o grupo não deve pontuar.
+          </p>
+          <table appResponsiva mat-table [dataSource]="rascunhos()">
+            <ng-container matColumnDef="data">
+              <th mat-header-cell *matHeaderCellDef>Data</th>
+              <td mat-cell *matCellDef="let r">{{ r.data | date: "dd/MM/yyyy" : "UTC" }}</td>
+            </ng-container>
+            <ng-container matColumnDef="instancia">
+              <th mat-header-cell *matHeaderCellDef>Instância</th>
+              <td mat-cell *matCellDef="let r">
+                {{ r.instancia?.nome ?? r.instanciaOrigem?.nome ?? "—" }}
+                @if (r.instancia === null && r.instanciaOrigem) {
+                  <div class="texto-secundario">não encontrada aqui</div>
+                }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="participantes">
+              <th mat-header-cell *matHeaderCellDef>Participantes</th>
+              <td mat-cell *matCellDef="let r">
+                {{ r.participantes }}
+                @if (r.pendentes > 0) {
+                  <div class="texto-secundario">{{ r.pendentes }} sem correspondência</div>
+                }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="acoes">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let r">
+                <a mat-button routerLink="/gestao/runs/nova" [queryParams]="{ rascunho: r.id }">Revisar</a>
+                <button mat-button type="button" (click)="descartar(r)">Descartar</button>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="colunasRascunho"></tr>
+            <tr mat-row *matRowDef="let row; columns: colunasRascunho"></tr>
+          </table>
+        </section>
+      }
       @if (instancias().length > 1) {
         <div class="chips" role="group" aria-label="Filtrar por instância">
           <button
@@ -162,6 +204,8 @@ export class AdminRunsComponent implements OnInit {
   private readonly acao = inject(Acao);
 
   readonly runs = signal<RunResumo[]>([]);
+  readonly rascunhos = signal<ResumoRascunhoNag4eyes[]>([]);
+  readonly colunasRascunho = ["data", "instancia", "participantes", "acoes"];
   readonly instancias = signal<Instancia[]>([]);
   readonly statusFiltro = STATUS_FILTRO;
   readonly rotuloStatus = ROTULO_STATUS;
@@ -174,7 +218,30 @@ export class AdminRunsComponent implements OnInit {
     } catch {
       // Sem a lista, o filtro por instância só não aparece.
     }
-    await this.recarregar();
+    await Promise.all([this.recarregar(), this.carregarRascunhos()]);
+  }
+
+  /** Rascunhos pendentes enviados pelo nag4eyes. Sem eles (ou sem a integração), a seção some. */
+  async carregarRascunhos(): Promise<void> {
+    try {
+      this.rascunhos.set(
+        await firstValueFrom(
+          this.http.get<ResumoRascunhoNag4eyes[]>("/api/rascunhos-run", { params: { status: "PENDENTE" } }),
+        ),
+      );
+    } catch {
+      this.rascunhos.set([]);
+    }
+  }
+
+  /** Descarta o rascunho: o grupo não vira run. */
+  async descartar(r: ResumoRascunhoNag4eyes): Promise<void> {
+    if (!window.confirm("Descartar este rascunho? O grupo não vai virar run.")) return;
+    const ok = await this.acao.executar(
+      () => firstValueFrom(this.http.post(`/api/rascunhos-run/${r.id}/descartar`, {})),
+      "Rascunho descartado.",
+    );
+    if (ok) await this.carregarRascunhos();
   }
 
   async filtrarInstancia(id: string): Promise<void> {

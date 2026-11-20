@@ -28,6 +28,9 @@ import {
   novoParticipante,
   novoRascunho,
   pendencias,
+  pendentesDoRascunho,
+  type RascunhoNag4eyes,
+  rascunhoDeNag4eyes,
   type RascunhoParticipante,
   type RascunhoRun,
   rascunhoDeRun,
@@ -46,6 +49,7 @@ interface RespostaRegistro {
  * T-20: assistente de run em 5 passos (dados → participantes → empréstimos → drops → revisão).
  * A prévia usa o mesmo motor da API (@betel/scoring), então os pontos mostrados são os que serão gravados.
  * Com `id`, abre em modo correção (US-07): pré-preenchido com a run e usando os parâmetros dela (D17).
+ * Com `?rascunho=<id>`, pré-preenche com o rascunho do nag4eyes e o envio confirma o rascunho.
  */
 @Component({
   selector: "app-admin-run-assistente",
@@ -72,6 +76,34 @@ interface RespostaRegistro {
         </p>
       } @else {
         <h1>Nova run</h1>
+      }
+      @if (origemRascunho(); as o) {
+        <mat-card class="bloco" data-testid="origem-rascunho">
+          <mat-card-subtitle>
+            Rascunho do nag4eyes{{ o.partyId ? " (grupo " + o.partyId + ")" : "" }}
+          </mat-card-subtitle>
+          <mat-card-content>
+            <p class="texto-secundario">
+              Data e participantes vieram do grupo encerrado no Discord. Confira, escolha o resultado e o
+              encontro e informe empréstimos e drops: nada pontua até o registro.
+              @if (o.instancia === null && o.instanciaOrigem) {
+                A instância "{{ o.instanciaOrigem.nome }}" não foi encontrada aqui; escolha-a.
+              }
+            </p>
+            @if (pendentesRascunho().length > 0) {
+              <p>Não entraram automaticamente (inclua à mão, se for o caso):</p>
+              <ul>
+                @for (x of pendentesRascunho(); track $index) {
+                  <li>
+                    {{ x.personagem }}{{ x.classe ? " · " + x.classe : "" }}
+                    {{ x.jogador ? "(" + x.jogador + ")" : "(Discord " + x.discordId + ")" }}:
+                    <span class="aviso">{{ x.motivo }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </mat-card-content>
+        </mat-card>
       }
 
       @if (!pronto()) {
@@ -498,6 +530,8 @@ export class AdminRunAssistenteComponent implements OnInit {
 
   /** Id da run a corrigir (rota /gestao/runs/:id/corrigir). */
   readonly id = input<string | undefined>();
+  /** Id do rascunho do nag4eyes que pré-preenche a run (?rascunho=...); o envio o confirma. */
+  readonly rascunho = input<string | undefined>();
 
   readonly statusRun = STATUS_RUN;
   readonly categorias = CATEGORIAS_EMPRESTIMO;
@@ -516,6 +550,11 @@ export class AdminRunAssistenteComponent implements OnInit {
   readonly itens = signal<ItemCatalogo[]>([]);
   readonly config = signal<VersaoParametros | null>(null);
   readonly correcaoDe = signal<string | null>(null);
+  readonly origemRascunho = signal<RascunhoNag4eyes | null>(null);
+  readonly pendentesRascunho = computed(() => {
+    const o = this.origemRascunho();
+    return o === null ? [] : pendentesDoRascunho(o);
+  });
   /** Incrementado a cada edição: recalcula pendências e prévia. */
   private readonly versao = signal(0);
 
@@ -577,14 +616,20 @@ export class AdminRunAssistenteComponent implements OnInit {
       const id = this.id();
       if (id === undefined) {
         this.config.set(versoes[0] ?? null);
-        // Começa pela Torre, se ela puder receber runs; senão, pela primeira disponível.
+        const origem = await this.carregarRascunho();
+        if (origem === false) return;
+        // Começa pela instância do rascunho ou pela Torre, se puderem receber runs; senão, pela primeira disponível.
         const disponiveis = this.instanciasDisponiveis();
-        const inicial = disponiveis.find((i) => i.codigo === "TORRE_CONSTELACAO") ?? disponiveis[0];
+        const inicial =
+          disponiveis.find((i) => origem !== null && i.id === origem.instancia?.id) ??
+          disponiveis.find((i) => i.codigo === "TORRE_CONSTELACAO") ??
+          disponiveis[0];
         if (inicial === undefined) {
           this.erroCarga.set("Nenhuma instância ativa com funções. Cadastre uma em Gestão → Instâncias.");
           return;
         }
         this.r = novoRascunho(inicial.id, inicial.vigente?.encontros[0]?.id ?? null);
+        if (origem !== null) this.r = rascunhoDeNag4eyes(origem, this.r);
         await this.carregarClasses(inicial.id);
       } else {
         const run = await firstValueFrom(this.http.get<DetalheRun>(`/api/runs/${id}`));
@@ -616,6 +661,22 @@ export class AdminRunAssistenteComponent implements OnInit {
 
   mudou(): void {
     this.versao.update((v) => v + 1);
+  }
+
+  /**
+   * Carrega o rascunho do nag4eyes indicado na URL. Devolve null sem rascunho e false quando ele
+   * não pode mais virar run (o erro já fica na tela).
+   */
+  private async carregarRascunho(): Promise<RascunhoNag4eyes | null | false> {
+    const id = this.rascunho();
+    if (id === undefined || id === "") return null;
+    const origem = await firstValueFrom(this.http.get<RascunhoNag4eyes>(`/api/rascunhos-run/${id}`));
+    if (origem.status !== "PENDENTE") {
+      this.erroCarga.set("Este rascunho já foi confirmado ou descartado.");
+      return false;
+    }
+    this.origemRascunho.set(origem);
+    return origem;
   }
 
   /** D45: as funções e ranks são da versão vigente da instância escolhida. */
@@ -729,14 +790,17 @@ export class AdminRunAssistenteComponent implements OnInit {
     this.enviando.set(true);
     const corpo = montarCorpo(this.r, this.catalogos());
     const alvo = this.correcaoDe();
+    const origem = this.origemRascunho();
     try {
       const resp = await firstValueFrom(
-        alvo === null
-          ? this.http.post<RespostaRegistro>("/api/runs", corpo)
-          : this.http.post<RespostaRegistro>(`/api/runs/${alvo}/corrigir`, {
+        alvo !== null
+          ? this.http.post<RespostaRegistro>(`/api/runs/${alvo}/corrigir`, {
               motivo: this.motivo,
               run: corpo,
-            }),
+            })
+          : origem !== null
+            ? this.http.post<RespostaRegistro>(`/api/rascunhos-run/${origem.id}/confirmar`, corpo)
+            : this.http.post<RespostaRegistro>("/api/runs", corpo),
       );
       const aviso = resp.avisosReducao.length > 0 ? " Houve redução proporcional de empréstimos." : "";
       this.acao.avisar(`${alvo === null ? "Run registrada" : "Correção registrada"}.${aviso}`);

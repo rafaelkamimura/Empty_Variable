@@ -178,11 +178,22 @@ export class RunsService {
     return { instancia, versao, encontro };
   }
 
-  registrar(entrada: EntradaRun, admin: Usuario): Promise<ResultadoRegistro> {
+  /**
+   * Registra a run com a versão de parâmetros vigente.
+   * @param aoRegistrar roda na mesma transação depois da gravação (ex.: marcar o rascunho de origem
+   *   como confirmado); um erro nele desfaz a run inteira.
+   */
+  registrar(
+    entrada: EntradaRun,
+    admin: Usuario,
+    aoRegistrar?: (tx: Tx, resultado: ResultadoRegistro) => Promise<void>,
+  ): Promise<ResultadoRegistro> {
     return this.prisma.$transaction(async (tx) => {
       const config = await tx.configPontuacao.findFirst({ orderBy: { versao: "desc" } });
       if (config === null) throw new ConflictException("Nenhuma versão de parâmetros cadastrada.");
-      return this.gravar(tx, entrada, admin, config.id, null);
+      const resultado = await this.gravar(tx, entrada, admin, config.id, null);
+      if (aoRegistrar !== undefined) await aoRegistrar(tx, resultado);
+      return resultado;
     });
   }
 

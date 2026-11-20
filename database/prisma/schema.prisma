@@ -88,6 +88,8 @@ model Usuario {
   versoesInstancia VersaoInstancia[]
   gruposCriados    GrupoInstancia[]
 
+  rascunhosRunDecididos RascunhoRun[]
+
   @@map("usuario")
 }
 
@@ -111,16 +113,17 @@ model Jogador {
   usuarioId String?  @unique @map("usuario_id") @db.Uuid
   criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
-  usuario            Usuario?             @relation(fields: [usuarioId], references: [id])
-  personagens        Personagem[]
-  solicitacoes       SolicitacaoVinculo[]
-  participacoes      Participacao[]
-  emprestimosCredor  Emprestimo[]         @relation("credor")
-  lancamentos        LancamentoPontos[]
-  lotes              LoteEstoque[]
-  compras            Compra[]
-  ofertas            OfertaVenda[]
-  solicitacoesNebula SolicitacaoNebula[]
+  usuario               Usuario?                  @relation(fields: [usuarioId], references: [id])
+  personagens           Personagem[]
+  solicitacoes          SolicitacaoVinculo[]
+  participacoes         Participacao[]
+  participantesRascunho RascunhoRunParticipante[]
+  emprestimosCredor     Emprestimo[]              @relation("credor")
+  lancamentos           LancamentoPontos[]
+  lotes                 LoteEstoque[]
+  compras               Compra[]
+  ofertas               OfertaVenda[]
+  solicitacoesNebula    SolicitacaoNebula[]
 
   transferenciasEnviadas  TransferenciaPontos[] @relation("transferencia_remetente")
   transferenciasRecebidas TransferenciaPontos[] @relation("transferencia_destinatario")
@@ -143,6 +146,8 @@ model Personagem {
 
   jogador       Jogador        @relation(fields: [jogadorId], references: [id])
   participacoes Participacao[]
+
+  participantesRascunho RascunhoRunParticipante[]
 
   @@index([jogadorId])
   @@map("personagem")
@@ -180,6 +185,8 @@ model Classe {
 
   funcoes     FuncaoClasse[]
   personagens Personagem[]
+
+  participantesRascunho RascunhoRunParticipante[]
 
   @@map("classe")
 }
@@ -275,6 +282,7 @@ model Run {
   participacoes   Participacao[]
   drops           DropRun[]
   lancamentos     LancamentoPontos[]
+  rascunho        RascunhoRun?
 
   @@index([data])
   @@index([versaoInstanciaId])
@@ -782,6 +790,8 @@ model Instancia {
   versoes VersaoInstancia[]
   grupos  GrupoInstancia[]
 
+  rascunhosRun RascunhoRun[]
+
   @@map("instancia")
 }
 
@@ -835,4 +845,64 @@ model GrupoInstancia {
 
   @@index([agendadoEm])
   @@map("grupo_instancia")
+}
+
+enum StatusRascunhoRun {
+  PENDENTE
+  CONFIRMADO
+  DESCARTADO
+}
+
+/// Rascunho de run enviado por outro sistema (hoje, o nag4eyes, quando um grupo termina).
+/// Não pontua: o gestor revisa e confirma pelo registro normal de runs, que cria a run e os lançamentos.
+/// `origem` + `idOrigem` identificam o envio, então um reenvio nunca cria um segundo rascunho.
+model RascunhoRun {
+  id              String            @id @default(uuid()) @db.Uuid
+  origem          String
+  idOrigem        String            @map("id_origem")
+  partyId         String?           @map("party_id")
+  data            DateTime          @db.Date
+  instanciaId     String?           @map("instancia_id") @db.Uuid
+  /// Instância como a origem a descreveu: { nome, nomeIngles, slug }. Nulo quando não informada.
+  instanciaOrigem Json?             @map("instancia_origem") @db.JsonB
+  status          StatusRascunhoRun @default(PENDENTE)
+  recebidoEm      DateTime          @default(now()) @map("recebido_em") @db.Timestamptz(3)
+  runId           String?           @unique @map("run_id") @db.Uuid
+  decididoPorId   String?           @map("decidido_por") @db.Uuid
+  decididoEm      DateTime?         @map("decidido_em") @db.Timestamptz(3)
+  motivoDescarte  String?           @map("motivo_descarte")
+
+  instancia     Instancia?                @relation(fields: [instanciaId], references: [id], onDelete: SetNull)
+  run           Run?                      @relation(fields: [runId], references: [id], onDelete: Restrict)
+  decididoPor   Usuario?                  @relation(fields: [decididoPorId], references: [id], onDelete: Restrict)
+  participantes RascunhoRunParticipante[]
+
+  @@unique([origem, idOrigem])
+  @@index([status, recebidoEm])
+  @@map("rascunho_run")
+}
+
+/// Participante do rascunho: os dados crus da origem e o que foi resolvido aqui pelo Discord id.
+/// `pendencia` diz por que o personagem (ou a classe) não foi resolvido; nulo quando está tudo certo.
+model RascunhoRunParticipante {
+  id               String  @id @default(uuid()) @db.Uuid
+  rascunhoId       String  @map("rascunho_id") @db.Uuid
+  ordem            Int
+  discordId        String  @map("discord_id")
+  personagemNome   String  @map("personagem_nome")
+  classeNome       String? @map("classe_nome")
+  classeNomeIngles String? @map("classe_nome_ingles")
+  classeSlug       String? @map("classe_slug")
+  jogadorId        String? @map("jogador_id") @db.Uuid
+  personagemId     String? @map("personagem_id") @db.Uuid
+  classeId         String? @map("classe_id") @db.Uuid
+  pendencia        String?
+
+  rascunho   RascunhoRun @relation(fields: [rascunhoId], references: [id], onDelete: Cascade)
+  jogador    Jogador?    @relation(fields: [jogadorId], references: [id], onDelete: SetNull)
+  personagem Personagem? @relation(fields: [personagemId], references: [id], onDelete: SetNull)
+  classe     Classe?     @relation(fields: [classeId], references: [id], onDelete: SetNull)
+
+  @@unique([rascunhoId, ordem])
+  @@map("rascunho_run_participante")
 }

@@ -59,7 +59,8 @@ function umDe<T extends string>(valor: unknown, opcoes: readonly T[], campo: str
   return valor as T;
 }
 
-function data(valor: unknown): Date {
+/** Data AAAA-MM-DD (dia do calendário, sem fuso). */
+export function data(valor: unknown): Date {
   if (typeof valor !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
     throw new BadRequestException("data deve estar no formato AAAA-MM-DD.");
   }

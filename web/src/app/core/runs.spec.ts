@@ -12,7 +12,10 @@ import {
   novoEmprestimo,
   novoRascunho,
   pendencias,
+  pendentesDoRascunho,
+  type RascunhoNag4eyes,
   type RascunhoRun,
+  rascunhoDeNag4eyes,
   rascunhoDeRun,
 } from "./runs";
 
@@ -385,6 +388,82 @@ describe("Rascunho de run", () => {
     expect(r.participantes[1]!.funcaoId).toBeNull();
     expect(pendencias(r, cat)[2]).toEqual([
       "Participante 2: esta classe não tem função padrão; escolha a função.",
+    ]);
+  });
+
+  it("rascunho do nag4eyes: pré-preenche data e quem casou; quem não casou fica à parte com o motivo", () => {
+    const participante = (
+      ordem: number,
+      nome: string,
+      extra: Partial<RascunhoNag4eyes["participantes"][number]>,
+    ): RascunhoNag4eyes["participantes"][number] => ({
+      id: `rp-${ordem}`,
+      ordem,
+      discordId: `10${ordem}`,
+      personagemNome: nome,
+      classeNome: null,
+      pendencia: null,
+      jogador: null,
+      personagem: null,
+      classe: null,
+      ...extra,
+    });
+    const d: RascunhoNag4eyes = {
+      id: "r-1",
+      partyId: "42",
+      data: "2026-11-20T00:00:00.000Z",
+      status: "PENDENTE",
+      recebidoEm: "2026-11-20T22:00:00.000Z",
+      instancia: { id: "i-torre", nome: "Torre da Constelação" },
+      instanciaOrigem: { nome: "Torre da Constelação", nomeIngles: null, slug: null },
+      runId: null,
+      participantes: [
+        participante(0, "Ana-MTK", {
+          jogador: { id: "j-ana", apelido: "Ana" },
+          personagem: { id: "p-ana", nome: "Ana-MTK" },
+          classe: { id: "c-mtk", nomeOficial: "Mestre Celestial", apelidoGrupo: "MTK" },
+        }),
+        participante(1, "Beto-GX", {
+          jogador: { id: "j-beto", apelido: "Beto" },
+          personagem: { id: "p-beto", nome: "Beto-GX" },
+          classe: { id: "c-gx", nomeOficial: "Executor", apelidoGrupo: "GX" },
+        }),
+        participante(2, "Solto", { classeNome: "Cardeal", pendencia: "SEM_VINCULO" }),
+        participante(3, "Ana-Outro", {
+          jogador: { id: "j-ana", apelido: "Ana" },
+          pendencia: "PERSONAGEM_NAO_ENCONTRADO",
+        }),
+      ],
+    };
+    const r = rascunhoDeNag4eyes(d, rascunho({ status: "CONCLUIDA" }));
+    expect(r.data).toBe("2026-11-20");
+    expect(r.instanciaId).toBe("i-torre");
+    expect(r.encontroId).toBe("e-naght");
+    expect(r.participantes.map((p) => [p.personagemId, p.classeId, p.funcaoId])).toEqual([
+      ["p-ana", "c-mtk", null],
+      ["p-beto", "c-gx", null],
+    ]);
+    expect(pendencias(r, cat)[2]).toEqual([]);
+    expect(calcularPrevia(r, CONFIG_V1, cat).total).toBe(500);
+    expect(montarCorpo(r, cat).participantes.map((p) => ("funcaoId" in p ? p.funcaoId : null))).toEqual([
+      "f-mtk",
+      "f-gx",
+    ]);
+    expect(pendentesDoRascunho(d)).toEqual([
+      {
+        discordId: "102",
+        personagem: "Solto",
+        classe: "Cardeal",
+        jogador: null,
+        motivo: "Usuário sem vínculo com um jogador",
+      },
+      {
+        discordId: "103",
+        personagem: "Ana-Outro",
+        classe: null,
+        jogador: "Ana",
+        motivo: "Personagem não cadastrado para o jogador",
+      },
     ]);
   });
 });
