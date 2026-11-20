@@ -16,14 +16,15 @@ import { grupoDaClasseLatam } from "../cadastros/classes-latam.js";
 import { inteiro, objeto, uuid } from "../comum/validacao.js";
 import { PrismaService, type Tx } from "../prisma/prisma.service.js";
 
-type Vaga = {
+export type Vaga = {
   tipo: "OBRIGATORIA" | "SECUNDARIA" | "LIVRE";
   classeId: string | null;
   importancia: number | null;
   personagemId: string | null;
 };
 
-function lerVagas(valor: unknown): Vaga[] {
+/** Lê e valida as 12 vagas de um grupo (corpo da requisição ou coluna `vagas`). */
+export function lerVagas(valor: unknown): Vaga[] {
   if (!Array.isArray(valor) || valor.length !== 12) throw new BadRequestException("Informe as 12 vagas.");
   return valor.map((linha) => {
     const b = objeto(linha);

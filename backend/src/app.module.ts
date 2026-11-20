@@ -9,6 +9,7 @@ import { NebulaModule } from "./nebula/nebula.module.js";
 import { ImagensModule } from "./imagens/imagens.controller.js";
 import { GruposInstanciaModule } from "./instancias/grupos-instancia.controller.js";
 import { InstanciasModule } from "./instancias/instancias.controller.js";
+import { GruposProgramadosIntegracaoModule } from "./integracao/grupos-programados.controller.js";
 import { IntegracaoModule } from "./integracao/integracao.controller.js";
 import { PainelModule } from "./painel/painel.controller.js";
 import { FiltroErrosPrisma } from "./comum/filtro-prisma.js";
@@ -45,6 +46,7 @@ export class ConfiguracaoModule {}
     InstanciasModule,
     GruposInstanciaModule,
     IntegracaoModule,
+    GruposProgramadosIntegracaoModule,
   ],
   controllers: [SaudeController],
   providers: [
