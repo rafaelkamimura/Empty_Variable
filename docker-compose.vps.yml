@@ -24,6 +24,8 @@ services:
       DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?defina no .env}
       DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI:-}
       ADMIN_DISCORD_IDS: ${ADMIN_DISCORD_IDS:?defina no .env}
+      # Opcional: liga /api/integracao para outros sistemas (ex.: o bot nag4eyes).
+      INTEGRACAO_TOKEN: ${INTEGRACAO_TOKEN:-}
       # Login simulado nunca em produção (e a API também o recusa com NODE_ENV=production).
       AUTH_DEV_LOGIN: "false"
     networks:

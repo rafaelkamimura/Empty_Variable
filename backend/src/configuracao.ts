@@ -16,6 +16,10 @@ export interface Configuracao {
   discord: { clientId: string; clientSecret: string; guildId: string; redirectUri: string } | null;
   /** Login simulado (POST /api/auth/dev-login). Nunca fica ativo com NODE_ENV=production. */
   devLogin: boolean;
+  /** Segredo das rotas @Integracao() (INTEGRACAO_TOKEN). null deixa a integração desligada. */
+  tokenIntegracao: string | null;
+  /** Servidor do Discord do grupo, mesmo sem o OAuth configurado: delimita o que a integração enxerga. */
+  guildId: string | null;
 }
 
 export const CONFIGURACAO = Symbol("CONFIGURACAO");
@@ -46,6 +50,10 @@ export function carregarConfiguracao(env: NodeJS.ProcessEnv = process.env): Conf
   const caminhoBase = caminhoBaseDe(env);
   const redirectUri = env["DISCORD_REDIRECT_URI"] || `${appOrigin}${caminhoBase}/api/auth/discord/callback`;
   const discordCompleto = clientId !== "" && clientSecret !== "" && guildId !== "";
+  const tokenIntegracao = env["INTEGRACAO_TOKEN"] ?? "";
+  if (tokenIntegracao !== "" && tokenIntegracao.length < MIN_SEGREDO) {
+    throw new Error(`INTEGRACAO_TOKEN precisa ter pelo menos ${MIN_SEGREDO} caracteres.`);
+  }
 
   return {
     appOrigin,
@@ -60,5 +68,7 @@ export function carregarConfiguracao(env: NodeJS.ProcessEnv = process.env): Conf
     ),
     discord: discordCompleto ? { clientId, clientSecret, guildId, redirectUri } : null,
     devLogin: env["AUTH_DEV_LOGIN"] === "true" && env["NODE_ENV"] !== "production",
+    tokenIntegracao: tokenIntegracao === "" ? null : tokenIntegracao,
+    guildId: guildId === "" ? null : guildId,
   };
 }

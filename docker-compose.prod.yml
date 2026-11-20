@@ -36,6 +36,8 @@ services:
       DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?defina no .env.producao}
       DISCORD_REDIRECT_URI: https://${DOMINIO}/api/auth/discord/callback
       ADMIN_DISCORD_IDS: ${ADMIN_DISCORD_IDS:?defina no .env.producao}
+      # Opcional: liga /api/integracao para outros sistemas (ex.: o bot nag4eyes).
+      INTEGRACAO_TOKEN: ${INTEGRACAO_TOKEN:-}
       # Login simulado nunca em produção (e a API também o recusa com NODE_ENV=production).
       AUTH_DEV_LOGIN: "false"
     depends_on:

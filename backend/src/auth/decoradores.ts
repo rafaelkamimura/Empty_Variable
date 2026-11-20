@@ -4,12 +4,19 @@ import type { Request } from "express";
 
 export const CHAVE_PUBLICO = "betel:publico";
 export const CHAVE_PAPEIS = "betel:papeis";
+export const CHAVE_INTEGRACAO = "betel:integracao";
 
 /** Rota acessível sem sessão. */
 export const Publico = () => SetMetadata(CHAVE_PUBLICO, true);
 
 /** Restringe a rota aos papéis informados (403 para os demais). */
 export const Papeis = (...papeis: Papel[]) => SetMetadata(CHAVE_PAPEIS, papeis);
+
+/**
+ * Rota chamada por outro sistema (ex.: o bot nag4eyes), não por uma pessoa no navegador.
+ * Autentica com `Authorization: Bearer <INTEGRACAO_TOKEN>` no lugar da sessão e dispensa a checagem de Origin.
+ */
+export const Integracao = () => SetMetadata(CHAVE_INTEGRACAO, true);
 
 export type RequisicaoAutenticada = Request & { usuario?: Usuario };
 

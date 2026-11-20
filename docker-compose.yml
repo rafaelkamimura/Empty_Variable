@@ -32,6 +32,8 @@ services:
       DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
       DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI:-}
       ADMIN_DISCORD_IDS: ${ADMIN_DISCORD_IDS:-}
+      # Opcional: liga /api/integracao para outros sistemas (ex.: o bot nag4eyes).
+      INTEGRACAO_TOKEN: ${INTEGRACAO_TOKEN:-}
       AUTH_DEV_LOGIN: ${AUTH_DEV_LOGIN:-false}
     depends_on:
       postgres: { condition: service_healthy }

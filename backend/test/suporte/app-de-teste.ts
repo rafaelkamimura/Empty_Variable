@@ -28,7 +28,12 @@ export const CONFIG_TESTE: Configuracao = {
     redirectUri: `${ORIGEM}/api/auth/discord/callback`,
   },
   devLogin: false,
+  tokenIntegracao: null,
+  guildId: "guild-1",
 };
+
+/** Token de serviço usado nos testes das rotas /api/integracao. */
+export const TOKEN_INTEGRACAO = "token-de-integracao-de-teste-com-32-caracteres";
 
 /** Dublê do Discord: cada `code` mapeia para um perfil; `naoMembros` simula o 404 da consulta de membro. */
 export class DiscordFalso implements DiscordCliente {
