@@ -71,8 +71,9 @@ test("membro cadastra, faz o check-in, vê os totais e importa o backup do artef
 
   await test.step("Totais da semana mostram os itens e o valor", async () => {
     await page.getByRole("tab", { name: "Totais" }).click();
-    await expect(page.getByTestId("total-itens")).toHaveText("2");
-    await expect(page.getByTestId("total-zeny")).toHaveText("3kk");
+    // O cartão de resumo (ui-resumo) traz rótulo, valor em destaque (strong) e contexto.
+    await expect(page.getByTestId("total-itens").getByRole("strong")).toHaveText("2");
+    await expect(page.getByTestId("total-zeny").getByRole("strong")).toHaveText("3kk");
   });
 
   await test.step("Importar o backup do artefato", async () => {

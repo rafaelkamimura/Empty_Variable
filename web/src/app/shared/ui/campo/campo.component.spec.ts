@@ -15,6 +15,13 @@ class HospedeiroComponent {
   readonly erro = signal("");
 }
 
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CampoComponent, CampoControleDirective],
+  template: `<ui-campo rotulo="Preço de Oridecon" rotuloOculto><input uiCampo /></ui-campo>`,
+})
+class OcultoComponent {}
+
 describe("CampoComponent", () => {
   it("liga rótulo, dica e erro ao controle", () => {
     const f = TestBed.createComponent(HospedeiroComponent);
@@ -35,5 +42,14 @@ describe("CampoComponent", () => {
     expect(erro.getAttribute("role")).toBe("alert");
     expect(input.getAttribute("aria-describedby")).toBe(`${dica.id} ${erro.id}`);
     expect(input.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("com rotuloOculto, o rótulo sai da tela mas continua ligado ao controle", () => {
+    const f = TestBed.createComponent(OcultoComponent);
+    f.detectChanges();
+    const el: HTMLElement = f.nativeElement;
+    const label = el.querySelector("label")!;
+    expect(label.classList).toContain("ui-campo-rotulo-oculto");
+    expect(label.htmlFor).toBe(el.querySelector("input")!.id);
   });
 });
