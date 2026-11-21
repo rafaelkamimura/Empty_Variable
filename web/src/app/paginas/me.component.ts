@@ -4,9 +4,9 @@ import { CONFIG_V1, pesoDoRank } from "@betel/scoring";
 import { firstValueFrom } from "rxjs";
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { mensagemDeErro, type SituacaoVinculo } from "../core/modelos";
-import type { Extrato } from "../core/runs";
+import type { Extrato } from "../features/carteira/data/extrato.modelos";
 import { siglaDaClasse, tomDe } from "../shared/dominio/visual";
-import { ExtratoComponent } from "./extrato.component";
+import { ExtratoComponent } from "../features/carteira/componentes/extrato.component";
 
 /**
  * T-22: área do membro. Só o próprio saldo e histórico (D14), e os personagens.
