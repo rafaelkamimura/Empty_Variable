@@ -1,0 +1,732 @@
+import { ClassName } from './_class-name';
+import { ActiveSkillModel, AtkSkillFormulaInput, AtkSkillModel, DefForCalcModel, PassiveSkillModel } from './_character-base.abstract';
+import { LordKnight } from './LordKnight';
+import { ElementType } from '../constants/element-type.const';
+import { AdditionalBonusInput, InfoForClass } from '../models/info-for-class.model';
+import { floor, round } from '../utils';
+import { SKILL_ID_BY_NAME } from '../skills';
+import { ClassAutoCastDefinition } from '../models/auto-cast.model';
+
+const LUX_ANIMA_AUTO_CAST: ClassAutoCastDefinition = {
+  key: 'lux-anima-storm-blast',
+  resolve: ({ skillState, skillById }) => {
+    if (!skillState.isActive('Lux Anima Runestone')) return {
+      blocked: [{ key: 'lux-anima-storm-blast', name: 'Explosão Rúnica', icon: 2017,
+        reason: 'Ative Runa Luxanima em Habilidades para aplicar a chance de 15%.' }],
+    };
+    const skill = skillById(2017);
+    if (!skill) return {};
+    return { sources: [{ key: 'lux-anima-storm-blast', kind: 'passive', skillId: 2017,
+      skillLevel: 1, chance: 15, trigger: 'physical-attack', sourceName: 'Runa Luxanima', skillData: skill,
+      chanceBreakdown: [{ label: 'Runa Luxanima', value: '15% por ataque físico' }],
+    }] };
+  },
+};
+
+const jobBonusTable: Record<number, [number, number, number, number, number, number]> = {
+  1: [0, 0, 0, 1, 0, 0],
+  2: [0, 0, 0, 2, 0, 0],
+  3: [0, 0, 0, 2, 1, 0],
+  4: [0, 0, 1, 2, 1, 0],
+  5: [0, 0, 1, 3, 1, 0],
+  6: [0, 0, 1, 3, 1, 0],
+  7: [0, 0, 1, 3, 1, 0],
+  8: [0, 0, 1, 3, 1, 0],
+  9: [0, 0, 1, 3, 1, 0],
+  10: [1, 0, 1, 3, 1, 0],
+  11: [2, 0, 1, 3, 1, 0],
+  12: [2, 0, 1, 4, 1, 0],
+  13: [2, 0, 1, 5, 1, 0],
+  14: [2, 0, 2, 5, 1, 0],
+  15: [2, 0, 2, 5, 2, 0],
+  16: [2, 0, 2, 5, 2, 0],
+  17: [2, 0, 2, 5, 2, 0],
+  18: [2, 0, 2, 5, 2, 0],
+  19: [2, 0, 2, 5, 3, 0],
+  20: [2, 1, 2, 5, 3, 0],
+  21: [2, 2, 2, 5, 3, 0],
+  22: [2, 2, 2, 6, 3, 0],
+  23: [2, 2, 3, 6, 3, 0],
+  24: [2, 2, 3, 6, 4, 0],
+  25: [2, 2, 3, 6, 4, 0],
+  26: [2, 2, 3, 6, 4, 0],
+  27: [2, 2, 3, 6, 4, 0],
+  28: [2, 2, 3, 6, 4, 0],
+  29: [2, 2, 3, 6, 4, 0],
+  30: [2, 2, 3, 7, 4, 0],
+  31: [2, 2, 3, 7, 5, 0],
+  32: [2, 2, 4, 7, 5, 0],
+  33: [3, 2, 4, 7, 5, 0],
+  34: [3, 2, 4, 7, 5, 0],
+  35: [3, 2, 4, 7, 5, 0],
+  36: [3, 2, 4, 7, 5, 0],
+  37: [3, 2, 4, 7, 5, 0],
+  38: [3, 2, 4, 7, 5, 0],
+  39: [3, 2, 4, 8, 5, 0],
+  40: [3, 2, 4, 8, 6, 0],
+  41: [3, 3, 4, 8, 6, 0],
+  42: [3, 3, 4, 8, 6, 0],
+  43: [3, 3, 4, 8, 6, 0],
+  44: [3, 3, 4, 8, 7, 0],
+  45: [3, 3, 5, 8, 7, 0],
+  46: [3, 3, 5, 9, 7, 0],
+  47: [3, 3, 5, 9, 7, 1],
+  48: [3, 3, 5, 9, 7, 2],
+  49: [3, 3, 5, 9, 7, 3],
+  50: [3, 3, 5, 10, 7, 3],
+  51: [4, 3, 5, 10, 7, 3],
+  52: [4, 3, 5, 10, 7, 3],
+  53: [4, 4, 5, 10, 7, 3],
+  54: [4, 4, 5, 10, 7, 3],
+  55: [4, 4, 5, 10, 8, 3],
+  56: [4, 4, 5, 10, 8, 3],
+  57: [4, 4, 5, 10, 8, 4],
+  58: [4, 4, 5, 10, 8, 4],
+  59: [4, 4, 6, 10, 8, 4],
+  60: [5, 4, 6, 10, 8, 4],
+  61: [5, 4, 7, 10, 8, 4],
+  62: [5, 4, 7, 10, 8, 4],
+  63: [5, 5, 7, 10, 8, 4],
+  64: [5, 5, 7, 10, 8, 4],
+  65: [5, 5, 7, 10, 8, 5],
+  66: [5, 5, 7, 10, 9, 5],
+  67: [5, 5, 7, 10, 9, 5],
+  68: [5, 6, 7, 10, 9, 5],
+  69: [5, 6, 7, 10, 9, 5],
+  70: [6, 6, 7, 10, 9, 5],
+};
+
+export class RuneKnight extends LordKnight {
+  protected override CLASS_NAME = ClassName.RuneKnight;
+  protected override JobBonusTable = jobBonusTable;
+
+  private readonly classNames3rd = [ClassName.Only_3rd, ClassName.RuneKnight];
+  private readonly atkSkillList3rd: AtkSkillModel[] = [
+    // {
+    //   name: 'Clashing Spiral',
+    //   label: 'Clashing Spiral Lv5',
+    //   value: 'Clashing Spiral==1',
+    //   acd: 1,
+    //   fct: 0.3,
+    //   vct: 0.25,
+    //   cd: 0,
+    //   hit: 5,
+    //   formula: (input: AtkSkillFormulaInput): number => {
+    //     const { model, skillLevel, monster, weapon } = input;
+    //     const baseLevel = model.level;
+    //     const weaponWeight = weapon.data?.weight || 1;
+    //     const sizeModifier = {
+    //       l: 1,
+    //       m: 1.15,
+    //       s: 1.3,
+    //     }[monster.size];
+
+    //     return weaponWeight * 0.7 * sizeModifier * (150 + skillLevel * 50) * (baseLevel / 100);
+    //   },
+    //   finalDmgFormula(input) {
+    //     const { model, skillLevel, monster, weapon, statusAtk, equipmentAtk } = input;
+    //     const baseLevel = model.level;
+    //     const weaponWeight = weapon.data?.weight ?? 0;
+    //     const sizeModifier = {
+    //       l: 1,
+    //       m: 1.15,
+    //       s: 1.3,
+    //     }[monster.size];
+    //     const masterAtk = 0;
+
+    //     return (
+    //       (((floor(statusAtk * 0.9) + floor(equipmentAtk + weaponWeight) * 0.7 + masterAtk) *
+    //         floor(150 + skillLevel * 50)) /
+    //         100) *
+    //       (baseLevel / 100) *
+    //       5
+    //     );
+    //   },
+    // },
+    {
+      name: 'Sonic Wave',
+      label: 'Sonic Wave Lv10',
+      value: 'Sonic Wave==10',
+      values: ['[Improved 2nd] Sonic Wave==10'],
+      acd: 0.5,
+      fct: 0,
+      vct: 0,
+      cd: 1.75,
+      canCri: true,
+      criDmgPercentage: 0.5,
+      hit: 3,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel } = input;
+        const baseLevel = model.level;
+
+        return (1050 + skillLevel * 150) * (1 + (baseLevel - 100) / 100);
+      },
+    },
+    {
+      name: 'Wind Cutter',
+      label: 'Wind Cutter Lv5',
+      value: 'Wind Cutter==5',
+      values: ['Wind Cutter==10', '[Improved 2nd] Wind Cutter==5', '[Improved 2nd] Wind Cutter==10'],
+      acd: 0.5,
+      fct: 0,
+      vct: 0,
+      cd: 0.3,
+      isMelee: (weaponType) => weaponType !== 'spear' && weaponType !== 'twohandSpear',
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel, weapon } = input;
+        const wTypeName = weapon.data.typeName;
+        const baseLevel = model.level;
+
+        let baseDamage = 0;
+        if (wTypeName === 'twohandSword') {
+          baseDamage = 250 * skillLevel * 2;
+        } else if (wTypeName === 'spear' || wTypeName === 'twohandSpear') {
+          baseDamage = 400 * skillLevel;
+        } else {
+          baseDamage = 300 * skillLevel;
+        }
+
+        return baseDamage * (baseLevel / 100);
+      },
+    },
+    {
+      name: 'Ignition Break',
+      label: 'Ignition Break Lv5',
+      value: 'Ignition Break==5',
+      values: ['[Improved 2nd] Ignition Break==5'],
+      acd: 0,
+      fct: 0,
+      vct: 1,
+      cd: 2,
+      isMelee: true,
+      canCri: true,
+      criDmgPercentage: 0.5,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel } = input;
+        const baseLevel = model.level;
+
+        return skillLevel * 450 * (baseLevel / 100);
+      },
+    },
+    {
+      name: 'Hundred Spears',
+      label: 'Hundred Spears Lv10',
+      value: 'Hundred Spears==10',
+      values: ['[Improved] Hundred Spears==10'],
+      acd: 0.5,
+      fct: 0,
+      vct: 0.1,
+      cd: 3,
+      hit: 5,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel } = input;
+        const baseLevel = model.level;
+        const clashingSpiralBonus = this.learnLv('Clashing Spiral') * 50;
+
+        if (this.isSkillActive('Dragonic Aura')) {
+          return (700 + 350 * skillLevel) * (baseLevel / 100) + clashingSpiralBonus;
+        }
+
+        return (600 + 200 * skillLevel) * (baseLevel / 100) + clashingSpiralBonus;
+      },
+    },
+    {
+      name: 'Dragon Breath',
+      label: 'Dragon Breath Lv10',
+      value: 'Dragon Breath==10',
+      values: ['[Improved 2nd] Dragon Breath==10'],
+      acd: 2,
+      fct: 0.5,
+      vct: 2,
+      cd: 0,
+      isHit100: true,
+      currentHpFn: (maxHp) => this.getCurrentHp(maxHp),
+      getElement: () => {
+        if (this.isSkillActive('Lux Anima Runestone')) {
+          return ElementType.Dark;
+        } else if (this.isSkillActive('Turisus Runestone')) {
+          return ElementType.Holy;
+        }
+
+        return ElementType.Fire;
+      },
+      formula: (input: AtkSkillFormulaInput): number => {
+        return this.calcDragonBreathFormula(input);
+      },
+      customFormula: (input): number => {
+        return this.calcPostSkillDamgeDragonBreath(input, 'Dragon Breath');
+      },
+    },
+    {
+      name: 'Dragon Breath - WATER',
+      label: 'Dragon Breath - WATER Lv10',
+      value: 'Dragon Breath - WATER==10',
+      values: ['[Improved 2nd] Dragon Breath - WATER==10'],
+      acd: 2,
+      fct: 0.5,
+      vct: 2,
+      cd: 0,
+      isHit100: true,
+      currentHpFn: (maxHp) => this.getCurrentHp(maxHp),
+      getElement: () => {
+        if (this.isSkillActive('Lux Anima Runestone')) {
+          return ElementType.Neutral;
+        } else if (this.isSkillActive('Asir Runestone')) {
+          return ElementType.Ghost;
+        }
+
+        return ElementType.Water;
+      },
+      formula: (input: AtkSkillFormulaInput): number => {
+        return this.calcDragonBreathFormula(input);
+      },
+      customFormula: (input): number => {
+        return this.calcPostSkillDamgeDragonBreath(input, 'Dragon Breath - WATER');
+      },
+    },
+  ];
+
+  private readonly activeSkillList3rd: ActiveSkillModel[] = [
+    {
+      name: 'Enchant Blade',
+      label: 'Enchant Blade 10',
+      inputType: 'selectButton',
+      dropdown: [
+        { label: 'Sim', value: 10, isUse: true },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+    {
+      name: 'Ride Dragon',
+      label: 'Ride Dragon',
+      inputType: 'selectButton',
+      dropdown: [
+        { label: 'Sim', value: 5, isUse: true },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+    {
+      name: 'Current HP',
+      label: 'HP Atual',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '100 %', value: 0, isUse: false },
+        { label: '30 %', value: 30, isUse: true },
+        { label: '40 %', value: 40, isUse: true },
+        { label: '50 %', value: 50, isUse: true },
+        { label: '60 %', value: 60, isUse: true },
+        { label: '70 %', value: 70, isUse: true },
+        { label: '80 %', value: 80, isUse: true },
+        { label: '90 %', value: 90, isUse: true },
+      ],
+    },
+    {
+      name: 'Turisus Runestone',
+      label: 'Rune: Turisus',
+      inputType: 'selectButton',
+      dropdown: [
+        { label: 'Sim', value: 1, isUse: true, bonus: { flatBasicDmg: 250, str: 30, melee: 15 } },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+    {
+      name: 'Lux Anima Runestone',
+      label: 'Rune: Lux Anima',
+      inputType: 'selectButton',
+      dropdown: [
+        {
+          label: 'Sim',
+          value: 2,
+          isUse: true,
+          bonus: { p_size_all: 30, criDmg: 30, melee: 30, range: 30, hpPercent: 30, spPercent: 30 },
+        },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+    {
+      name: 'Asir Runestone',
+      label: 'Rune: Asir',
+      inputType: 'selectButton',
+      // Aura de Combate is plain ATQ Equip., not a hidden mastery: the status window of
+      // `dk-storm-slash-buffed.rrf` reads ATQ Equip. 1.204 / 1.229 with the buff up, which
+      // is the build's own equipment ATQ plus exactly these 70 (7 per party member, ten of
+      // them there). As a mastery it sat after the P.ATQ multiplier and paid ~3% less.
+      dropdown: [
+        { label: 'Sim', value: 1, isUse: true, bonus: { atk: 70 } },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+    {
+      name: 'Hagalas Runestone',
+      label: 'Rune: Hagalas',
+      inputType: 'selectButton',
+      // No static bonus: Escamas Rochosas scales with the build's own job level and
+      // Perícia em Runas, so the DEF/DEFM it grants is solved in setAdditionalBonus.
+      dropdown: [
+        { label: 'Sim', value: 1, isUse: true },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+  ];
+
+  protected readonly passiveSkillList3rd: PassiveSkillModel[] = [
+    {
+      label: 'Ignition Break',
+      name: 'Ignition Break',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+      ],
+    },
+    {
+      label: 'Dragon Training',
+      name: 'Dragon Training',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+      ],
+    },
+    {
+      label: 'Dragon Breath',
+      name: 'Dragon Breath',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+        { label: 'Nv 6', value: 6, isUse: true },
+        { label: 'Nv 7', value: 7, isUse: true },
+        { label: 'Nv 8', value: 8, isUse: true },
+        { label: 'Nv 9', value: 9, isUse: true },
+        { label: 'Nv 10', value: 10, isUse: true },
+      ],
+    },
+    {
+      label: 'Breath - WATER',
+      name: 'Dragon Breath - WATER',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+        { label: 'Nv 6', value: 6, isUse: true },
+        { label: 'Nv 7', value: 7, isUse: true },
+        { label: 'Nv 8', value: 8, isUse: true },
+        { label: 'Nv 9', value: 9, isUse: true },
+        { label: 'Nv 10', value: 10, isUse: true },
+      ],
+    },
+    {
+      label: 'Rune Mastery',
+      name: 'Rune Mastery',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+        { label: 'Nv 6', value: 6, isUse: true },
+        { label: 'Nv 7', value: 7, isUse: true },
+        { label: 'Nv 8', value: 8, isUse: true },
+        { label: 'Nv 9', value: 9, isUse: true },
+        { label: 'Nv 10', value: 10, isUse: true },
+      ],
+    },
+    {
+      label: 'Enchant Blade',
+      name: 'Enchant Blade',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+        { label: 'Nv 6', value: 6, isUse: true },
+        { label: 'Nv 7', value: 7, isUse: true },
+        { label: 'Nv 8', value: 8, isUse: true },
+        { label: 'Nv 9', value: 9, isUse: true },
+        { label: 'Nv 10', value: 10, isUse: true },
+      ],
+    },
+    {
+      label: 'Sonic Wave',
+      name: 'Sonic Wave',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+        { label: 'Nv 6', value: 6, isUse: true },
+        { label: 'Nv 7', value: 7, isUse: true },
+        { label: 'Nv 8', value: 8, isUse: true },
+        { label: 'Nv 9', value: 9, isUse: true },
+        { label: 'Nv 10', value: 10, isUse: true },
+      ],
+    },
+    {
+      label: 'Death Bound',
+      name: 'Death Bound',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+        { label: 'Nv 6', value: 6, isUse: true },
+        { label: 'Nv 7', value: 7, isUse: true },
+        { label: 'Nv 8', value: 8, isUse: true },
+        { label: 'Nv 9', value: 9, isUse: true },
+        { label: 'Nv 10', value: 10, isUse: true },
+      ],
+    },
+    {
+      label: 'Dragon Howling',
+      name: 'Dragon Howling',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+      ],
+    },
+  ];
+
+  constructor() {
+    super();
+
+    this.inheritSkills({
+      activeSkillList: this.activeSkillList3rd,
+      atkSkillList: this.atkSkillList3rd,
+      passiveSkillList: this.passiveSkillList3rd,
+      classNames: this.classNames3rd,
+    });
+    this.inheritAutoCasts([LUX_ANIMA_AUTO_CAST]);
+  }
+
+  override getMasteryAtk(info: InfoForClass): number {
+    const { weapon } = info;
+    const weaponType = weapon?.data?.typeName;
+    const bonuses = this.bonuses?.masteryAtks || {};
+
+    let sum = 0;
+    const spearMasteryLv = this.learnLv('Spear Mastery');
+    if ((weaponType === 'spear' || weaponType === 'twohandSpear') && spearMasteryLv > 0) {
+      sum += spearMasteryLv * 4;
+      if (this.isSkillActive('Ride Dragon')) sum += spearMasteryLv;
+      if (this.learnLv('Dragon Training')) sum += spearMasteryLv * 10;
+    }
+
+    for (const [, bonus] of Object.entries(bonuses)) {
+      sum += bonus[`x_${weaponType}_atk`] || 0;
+    }
+
+    return sum;
+  }
+
+  override setAdditionalBonus(params: AdditionalBonusInput) {
+    const { totalBonus, weapon } = params;
+
+    if (this.isSkillActive('Asir Runestone')) {
+      // Aura de Combate hands out a *flat* ASPD bonus, not a percentage, and it shrinks as
+      // the gear's own ASPD% grows: 4 × (100 − ASPD% from equipment), floored. browiki's
+      // worked examples: 24% of gear ASPD leaves +3, 40% leaves +2. Rune Mastery is the
+      // skill's prerequisite, never a multiplier — reading it as one was worth +40% ASPD.
+      const equipAspdPercent = totalBonus.aspdPercent || 0;
+      const asirRuneAspd = Math.max(0, Math.floor((4 * (100 - equipAspdPercent)) / 100));
+      totalBonus.aspd = (totalBonus.aspd || 0) + asirRuneAspd;
+    }
+
+    if (this.isSkillActive('Hagalas Runestone')) {
+      // Escamas Rochosas: DEF and DEFM += floor(job level × Perícia em Runas ÷ 4). The rune's
+      // own description names both inputs ("de acordo com o nível de [Perícia em Runas] e o
+      // nível de classe do usuário") without the divisor; browiki and irowiki both give it as
+      // ÷ 4. Floored, as the server int-casts. Unlike Aura de Combate above, here Rune Mastery
+      // really is a multiplier — with it unlearned the rune grants nothing, as in game.
+      const stonehardSkinDef = Math.floor(((params.model.jobLevel || 0) * this.learnLv('Rune Mastery')) / 4);
+      totalBonus.def = (totalBonus.def || 0) + stonehardSkinDef;
+      totalBonus.mdef = (totalBonus.mdef || 0) + stonehardSkinDef;
+      this.attributeDisplayBonus(params, 'Hagalas Runestone', { def: stonehardSkinDef, mdef: stonehardSkinDef });
+    }
+
+    const wType = weapon.data?.typeName;
+    if (this.isSkillActive('Two hand Quicken') && wType === 'twohandSword') {
+      totalBonus.skillAspd = (totalBonus.skillAspd || 0) + 7;
+      totalBonus.aspdPercent = (totalBonus.aspdPercent || 0) + 10;
+      totalBonus.cri = (totalBonus.cri || 0) + 12;
+      totalBonus.hit = (totalBonus.hit || 0) + 20;
+    }
+
+    const isRideDragon = this.isSkillActive('Ride Dragon');
+    if (isRideDragon) {
+      totalBonus.decreaseSkillAspdPercent = (totalBonus.decreaseSkillAspdPercent || 0) + (25 - this.learnLv('Dragon Training') * 5);
+
+      if (wType === 'spear' || wType === 'twohandSpear') {
+        totalBonus['ignore_size_penalty'] = 100;
+      }
+    }
+
+    if (!wType) return totalBonus;
+
+    const bonus = this.getDynimicBonusFromSkill(`${wType}_`);
+    for (const [key, value] of Object.entries(bonus)) {
+      if (totalBonus[key]) {
+        totalBonus[key] += value;
+      } else {
+        totalBonus[key] = value;
+      }
+    }
+
+    return totalBonus;
+  }
+
+  protected getCurrentHp(maxHp: number) {
+    const curHp = this.activeSkillLv('Current HP') || 100;
+
+    return maxHp * curHp * 0.01;
+  }
+
+  /**
+   * Sopro do Dragão / Bafo do Dragão before DEF:
+   *
+   *     [floor(HP atual ÷ 50) + floor(SP máx. ÷ 4)] × (nv × nv. base ÷ 100) × termo%
+   *
+   * where the term is `90 + 10 × Adestrar Dragão`, and once Aura Draconiana is learned
+   * `floor((90 + 10 × Adestrar Dragão + POD ÷ 5) × (1 + P.ATQ ÷ 100))` (irowiki). P.ATQ
+   * multiplies the whole term, POD ÷ 5 is not floored, and P.ATQ is the status-window
+   * total, not the item share in `totalBonus`. `teste-sopro-dk.rrf` pins both: 256.897
+   * bare-handed (POD 113, P.ATQ 54 → term 250) and 6.913.590 geared (POD 118, P.ATQ 86 →
+   * term 304), each to the unit. Integer arithmetic, so the floor never lands on a
+   * 303,99999… that the game rounds as 304.
+   */
+  protected calcDragonBreathFormula(input: AtkSkillFormulaInput) {
+    const { model, skillLevel, currentHp, maxSp, status, pAtk = 0 } = input;
+    const baseLevel = model.level;
+    const trainingTerm = 90 + this.learnLv('Dragon Training') * 10;
+    const term = this.learnLv('Dragonic Aura') > 0 ? Math.floor(((5 * trainingTerm + status.totalPow) * (100 + pAtk)) / 500) : trainingTerm;
+
+    return ((floor(currentHp / 50) + floor(maxSp / 4)) * skillLevel * baseLevel * term) / 10000;
+  }
+
+  /** Aura Draconiana's "aumenta o dano de Sopro do Dragão e Bafo do Dragão" — nothing on a
+   *  Rune Knight, which cannot cast it. */
+  protected getDragonBreathAuraMultiplier(): number {
+    return 1;
+  }
+
+  private calcPostSkillDamgeDragonBreath(
+    input: AtkSkillFormulaInput & {
+      baseSkillDamage: number;
+      sizePenalty: number;
+      propertyMultiplier: number;
+    } & DefForCalcModel,
+    skillName: string,
+  ) {
+    const { baseSkillDamage, propertyMultiplier, totalBonus, reducedHardDef, finalSoftDef, monster } = input;
+    const { cometMultiplier } = input
+    const _getRaidMultiplier = (): number => {
+      if (!totalBonus['raid']) return 0;
+
+      return monster.isBoss ? 115 : 130;
+    }
+
+    const _getQuakeBonus = (): number => {
+      const bonus = totalBonus['quake'] || 0;
+      if (!bonus) return 0
+
+      return 100 + bonus;
+    }
+
+    const _getSporeExplosionBonus = (): number => {
+      const bonus = totalBonus['sporeExplosion'] || 0;
+      if (!bonus) return 0
+
+      if (monster.isBoss) {
+        return 100 + bonus / 2;
+      }
+
+      return 100 + bonus;
+    }
+
+    const _getOleumSanctumBonus = (): number => {
+      const bonus = totalBonus['oleumSanctum'] || 0;
+      if (!bonus) return 0
+
+      return 100 + bonus;
+    }
+
+    const getDebuffMultiplier = () => {
+      let totalBonus = 0
+
+      totalBonus += _getRaidMultiplier();
+      totalBonus += _getQuakeBonus();
+      totalBonus += _getSporeExplosionBonus()
+      totalBonus += _getOleumSanctumBonus()
+
+      return round((totalBonus || 100) * 0.01, 4)
+    }
+
+    // Items key "Dano de [Sopro do Dragão]" by skill id ("2008" / "5004"). This used to read
+    // totalBonus['Dragon Breath - WATER'], which nothing but the Aura toggle ever wrote, so
+    // every item bonus to the breaths was silently dropped — 228% of it on the build in
+    // teste-sopro-dk.rrf, which simulated at a seventh of the recording.
+    const equipSkillBonus = totalBonus[SKILL_ID_BY_NAME[skillName]] || 0;
+
+    let totalDamage = baseSkillDamage;
+    totalDamage = totalDamage - (reducedHardDef + finalSoftDef);
+    totalDamage = floor(totalDamage * (100 + totalBonus.range) * 0.01);
+    totalDamage = floor(totalDamage * (100 + equipSkillBonus) * 0.01);
+    // A stage of its own, as the Aura's toggle has always been; no recording carries the
+    // Aura state (EFST 1176) yet, so whether it adds to the item bonuses is still open.
+    totalDamage = floor(totalDamage * this.getDragonBreathAuraMultiplier());
+    totalDamage = floor(totalDamage * propertyMultiplier);
+
+    totalDamage = floor(totalDamage * cometMultiplier);
+    totalDamage = floor(totalDamage * getDebuffMultiplier());
+
+    return totalDamage;
+  }
+
+  override getAdditionalDmg(info: InfoForClass): number {
+    if (this.isSkillActive('Aura Blade')) {
+      return info.model.level * 8;
+    }
+
+    return 0;
+  }
+
+  override getAdditionalBasicDmg(info: InfoForClass): number {
+    if (this.isSkillActive('Enchant Blade')) {
+      return 300 * (info.model.level / 100) + info.status.totalInt + info.totalBonus.matk;
+    }
+
+    return 0;
+  }
+}

@@ -1,6 +1,8 @@
 name: CI
 
-# Tudo roda no runner self-hosted da VPS (o mesmo que o deploy usa); nenhum runner da nuvem.
+# Tudo roda nos runners self-hosted da VPS (a mesma máquina do deploy); nenhum runner da nuvem.
+# Há mais de um runner: os dois jobs rodam em paralelo, e execuções de PRs diferentes também, então
+# nada aqui pode usar porta, nome de container ou pasta fixos.
 on:
   push:
     branches: [main]
@@ -16,13 +18,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verificar:
-    name: lint, build, testes e e2e
+  # PR que só mexe em documentação (Markdown fora de web/ e backend/) não precisa de build, testes
+  # nem imagens: roda só a conferência de formatação. Na main e no disparo manual, roda tudo.
+  alteracoes:
+    name: o que mudou
     # Nunca executa código de fork na VPS. Como o workflow de um PR de fork vem do próprio fork,
     # o repositório também precisa exigir aprovação para rodar workflows de colaboradores externos.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, linux, empty-variable]
+    timeout-minutes: 5
+    outputs:
+      codigo: ${{ steps.diff.outputs.codigo }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          TOPO: ${{ github.event.pull_request.head.sha }}
+        run: |
+          codigo=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if ! git diff --name-only "$BASE...$TOPO" | grep -qvE '(^docs/|\.md$|^\.github/(instructions/|pull_request_template\.md$)|^\.(claude|codex)/agents/)'; then
+              codigo=false
+            fi
+          fi
+          echo "codigo=$codigo" >> "$GITHUB_OUTPUT"
+
+  verificar:
+    name: lint, build, testes e e2e
+    needs: alteracoes
+    runs-on: [self-hosted, linux, empty-variable]
     timeout-minutes: 30
+    env:
+      CODIGO: ${{ needs.alteracoes.outputs.codigo }}
     steps:
       - uses: actions/checkout@v4
       # A VPS não tem Node no sistema: o setup-node baixa uma versão fixa para a execução.
@@ -32,10 +62,12 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @betel/api prisma:generate
+        if: env.CODIGO == 'true'
 
       # A VPS não tem Google Chrome: os testes do Angular (Karma) e o e2e usam o Chromium do Playwright,
       # que fica em cache em ~/.cache/ms-playwright entre as execuções.
       - name: Chromium
+        if: env.CODIGO == 'true'
         run: |
           pnpm --filter @betel/e2e exec playwright install chromium
           echo "CHROME_BIN=$(pnpm --filter @betel/e2e exec node -e "console.log(require('@playwright/test').chromium.executablePath())")" >> "$GITHUB_ENV"
@@ -44,6 +76,7 @@ jobs:
       # os testes da API aplicam as migrations em um, o e2e no outro.
       - name: Subir o Postgres
         id: pg
+        if: env.CODIGO == 'true'
         run: |
           nome="ev-ci-pg-${{ github.run_id }}-${{ github.run_attempt }}"
           senha="$(openssl rand -hex 16)"
@@ -61,21 +94,40 @@ jobs:
           echo "url_testes=postgresql://betel:${senha}@127.0.0.1:${porta}/betel_test" >> "$GITHUB_OUTPUT"
           echo "url_e2e=postgresql://betel:${senha}@127.0.0.1:${porta}/betel_e2e" >> "$GITHUB_OUTPUT"
 
-      - name: Lint e formatação
-        run: |
-          pnpm lint
-          pnpm format:check
+      - name: Formatação
+        run: pnpm format:check
+      - name: Lint
+        if: env.CODIGO == 'true'
+        run: pnpm lint
       - name: Build (motor primeiro, pois API e web dependem dele)
+        if: env.CODIGO == 'true'
         run: |
           pnpm --filter @betel/scoring build
           pnpm -r --filter "!@betel/scoring" run build
       - run: pnpm typecheck
+        if: env.CODIGO == 'true'
       - name: Testes (motor, API e web)
+        if: env.CODIGO == 'true'
         run: pnpm test
         env:
           TEST_DATABASE_URL: ${{ steps.pg.outputs.url_testes }}
+      # O e2e usa duas portas seguidas (web e API). Com mais de um runner na máquina, cada execução
+      # escolhe um par livre em vez da porta padrão.
       - name: Testes e2e
-        run: pnpm e2e
+        if: env.CODIGO == 'true'
+        run: |
+          E2E_PORTA=$(python3 -c 'import socket
+          while True:
+              a = socket.socket(); a.bind(("127.0.0.1", 0)); p = a.getsockname()[1]
+              b = socket.socket()
+              try:
+                  b.bind(("127.0.0.1", p + 1)); print(p); break
+              except OSError:
+                  pass
+              finally:
+                  a.close(); b.close()')
+          export E2E_PORTA
+          pnpm e2e
         env:
           TEST_DATABASE_URL: ${{ steps.pg.outputs.url_e2e }}
           E2E_CANAL: chromium
@@ -88,7 +140,8 @@ jobs:
   # elas dividem o Docker da VPS com a produção e não podem encostar nela.
   docker:
     name: imagens e stacks (dev, Caddy e VPS)
-    needs: verificar
+    needs: alteracoes
+    if: needs.alteracoes.outputs.codigo == 'true'
     runs-on: [self-hosted, linux, empty-variable]
     timeout-minutes: 30
     env:
@@ -132,9 +185,16 @@ jobs:
           caddy=(docker compose -p "$PROJETO-caddy" -f docker-compose.prod.yml --env-file .env.producao)
           "${caddy[@]}" up -d --build --wait
           base="https://localhost:$PORTA_HTTPS"
+          # O Caddy fica "healthy" antes de terminar de emitir o certificado local: espera o HTTPS responder.
+          curl -fsSk --retry 10 --retry-delay 2 --retry-all-errors -o /dev/null "$base/api/saude"
           curl -fsSk "$base/api/saude" | grep '"status":"ok"'
           curl -fsSk "$base/" | grep '<app-root>'
           curl -fsSkI "$base/" | grep -i 'strict-transport-security'
+          # D61: só o simulador de dano pode ser emoldurado, e só pela mesma origem.
+          curl -fsSkI "$base/" | grep -i 'x-frame-options: DENY'
+          curl -fsSkI "$base/simulador-latam/index.html" | grep -i 'x-frame-options: SAMEORIGIN'
+          curl -fsSkI "$base/simulador-latam/index.html" | grep -i "frame-ancestors 'self'"
+          curl -fsSk "$base/simulador-latam/index.html" | grep 'Carregando o simulador'
           curl -sSk -o /dev/null -w '%{http_code}' "$base/api/auth/me" | grep 401
           "${caddy[@]}" exec -T backup sh /scripts/backup.sh
           "${caddy[@]}" exec -T backup sh /scripts/testar-restauracao.sh
@@ -177,6 +237,7 @@ jobs:
           base="http://127.0.0.1:$PORTA_WEB"
           curl -fsS "$base/api/saude" | grep '"status":"ok"'
           curl -fsS "$base/" | grep '<base href="/emptyvariable/"'
+          curl -fsS "$base/simulador-latam/index.html" | grep 'Carregando o simulador'
           curl -sS -o /dev/null -w '%{http_code}' "$base/api/auth/me" | grep 401
           # O login precisa voltar para a sub-rota, e o cookie de state ficar restrito a ela.
           curl -sS -o /dev/null -D - "$base/api/auth/discord" | grep -i 'set-cookie:.*Path=/emptyvariable/api/auth'
@@ -194,3 +255,5 @@ jobs:
           docker rm -f "$PROJETO-pg" > /dev/null 2>&1 || true
           docker network rm "$PROJETO-banco" > /dev/null 2>&1 || true
           docker compose -p "$PROJETO-dev" down --rmi local > /dev/null 2>&1 || true
+          # As imagens do ambiente local não têm container, e o "down" não as remove: tira pelo nome.
+          docker images --format '{{.Repository}}:{{.Tag}}' | grep "^$PROJETO-" | xargs -r docker rmi > /dev/null 2>&1 || true

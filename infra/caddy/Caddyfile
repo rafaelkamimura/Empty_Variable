@@ -6,13 +6,27 @@
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# D61: o simulador de dano (web/public/simulador-latam) abre num iframe da tela /simulador, na
+	# mesma origem. Só ele pode ser emoldurado, e só pelo próprio sistema; o resto continua proibido.
+	# Os dois blocos não se sobrepõem, então a ordem entre eles não importa.
+	@simulador path /simulador-latam/*
+	@resto not path /simulador-latam/*
+
+	header @resto {
+		X-Frame-Options "DENY"
 		# Angular Material injeta estilos em tempo de execução ('unsafe-inline' só em style-src).
 		# Fontes do Google e avatares do Discord são as únicas origens externas.
 		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn.discordapp.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://discord.com"
-		-Server
+	}
+	header @simulador {
+		X-Frame-Options "SAMEORIGIN"
+		# Mesma política, trocando só quem pode emoldurar. O simulador não pede nada a outro servidor.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 	}
 
 	handle /api/* {

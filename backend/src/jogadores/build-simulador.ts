@@ -12,6 +12,7 @@ import {
   type Grau,
   REFINO_MAXIMO,
   TALENTOS,
+  TOKEN_BUILD_MAXIMO,
 } from "./ficha-build.js";
 
 /** Resposta mínima do encurtador do simulador (o `fetch` global cumpre este contrato). */
@@ -49,7 +50,7 @@ export const SLOTS_SIMULADOR = {
 export type SlotFicha = keyof typeof SLOTS_SIMULADOR;
 
 /** Classe do simulador (número interno dele) → nome em português, como ele mesmo mostra. */
-const CLASSES_SIMULADOR: Readonly<Record<number, string>> = {
+export const CLASSES_SIMULADOR: Readonly<Record<number, string>> = {
   1: "Insurgente",
   2: "Sentinela",
   3: "Ceifador de Almas",
@@ -238,8 +239,12 @@ function pontosDe<Chave extends string>(
 
 const comMaiuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1);
 
-/** Atributos, talentos, nível de classe, habilidade ("Nome==nível") e propriedade do ataque. */
-function atributosDaBuild(build: Record<string, unknown>): AtributosFicha {
+/**
+ * Atributos, talentos, nível de classe, habilidade ("Nome==nível") e propriedade do ataque. Com a
+ * D59 vão junto o número da classe no simulador e o token do link, que a simulação lê de novo.
+ */
+function atributosDaBuild(build: Record<string, unknown>, token: string): AtributosFicha {
+  const classeSimulador = inteiroEntre(build["class"], 1, 99_999);
   const nivelClasse = inteiroEntre(build["jobLevel"], 1, 250);
   const base = pontosDe(build, ATRIBUTOS, (a) => a, 1);
   const bonusClasse = pontosDe(build, ATRIBUTOS, (a) => `job${comMaiuscula(a)}`, 0);
@@ -262,6 +267,8 @@ function atributosDaBuild(build: Record<string, unknown>): AtributosFicha {
     ...(talentos === undefined ? {} : { talentos }),
     ...(habilidade === undefined ? {} : { habilidade }),
     ...(elementoAtaque === undefined || !ELEMENTOS.includes(elementoAtaque) ? {} : { elementoAtaque }),
+    ...(classeSimulador === null ? {} : { classeSimulador }),
+    ...(token.length > TOKEN_BUILD_MAXIMO ? {} : { token }),
   };
 }
 
@@ -289,7 +296,7 @@ export function decodificarBuild(token: string): BuildSimulador | null {
     classe: inteiroEntre(build["class"], 1, 99_999),
     nivelBase: inteiroEntre(build["level"], 1, 250),
     equipamentos,
-    atributos: atributosDaBuild(build),
+    atributos: atributosDaBuild(build, token.replace(/\+/g, ".")),
   };
 }
 

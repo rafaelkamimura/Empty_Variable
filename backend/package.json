@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@betel/farm": "workspace:*",
+    "@betel/motor-latam": "workspace:*",
     "@betel/scoring": "workspace:*",
     "@betel/simulador": "workspace:*",
     "@emptyvariable/discord": "workspace:*",

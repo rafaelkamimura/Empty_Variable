@@ -1,0 +1,362 @@
+import { ElementType, ElementalControlMode, ElementalMasterSpirit } from '../constants/element-type.const';
+import { AdditionalBonusInput } from '../models/info-for-class.model';
+import { ClassName } from './_class-name';
+import { ActiveSkillModel, AtkSkillFormulaInput, AtkSkillModel, PassiveSkillModel } from './_character-base.abstract';
+import { Scholar } from './Scholar';
+import { addBonus } from '../utils';
+
+const jobBonusTable: Record<number, [number, number, number, number, number, number]> = {
+  1: [0, 0, 0, 1, 0, 0],
+  2: [0, 0, 0, 2, 0, 0],
+  3: [0, 0, 0, 2, 1, 0],
+  4: [0, 0, 1, 2, 1, 0],
+  5: [0, 0, 1, 3, 1, 0],
+  6: [0, 0, 1, 3, 1, 0],
+  7: [0, 0, 1, 3, 1, 0],
+  8: [0, 0, 1, 3, 1, 0],
+  9: [0, 0, 1, 3, 1, 0],
+  10: [1, 0, 1, 3, 1, 0],
+  11: [2, 0, 1, 3, 1, 0],
+  12: [2, 0, 1, 4, 1, 0],
+  13: [2, 0, 1, 5, 1, 0],
+  14: [2, 0, 2, 5, 1, 0],
+  15: [2, 0, 2, 5, 2, 0],
+  16: [2, 0, 2, 5, 2, 0],
+  17: [2, 0, 2, 5, 2, 0],
+  18: [2, 0, 2, 5, 2, 0],
+  19: [2, 0, 2, 5, 3, 0],
+  20: [2, 1, 2, 5, 3, 0],
+  21: [2, 2, 2, 5, 3, 0],
+  22: [2, 2, 2, 6, 3, 0],
+  23: [2, 2, 3, 6, 3, 0],
+  24: [2, 2, 3, 6, 4, 0],
+  25: [2, 2, 3, 6, 4, 0],
+  26: [2, 2, 3, 6, 4, 0],
+  27: [2, 2, 3, 6, 4, 0],
+  28: [2, 2, 3, 6, 4, 0],
+  29: [2, 2, 3, 6, 4, 0],
+  30: [2, 2, 3, 7, 4, 0],
+  31: [2, 2, 3, 7, 5, 0],
+  32: [2, 2, 4, 7, 5, 0],
+  33: [3, 2, 4, 7, 5, 0],
+  34: [3, 2, 4, 7, 5, 0],
+  35: [3, 2, 4, 7, 5, 0],
+  36: [3, 2, 4, 7, 5, 0],
+  37: [3, 2, 4, 7, 5, 0],
+  38: [3, 2, 4, 7, 5, 0],
+  39: [3, 2, 4, 8, 5, 0],
+  40: [3, 2, 4, 8, 6, 0],
+  41: [3, 3, 4, 8, 6, 0],
+  42: [3, 3, 4, 8, 6, 0],
+  43: [3, 3, 4, 8, 6, 0],
+  44: [3, 3, 4, 8, 7, 0],
+  45: [3, 3, 5, 8, 7, 0],
+  46: [3, 3, 5, 9, 7, 0],
+  47: [3, 3, 5, 9, 7, 1],
+  48: [3, 3, 5, 9, 7, 2],
+  49: [3, 3, 5, 9, 7, 3],
+  50: [3, 3, 5, 10, 7, 3],
+  51: [3, 3, 5, 10, 8, 3],
+  52: [3, 3, 5, 10, 8, 3],
+  53: [4, 3, 5, 10, 8, 3],
+  54: [4, 3, 5, 10, 8, 3],
+  55: [4, 4, 5, 10, 8, 3],
+  56: [4, 4, 5, 10, 8, 3],
+  57: [4, 4, 6, 10, 8, 3],
+  58: [4, 4, 6, 10, 8, 3],
+  59: [4, 4, 6, 10, 9, 3],
+  60: [4, 4, 6, 11, 9, 3],
+  61: [4, 4, 6, 11, 9, 3],
+  62: [4, 4, 6, 11, 9, 3],
+  63: [4, 4, 6, 11, 9, 3],
+  64: [4, 4, 6, 11, 9, 3],
+  65: [4, 4, 7, 12, 9, 4],
+  66: [4, 4, 7, 12, 9, 4],
+  67: [4, 4, 7, 12, 9, 4],
+  68: [4, 4, 7, 12, 9, 4],
+  69: [4, 4, 7, 12, 9, 4],
+  70: [4, 4, 8, 13, 9, 5],
+};
+
+enum ElementalSpiritValue {
+  Agni_2 = 12,
+  Aqua_2 = 22,
+  Ventus_2 = 32,
+  Tera_2 = 42,
+}
+
+export class Sorcerer extends Scholar {
+  protected override CLASS_NAME = ClassName.Sorcerer;
+  protected override JobBonusTable = jobBonusTable;
+
+  private readonly classNames3rd = [ClassName.Only_3rd, ClassName.Sorcerer];
+  private readonly atkSkillList3rd: AtkSkillModel[] = [
+    {
+      name: 'Diamond Dust',
+      label: 'Diamond Dust Lv 5',
+      value: 'Diamond Dust==5',
+      fct: 0,
+      vct: 7,
+      cd: 5,
+      acd: 1,
+      element: ElementType.Water,
+      isMatk: true,
+      hit: 2,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel, status } = input;
+        const baseLevel = model.level;
+        const totalInt = status.totalInt;
+        const bonus = this.learnLv('Frost Weapon') * 300;
+        const summonerBonus = this.isSummon(ElementalSpiritValue.Aqua_2) ? model.jobLevel * 5 : 0
+
+        return ((skillLevel + 2) * totalInt + bonus) * (baseLevel / 100) + summonerBonus;
+      },
+    },
+    {
+      name: 'Earth Grave',
+      label: 'Earth Grave Lv 5',
+      value: 'Earth Grave==5',
+      fct: 1,
+      vct: 3,
+      cd: 5,
+      acd: 1,
+      element: ElementType.Earth,
+      isMatk: true,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel, status } = input;
+        const baseLevel = model.level;
+        const totalInt = status.totalInt;
+        const bonus = this.learnLv('Seismic Weapon') * 300;
+        const summonerBonus = this.isSummon(ElementalSpiritValue.Tera_2) ? model.jobLevel * 5 : 0
+
+        return ((skillLevel + 2) * totalInt + bonus) * (baseLevel / 100) + summonerBonus;
+      },
+    },
+    {
+      name: 'Psychic Wave',
+      label: 'Psychic Wave Lv5',
+      value: 'Psychic Wave==5',
+      fct: 0.6,
+      vct: 12,
+      cd: 5,
+      acd: 1,
+      getElement: () => {
+        // "Onda Psíquica de propriedade X" is a Modo Passivo effect (Domínio Elemental
+        // nv.1), not something the summon grants on its own — browiki lists it inside
+        // each elemental's Modo Passivo block. The 3rd-job Sorcerer has no Domínio
+        // Elemental picker, so this reads 0 there and falls through to its own spirit.
+        const spiritLv = this.activeSkillLv('_ElementalMaster_spirit');
+        const isPassiveMode = this.activeSkillLv('_ElementalMaster_el_control') === ElementalControlMode.Passive;
+        if (spiritLv && isPassiveMode) return ElementalMasterSpirit[spiritLv] || ElementType.Neutral
+
+        const elementalMapper = {
+          [ElementalSpiritValue.Agni_2]: ElementType.Fire,
+          [ElementalSpiritValue.Aqua_2]: ElementType.Water,
+          [ElementalSpiritValue.Ventus_2]: ElementType.Wind,
+          [ElementalSpiritValue.Tera_2]: ElementType.Earth,
+        }
+        const eleSpiritVal = this.activeSkillLv('_Sorcerer_Elemental_Spirit')
+        if (eleSpiritVal) return elementalMapper[eleSpiritVal] || ElementType.Neutral
+
+        return ElementType.Neutral;
+      },
+      totalHit: 7,
+      isMatk: true,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel, status } = input;
+        const baseLevel = model.level;
+        const totalInt = status.totalInt;
+
+        return (70 * skillLevel + 3 * totalInt) * (baseLevel / 100);
+      },
+      finalDmgFormula(input) {
+        const weaponType = input.weapon.data?.typeName;
+        if (weaponType === 'book' || weaponType === 'rod' || weaponType === 'twohandRod') {
+          return input.damage * 2;
+        }
+
+        return input.damage;
+      },
+    },
+    {
+      name: 'Varetyr Spear',
+      label: 'Varetyr Spear Lv10',
+      value: 'Varetyr Spear==10',
+      fct: 1,
+      vct: 4,
+      cd: 5,
+      acd: 1,
+      element: ElementType.Wind,
+      isMatk: true,
+      hit: 3,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel, status } = input;
+        const baseLevel = model.level;
+        const totalInt = status.totalInt;
+        const strikingLvl = this.learnLv('Striking');
+        const endowLvl = this.learnLv('Lightning Loader');
+        const summonerBonus = this.isSummon(ElementalSpiritValue.Ventus_2) ? model.jobLevel * 5 : 0
+
+        return (((skillLevel + 4) * totalInt) / 2 + (strikingLvl + endowLvl) * 150) * (baseLevel / 100) + summonerBonus;
+      },
+    },
+    {
+      // Poison Burst (SO_POISON_BUSTER) — "Implosão Tóxica". Against a target
+      // suffering [Infecção] (left by Maldição de Jormungand) it uses a higher
+      // ratio, per the pt-BR description: "Se o alvo estiver sofrendo de
+      // [Infecção], causa um dano ainda maior" — MATK 1,300/1,600/1,900/2,200/
+      // 2,500% normally vs MATK under Infecção 1,500/2,000/2,500/3,000/3,500%, i.e.
+      // base 1000 + lv*300 becomes 1000 + lv*500. Validated against the replays
+      // in ElementalMaster.poison-replay.spec.ts.
+      name: 'Poison Burst',
+      label: 'Poison Burst Lv5',
+      value: 'Poison Burst==5',
+      fct: 0,
+      vct: 6,
+      cd: 2,
+      acd: 1,
+      element: ElementType.Poison,
+      isMatk: true,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel, status, totalBonus } = input;
+        const baseLevel = model.level;
+        const totalInt = status.totalInt;
+        const summonerBonus = this.isSummon(ElementalSpiritValue.Tera_2) ? model.jobLevel * 5 : 0
+        const baseRatio = totalBonus['infection'] ? 1000 + skillLevel * 500 : 1000 + skillLevel * 300;
+
+        return (baseRatio + totalInt) * (baseLevel / 100) + summonerBonus;
+      },
+    },
+    {
+      // Killing Cloud (SO_CLOUD_KILL) — "Maldição de Jormungand". Ground poison
+      // cloud that ticks magic Poison damage every 0.5s for 5s. Per-tick MATK is
+      // {[skillLv*40 + INT*3] * (baseLevel/100)}% (wiki: 40/80/120/160/200% base).
+      // Improved by the Chandra (Tera) elemental spirit, same as Poison Burst.
+      name: 'Killing Cloud',
+      label: 'Killing Cloud Lv5',
+      value: 'Killing Cloud==5',
+      fct: 0,
+      vct: 3.1,
+      cd: 5,
+      acd: 1,
+      element: ElementType.Poison,
+      isMatk: true,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel, status } = input;
+        const baseLevel = model.level;
+        const totalInt = status.totalInt;
+        const summonerBonus = this.isSummon(ElementalSpiritValue.Tera_2) ? model.jobLevel * 5 : 0
+
+        return (skillLevel * 40 + totalInt * 3) * (baseLevel / 100) + summonerBonus;
+      },
+    },
+  ];
+  private readonly activeSkillList3rd: ActiveSkillModel[] = [
+    {
+      name: 'Fist Spell',
+      label: 'Punho Arcano (Nv 10)',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Lanças de Fogo Nv 10', value: 1, isUse: true, icon: 19 },
+        { label: 'Lanças de Gelo Nv 10', value: 2, isUse: true, icon: 14 },
+        { label: 'Relâmpago Nv 10', value: 3, isUse: true, icon: 20 },
+      ],
+    },
+    {
+      name: '_Sorcerer_Elemental_Spirit',
+      label: 'Espírito Elemental',
+      inputType: 'dropdown',
+      dropdown: [
+        // icons are the Summon Elemental Spirit skill ids (rAthena e_skill): Agni 2457,
+        // Aqua 2458, Ventus 2459, Tera 2460.
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Agni', isUse: true, value: ElementalSpiritValue.Agni_2, icon: 2457 },
+        { label: 'Varuna', isUse: true, value: ElementalSpiritValue.Aqua_2, icon: 2458 },
+        { label: 'Vayu', isUse: true, value: ElementalSpiritValue.Ventus_2, icon: 2459 },
+        { label: 'Chandra', isUse: true, value: ElementalSpiritValue.Tera_2, icon: 2460 },
+      ],
+    },
+  ];
+  private readonly passiveSkillList3rd: PassiveSkillModel[] = [
+    {
+      name: 'Striking',
+      label: 'Striking',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+    {
+      name: 'Diamond Dust',
+      label: 'Diamond Dust',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+    {
+      name: 'Earth Grave',
+      label: 'Earth Grave',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+  ];
+
+  constructor() {
+    super();
+
+    this.inheritSkills({
+      activeSkillList: this.activeSkillList3rd,
+      atkSkillList: this.atkSkillList3rd,
+      passiveSkillList: this.passiveSkillList3rd,
+      classNames: this.classNames3rd,
+    });
+  }
+
+  override setAdditionalBonus(params: AdditionalBonusInput) {
+    // Scholar owns the weapon-gated Estudo de Livros payout (mastery ATK + ASPD%);
+    // what is left here is the elemental spirit, which is this class's own.
+    super.setAdditionalBonus(params);
+
+    const { totalBonus } = params;
+
+    if (!this.activeSkillLv('_ElementalMaster_spirit')) {
+      if (this.isSummon(ElementalSpiritValue.Agni_2)) {
+        addBonus(totalBonus, 'atk', 120)
+      } else if (this.isSummon(ElementalSpiritValue.Aqua_2)) {
+        addBonus(totalBonus, 'matk', 80)
+      } else if (this.isSummon(ElementalSpiritValue.Ventus_2)) {
+        addBonus(totalBonus, 'skillAspd', 5)
+        addBonus(totalBonus, 'fct', 1)
+      } else if (this.isSummon(ElementalSpiritValue.Tera_2)) {
+        addBonus(totalBonus, 'hpPercent', 10)
+      }
+    }
+
+    return totalBonus;
+  }
+
+  private isSummon(spirit: ElementalSpiritValue) {
+    if (this.activeSkillLv('_ElementalMaster_spirit')) return false;
+
+    return this.activeSkillLv('_Sorcerer_Elemental_Spirit') === spirit
+  }
+}

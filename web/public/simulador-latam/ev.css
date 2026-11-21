@@ -1,0 +1,17 @@
+/* D61: partes do simulador de origem que dependem de serviços que este sistema não usa. */
+.topbar-bell,
+.topbar-locale,
+.layout-topbar a.topbar-nav,
+.topbar-actions > button.ui-button-help,
+.topbar-menu-row--control,
+a.topbar-menu-row,
+.topbar-menu-list > button.topbar-menu-row:has(app-icon[style*="bell.svg"]),
+.topbar-menu-list > button.topbar-menu-row:has(app-icon[style*="sparkles.svg"]),
+.auto-cast-beta-actions {
+  display: none !important;
+}
+/* Sem servidor de imagens os ícones ficam sem endereço: some a figura quebrada, o espaço continua. */
+img[src=""],
+img:not([src]) {
+  visibility: hidden;
+}

@@ -1,0 +1,412 @@
+import { StatStickIds } from 'src/app/constants/food-stat-list';
+import { MainModel } from 'src/app/models/main.model';
+import { MonsterModel } from 'src/app/models/monster.model';
+import { ChanceModel } from 'src/app/models/chance-model';
+import { itemBonusScriptEntries } from 'src/app/models/item.model';
+import { Calculator } from './calculator';
+import { PlayerTargetProfile, PvpMode } from './pvp';
+
+/**
+ * Framework-free orchestration for the calculator.
+ *
+ * The UI component owns form state and DOM concerns; everything that turns that
+ * state into a solved {@link Calculator} lives here so it can be unit-tested
+ * without Angular. The two `collect*` helpers are pure (state in, value out) and
+ * {@link CalculatorController.runChain} is the single "solve the whole thing"
+ * entry point that drives the engine's fluent pipeline.
+ */
+
+/** A consumable/aspd item id whose script is one of the calculator's buffs. */
+type ConsumableId = number;
+
+/** The id of the Superior Battle Pill — when active it suppresses the regular
+ *  Battle Pill (12791) so the two don't stack. */
+const SUPERIOR_BATTLE_PILL = 12792;
+const REGULAR_BATTLE_PILL = 12791;
+/** HP Increase Potion (L) — consumed flag is needed by the HP/SP step. */
+const HP_INCREASE_POTION_L = 12424;
+const SP_INCREASE_POTION_L = 12427;
+
+export interface ConsumableSelection {
+  /** The item scripts to feed into `Calculator.setConsumables`. */
+  scripts: any[];
+  /** Per-consumable numeric bonus maps for the bonus-breakdown modal, keyed
+   *  `consumable_<itemId>`. Only plain numeric script entries are kept —
+   *  conditional tokens don't apply to consumables. */
+  sources: Record<string, Record<string, number>>;
+  /** Whether HP Increase Potion (L) is active (drives the HP/SP calc). */
+  usedHpL: boolean;
+  /** Whether the Superior Battle Pill is active (suppresses the regular one). */
+  usedSupBattlePill: boolean;
+}
+
+/**
+ * Resolve the active consumable scripts from the model's selected ids.
+ * Mirrors the rule that the Superior Battle Pill replaces the regular one.
+ */
+export function collectConsumables(
+  model: Pick<MainModel, 'consumables' | 'consumables2' | 'aspdPotions'> & Partial<Pick<MainModel, 'level'>>,
+  items: Record<number, { script?: any }>,
+): ConsumableSelection {
+  const consumables = model.consumables ?? [];
+  const usedSupBattlePill = consumables.includes(SUPERIOR_BATTLE_PILL);
+  const usedHpL = consumables.includes(HP_INCREASE_POTION_L);
+
+  const ids = [...consumables, ...(model.consumables2 ?? []), ...(model.aspdPotions ?? [])]
+    .filter(Boolean)
+    // when the superior pill is on, drop the regular pill so they don't stack
+    .filter((id: ConsumableId) => !usedSupBattlePill || id !== REGULAR_BATTLE_PILL);
+
+  const scriptFor = (id: ConsumableId) => {
+    const script = items[id]?.script;
+    if (id !== SP_INCREASE_POTION_L || !script) return script;
+    // SC_ENERGY_DRINK_RESERCH: Large = 5 + floor(BaseLv / 10) percent.
+    // Consumables enter the engine as numeric bonuses; resolve this level-dependent
+    // potion here so the calculation and its per-item breakdown use the same value.
+    return { ...script, spPercent: [String(5 + Math.floor((model.level ?? 1) / 10))] };
+  };
+
+  const sources: Record<string, Record<string, number>> = {};
+  for (const id of ids) {
+    const script = scriptFor(id);
+    if (!script || typeof script !== 'object') continue;
+    const bonus: Record<string, number> = {};
+    for (const [attr, value] of itemBonusScriptEntries(script)) {
+      const num = Number(value); // script values are single-entry arrays, e.g. ["7"]
+      if (Number.isFinite(num) && num !== 0) bonus[attr] = num;
+    }
+    if (Object.keys(bonus).length) sources[`consumable_${id}`] = bonus;
+  }
+
+  return { scripts: ids.filter((id: ConsumableId) => !!items[id]?.script)
+    .map((id: ConsumableId) => (items[id] as any).custom ? { __customItem: items[id] }
+      // Tagged, not flattened: the engine merges main-stat consumables per in-game status
+      // group, and a biscuit stick's `_CASH` buff adds on top of the dish's instead of
+      // replacing it. See {@link StatStickIds}.
+      : StatStickIds.has(id) ? { __cashStatFood: scriptFor(id) } : scriptFor(id)),
+    sources, usedHpL, usedSupBattlePill };
+}
+
+/**
+ * Display-only breakdown sources for the selected ASPD potions (Concentração 645,
+ * Despertar 656, Fúria 657, Poção de Ouro 12684). Their effect isn't a plain
+ * script bonus — it's an AGI-scaled term inside the ASPD formula — so they never
+ * appear via {@link collectConsumables}. Here we surface each one's fixed potion
+ * value under `aspdPercent` purely so the VelAtq bonus-breakdown modal can list it
+ * (keyed `consumable_<id>` to reuse the item label/icon resolver). NOT fed to the
+ * engine, so it can't double-count.
+ */
+export function collectAspdPotionSources(
+  model: Pick<MainModel, 'aspdPotion' | 'aspdPotions'>,
+  fixBonus: Map<number, number>,
+  totalAgi: number,
+): { sources: Record<string, Record<string, number>>; tooltips: Record<string, string> } {
+  const sources: Record<string, Record<string, number>> = {};
+  const tooltips: Record<string, string> = {};
+  const add = (id?: number) => {
+    const bonus = id ? fixBonus.get(id) : undefined;
+    if (!bonus) return;
+    // An ASPD potion is a flat bonus fed through `potionAspds` and scaled by AGI
+    // (× AGI / 200), NOT an ASPD% multiplier. Surface that real AGI-scaled value in
+    // the breakdown (the nominal bonus would over-state it), with the formula in a
+    // tooltip so the AGI dependency is clear.
+    const scaled = Math.round((bonus * totalAgi) / 200);
+    sources[`consumable_${id}`] = { aspd: scaled };
+    tooltips[`consumable_${id}`] = `Vel.Atq da poção é baseada na AGI: ${bonus} × AGI ${totalAgi} ÷ 200 ≈ ${scaled}.`;
+  };
+  add(model.aspdPotion);
+  for (const id of model.aspdPotions ?? []) add(id);
+  return { sources, tooltips };
+}
+
+/**
+ * Breakdown sources for the ticked "Efeitos" (procs), keyed `chance_<itemId>` so the
+ * modal can label them with the item that grants them.
+ *
+ * The panel shows the character sheet with those procs running (see
+ * `Calculator.effectedState`), so DES reads "+224" on a build whose gear alone gives 24.
+ * Without these rows the modal behind that number would list the 24 and silently drop
+ * the 200 the reader is looking at.
+ */
+export function collectChanceSources(
+  chanceList: ChanceModel[],
+  selectedChances: string[],
+): Record<string, Record<string, number>> {
+  const selected = new Set(selectedChances ?? []);
+  const sources: Record<string, Record<string, number>> = {};
+
+  for (const chance of chanceList ?? []) {
+    if (!selected.has(chance.name)) continue;
+    sources[`chance_${chance.itemId ?? chance.name}`] = { ...chance.bonus };
+  }
+
+  return sources;
+}
+
+/** One selectable buff row (a subset of `JobBuffs`). */
+export interface BuffDef {
+  name: string;
+  isMasteryAtk?: boolean;
+  dropdown: { value: any; isUse?: boolean; bonus?: any }[];
+}
+
+/** Guarana Candy — on use it casts Increase Agility Lv 5 and applies the
+ *  Concentration Potion effect. Neither part stacks with a stronger source:
+ *  a selected ASPD potion replaces the Concentration part, and a higher-level
+ *  "Aumentar Agilidade" buff (or the character casting it) replaces the
+ *  Increase Agility part. */
+export const GUARANA_CANDY = 12414;
+const CONCENTRATION_POTION = 645;
+/** The `JobBuffs` row that models "Aumentar Agilidade". */
+const INC_AGI_BUFF = 'Cantocandidus';
+const GUARANA_INC_AGI_LEVEL = 5;
+/** Increase Agility Lv 5 on the job-buff table's scale (agi = 2 + lv, aspd% = lv). */
+const GUARANA_INC_AGI_BONUS = { agi: 7, aspdPercent: 5 };
+
+/**
+ * Layer Guarana Candy's two effects onto the already-collected buff bonuses
+ * and the selected ASPD potion, applying the no-stack rules above. Pure:
+ * returns the (possibly new) buff bonuses and the effective potion id.
+ */
+export function applyGuaranaCandy(input: {
+  consumables: number[];
+  aspdPotion: number | undefined;
+  buffDefs: BuffDef[];
+  selectedBuffValues: any[];
+  activeSkillNames: Set<string>;
+  buffBonuses: BuffBonuses;
+}): { aspdPotion: number | undefined; buffBonuses: BuffBonuses } {
+  const { consumables, aspdPotion, buffDefs, selectedBuffValues, activeSkillNames, buffBonuses } = input;
+  if (!(consumables ?? []).includes(GUARANA_CANDY)) return { aspdPotion, buffBonuses };
+
+  const i = buffDefs.findIndex((b) => b.name === INC_AGI_BUFF);
+  const selected = i >= 0 ? buffDefs[i].dropdown.find((d) => d.value === selectedBuffValues?.[i]) : undefined;
+  const selectedLevel = selected?.isUse ? selected.value : 0;
+  const outranked = activeSkillNames.has(INC_AGI_BUFF) || selectedLevel >= GUARANA_INC_AGI_LEVEL;
+
+  return {
+    aspdPotion: aspdPotion || CONCENTRATION_POTION,
+    buffBonuses: outranked
+      ? buffBonuses
+      : { ...buffBonuses, equipAtk: { ...buffBonuses.equipAtk, [INC_AGI_BUFF]: GUARANA_INC_AGI_BONUS } },
+  };
+}
+
+export interface BuffBonuses {
+  /** Buffs applied as equipment-style atk bonuses. */
+  equipAtk: Record<string, any>;
+  /** Buffs applied as mastery atk bonuses. */
+  masteryAtk: Record<string, any>;
+}
+
+/**
+ * Resolve the selected buff dropdown values into equip/mastery bonus maps.
+ * A buff that the character already casts as an active skill is skipped (the
+ * active skill already contributes it).
+ */
+const WEAPON_REQUIRED_TALISMANS = new Set([
+  'Talisman of the Warrior', 'Talisman of the Magician', 'Talisman of Five Elements',
+]);
+
+/** Self-cast Asceta talismans and party talismans obey the same weapon requirement. */
+export function withoutWeaponlessTalismans(bonuses: Record<string, any>, hasWeapon: boolean): Record<string, any> {
+  if (hasWeapon) return bonuses;
+  return Object.fromEntries(Object.entries(bonuses).filter(([name]) => !WEAPON_REQUIRED_TALISMANS.has(name)));
+}
+
+export function collectBuffBonuses(buffDefs: BuffDef[], selectedValues: any[], activeSkillNames: Set<string>, hasWeapon = true): BuffBonuses {
+  const equipAtk: Record<string, any> = {};
+  const masteryAtk: Record<string, any> = {};
+
+  buffDefs.forEach((buffDef, i) => {
+    const selected = buffDef.dropdown.find((d) => d.value === selectedValues[i]);
+    if (!selected?.isUse || activeSkillNames.has(buffDef.name) || (!hasWeapon && WEAPON_REQUIRED_TALISMANS.has(buffDef.name))) return;
+
+    if (buffDef.isMasteryAtk) masteryAtk[buffDef.name] = selected.bonus;
+    else equipAtk[buffDef.name] = selected.bonus;
+  });
+
+  return { equipAtk, masteryAtk };
+}
+
+/** A dropdown row of either catalog, as the superseding rule needs to see it. */
+interface SupersedableRow {
+  name: string;
+  dropdown: readonly { value: any; isUse?: boolean; bonus?: any }[];
+}
+
+/** A bonus map as a string that ignores key order, so two spellings of one effect match. */
+const bonusSignature = (bonus: any): string =>
+  JSON.stringify(Object.entries(bonus ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+
+/** What a row can actually grant: one signature per option that counts as "on". */
+const grantableBonuses = (row: SupersedableRow): string[] =>
+  row.dropdown.filter((option) => option.isUse).map((option) => bonusSignature(option.bonus));
+
+/**
+ * The option on `classRow` that grants exactly what the shared row's `sharedValue` granted,
+ * or undefined. Used to carry a saved selection across: the two catalogs agree on the
+ * effect far more reliably than on the number used to encode it — the Doram's Petisco de
+ * Camarão is `value: 5` on his own row and `value: 1` on the shared one, and the Ceifador's
+ * single shared "Sim" is Nv 5 of a five-level class row whose `value: 1` means Nv 1.
+ */
+export function matchingClassOption(
+  sharedRow: SupersedableRow,
+  classRow: SupersedableRow,
+  sharedValue: any,
+): { value: any } | undefined {
+  const selected = sharedRow.dropdown.find((option) => option.value === sharedValue);
+  if (!selected?.isUse) return undefined;
+  const wanted = bonusSignature(selected.bonus);
+
+  return classRow.dropdown.find((option) => option.isUse && bonusSignature(option.bonus) === wanted);
+}
+
+/**
+ * The shared `JobBuffs` rows the selected class also casts itself, by skill name.
+ *
+ * A buff can reach the character two ways — a party member casts it on him (the shared row)
+ * or he casts it himself (the class's own active row) — and the two catalogs name it
+ * identically. `collectBuffBonuses` above already drops the shared row's bonus whenever the
+ * class row is switched on, so the buff is never counted twice; the panel uses this set to
+ * drop the row as well, because the two lists are built independently and filtered neither
+ * against the other, so every name on both sides renders a second selectable control.
+ *
+ * Where the second row lands depends on `isDebuff`, and the report covers both: a Maestro
+ * saw "Poema de Bragi 10" under his own skills and again under "Buffs", a Warlock saw
+ * "Cometa" at both ends of "Debuffs no monstro". The two sides need not agree on `isDebuff`
+ * either — the Algoz's own "Potencializar Veneno" is an active effect while the shared row is
+ * a monster debuff — so `isDebuff` is not part of the test.
+ *
+ * The name is not enough on its own, though, and this is the one place the rule is stricter
+ * than PR #133's: a shared row is dropped only when the class row can grant everything it
+ * could. Six pairs in the catalog carry the same name over genuinely different numbers —
+ * the shared Magnum Break offers "Limpar EDP", which the Espadachim line's row does not;
+ * Amplificação Mística is Nv 5 *and* Nv 10 shared but one level only on each class that
+ * casts it; Força Violenta is 15 shared against 25 on the Mecânico line — and hiding the
+ * shared row there would take an option away from the player rather than de-duplicate it.
+ * Those keep both controls until the two sides are reconciled, which needs a source rather
+ * than a refactor.
+ *
+ * The two tests deliberately differ. The bonus asks what is switched on right now
+ * (`activeSkillNames`); the row asks what the class can cast at all, because a control that
+ * is off has to disappear too — that is the common case, and the whole report.
+ *
+ * The class row is the one that survives: it is what the engine honours when both are
+ * selected, and the only one `isSkillActive()` gates can see (Explosão de Chamas reads
+ * Oleum Sanctum that way).
+ */
+export function supersededBuffNames(
+  buffDefs: readonly SupersedableRow[],
+  activeSkills: readonly SupersedableRow[],
+): Set<string> {
+  const castByClass = new Map(activeSkills.map((skill) => [skill.name, skill]));
+
+  return new Set(buffDefs
+    .filter((buff) => {
+      const classRow = castByClass.get(buff.name);
+      if (!classRow) return false;
+      const covered = new Set(grantableBonuses(classRow));
+
+      return grantableBonuses(buff).every((bonus) => covered.has(bonus));
+    })
+    .map((buff) => buff.name));
+}
+
+/** Everything the fluent solve pipeline needs once items are loaded. */
+export interface CalcChainInput {
+  monster: MonsterModel;
+  /**
+   * The target's Aliviar level (0 = off). Only the monsters in RELIEVE_MONSTER_IDS can
+   * carry one; for anything else it is ignored.
+   */
+  relieveLevel?: number;
+  /** PVP: when set, the target is a player and this profile replaces `monster`. */
+  playerTarget?: PlayerTargetProfile;
+  /** PVP mode selecting the castle reduction layer (defaults to open PVP). */
+  pvpMode?: PvpMode;
+  equipAtks: Record<string, any>;
+  masteryAtks: Record<string, any>;
+  buffEquips: Record<string, any>;
+  buffMasterys: Record<string, any>;
+  consumeData: any[];
+  aspdPotion: any;
+  extraOptionScripts: any[];
+  activeSkillNames: Set<string>;
+  learnedSkillMap: Map<string, number>;
+  selectedAtkSkill: any;
+  selectedChances: any;
+  usedHpL: boolean;
+}
+
+export class CalculatorController {
+  /**
+   * Drive the engine's fluent pipeline to fully solve a (already class-set,
+   * already item-loaded) calculator: bonuses, atk, defs, HP/SP and damage.
+   * This is the single place the whole computed state is produced.
+   */
+  runChain(calc: Calculator, input: CalcChainInput): Calculator {
+    this.applySetters(calc, input);
+
+    return this.solveSkill(calc, input, input.selectedAtkSkill);
+  }
+
+  /**
+   * The skill-independent half of the solve: target, buffs, consumables and the
+   * learned/active skill sets. Everything here is a plain assignment, so it is
+   * applied once and then reused by every {@link CalculatorController.solveSkill}
+   * pass over the same calculator.
+   */
+  private applySetters(calc: Calculator, input: CalcChainInput): Calculator {
+    // PVP: a player target replaces the monster (setPlayerTarget also arms the
+    // reduction context). Otherwise the normal vs-monster path.
+    if (input.playerTarget) {
+      calc.setPlayerTarget(input.playerTarget, input.pvpMode ?? 'pvp');
+    } else {
+      calc.setMonster(input.monster, input.relieveLevel ?? 0);
+    }
+
+    return calc
+      .setBuffBonus({ masteryAtk: input.buffMasterys, equipAtk: input.buffEquips })
+      .setConsumables(input.consumeData)
+      .setAspdPotion(input.aspdPotion)
+      .setExtraOptions(input.extraOptionScripts)
+      .setUsedSkillNames(input.activeSkillNames)
+      .setLearnedSkills(input.learnedSkillMap);
+  }
+
+  /**
+   * Solve an already-prepared calculator (see {@link CalculatorController.applySetters},
+   * plus the caller's own item loading) for one offensive skill. Split out of
+   * `runChain` so an attack rotation can solve several skills against the same
+   * loaded build without paying for `loadItemFromModel`/`setItem` again.
+   *
+   * The two re-seeds at the top make each pass independent. `prepareAllItemBonus()` ends
+   * in `setAdditionalBonus`, which receives a *live reference* to `equipAtkSkillBonus`
+   * (see Calculator.additionalBonusInput) and lets a job mutate it —
+   * `clearSupersededBonusSource` zeroes a superseded bonus there — while
+   * `prepareAllItemBonus()` rebuilds `totalEquipStatus` from those same (now mutated)
+   * sources. Getting a second pass right therefore depends on the job reading the source
+   * map rather than re-subtracting a fixed amount; when Windhawk did the latter its
+   * `range` went 767 -> 417 (correct) -> 67 (wrong), the bug instinto-dex-chance.spec.ts
+   * was written for.
+   *
+   * Every job in the tree gets this right today, so the re-seed fixes no live bug. It is
+   * here because a rotation multiplies the pass count by the number of skills, and
+   * `setEquipAtkSkillAtk` already deep-copies each skill's bonus map out of the catalog:
+   * restoring pristine sources per pass costs one object rebuild and removes per-job
+   * idempotence from the set of things a correct rotation depends on.
+   */
+  solveSkill(calc: Calculator, input: CalcChainInput, skillValue: string): Calculator {
+    return calc
+      .setEquipAtkSkillAtk(input.equipAtks)
+      .setMasterySkillAtk(input.masteryAtks)
+      .setOffensiveSkill(skillValue)
+      .prepareAllItemBonus()
+      .calcAllAtk()
+      .setSelectedChances(input.selectedChances)
+      .calcAllDefs()
+      .calculateHpSp({ isUseHpL: input.usedHpL })
+      .calculateAllDamages(skillValue);
+  }
+}

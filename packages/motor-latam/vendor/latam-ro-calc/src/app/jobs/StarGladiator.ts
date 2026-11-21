@@ -1,0 +1,214 @@
+import { Taekwondo } from './Taekwondo';
+import { ActiveSkillModel, AtkSkillModel, PassiveSkillModel } from './_character-base.abstract';
+import { ClassName } from './_class-name';
+
+/**
+ * Calor Solar / Lunar / Estelar — the Mestre Taekwon's only damage.
+ *
+ * A standing heat wave that hits whatever walks into it. The client's own table prints
+ * duration and nothing else, so the ratio comes from bROWiki, which states it in words
+ * for all three: "causa dano físico corpo a corpo equivalente a 100% do ATQ". It does not
+ * change with the skill level — only the duration does (10 / 20 / 60 s) — so the picker
+ * offers the single level the calculator can say anything about.
+ *
+ * The map restriction rides in `labelSuffix` because it decides whether the skill can be
+ * used at all and the calculator has no map: each one works only on a SOLAR / LUNAR /
+ * ESTELAR map, and none of them damages other players. It has to be the suffix and not
+ * the label: `localize` replaces `label` wholesale with the pt-BR name from the client,
+ * and only `labelSuffix` survives that swap.
+ *
+ * The client ships no cast or delay row for them, which fits a toggled field rather than
+ * a cast: what paces the hits is the monster walking back in. That interval is not
+ * published anywhere, so `timingUnknown` withholds a DPS rather than reading four zeros
+ * as "spammable at full Vel.Atq." — damage per use is all this can honestly state.
+ * https://browiki.org/wiki/Calor_Solar · /Calor_Lunar · /Calor_Estelar
+ */
+export const STAR_GLADIATOR_HEATS = [
+  ['Solar Heat', 'SOLAR'],
+  ['Lunar Heat', 'LUNAR'],
+  ['Stellar Heat', 'ESTELAR'],
+] as const;
+
+const heat = ([name, map]: (typeof STAR_GLADIATOR_HEATS)[number]): AtkSkillModel => {
+  const maxLv = 3;
+
+  return {
+    name,
+    label: `${name} Nv${maxLv}`,
+    labelSuffix: `mapa ${map}`,
+    value: `${name}==${maxLv}`,
+    acd: 0,
+    fct: 0,
+    vct: 0,
+    cd: 0,
+    timingUnknown: true,
+    isMelee: true,
+    formula: (): number => 100,
+  };
+};
+
+const jobBonusTable: Record<number, [number, number, number, number, number, number]> = {
+  1: [1, 0, 0, 0, 0, 0],
+  2: [2, 0, 0, 0, 0, 0],
+  3: [3, 0, 0, 0, 0, 0],
+  4: [4, 0, 0, 0, 0, 0],
+  5: [5, 0, 0, 0, 0, 0],
+  6: [6, 0, 0, 0, 0, 0],
+  7: [7, 0, 0, 0, 0, 0],
+  8: [8, 0, 0, 0, 0, 0],
+  9: [9, 0, 0, 0, 0, 0],
+  10: [10, 0, 0, 0, 0, 0],
+  11: [11, 0, 0, 0, 0, 0],
+  12: [12, 0, 0, 0, 0, 0],
+  13: [12, 0, 0, 0, 0, 0],
+  14: [12, 0, 0, 0, 0, 0],
+  15: [12, 0, 0, 0, 0, 0],
+  16: [12, 0, 0, 0, 0, 0],
+  17: [12, 0, 0, 0, 0, 0],
+  18: [12, 0, 0, 0, 0, 0],
+  19: [12, 0, 0, 0, 0, 0],
+  20: [12, 0, 0, 0, 1, 0],
+  21: [12, 0, 0, 0, 2, 0],
+  22: [12, 0, 0, 0, 3, 0],
+  23: [12, 0, 0, 0, 4, 0],
+  24: [12, 0, 0, 0, 5, 0],
+  25: [12, 0, 0, 0, 6, 0],
+  26: [12, 0, 0, 0, 6, 0],
+  27: [12, 0, 0, 0, 6, 0],
+  28: [12, 0, 0, 0, 6, 0],
+  29: [12, 0, 0, 0, 6, 0],
+  30: [12, 0, 0, 0, 6, 0],
+  31: [12, 0, 0, 0, 6, 0],
+  32: [12, 0, 0, 0, 6, 0],
+  33: [12, 0, 0, 0, 6, 0],
+  34: [12, 0, 0, 0, 6, 0],
+  35: [12, 0, 0, 0, 6, 0],
+  36: [12, 0, 0, 0, 6, 0],
+  37: [12, 0, 0, 0, 6, 0],
+  38: [12, 0, 0, 0, 6, 0],
+  39: [12, 1, 0, 0, 6, 0],
+  40: [12, 2, 0, 0, 6, 0],
+  41: [12, 3, 0, 0, 6, 0],
+  42: [12, 4, 0, 0, 6, 0],
+  43: [12, 5, 0, 0, 6, 0],
+  44: [12, 6, 0, 0, 6, 0],
+  45: [12, 7, 0, 0, 6, 0],
+  46: [12, 8, 0, 0, 6, 0],
+  47: [12, 9, 0, 0, 6, 0],
+  48: [12, 10, 0, 0, 6, 0],
+  49: [12, 11, 0, 0, 6, 0],
+  50: [12, 12, 0, 0, 6, 0],
+  51: [12, 12, 0, 0, 6, 0],
+  52: [12, 12, 0, 0, 6, 0],
+  53: [12, 12, 0, 0, 6, 0],
+  54: [12, 12, 0, 0, 6, 0],
+  55: [12, 12, 0, 0, 6, 0],
+  56: [12, 12, 0, 0, 6, 0],
+  57: [12, 12, 0, 0, 6, 0],
+  58: [12, 12, 0, 0, 6, 0],
+  59: [12, 12, 0, 0, 6, 0],
+  60: [12, 12, 0, 0, 6, 0],
+  61: [12, 12, 0, 0, 6, 0],
+  62: [12, 12, 0, 0, 6, 0],
+  63: [12, 12, 0, 0, 6, 0],
+  64: [12, 12, 0, 0, 6, 0],
+  65: [12, 12, 0, 0, 6, 0],
+  66: [12, 12, 0, 0, 6, 0],
+  67: [12, 12, 0, 0, 6, 0],
+  68: [12, 12, 0, 0, 6, 0],
+  69: [12, 12, 0, 0, 6, 0],
+  70: [12, 12, 0, 0, 6, 0],
+};
+
+export class StarGladiator extends Taekwondo {
+  protected override CLASS_NAME = ClassName.StarGladiator;
+  protected override JobBonusTable = jobBonusTable;
+  protected override initialStatusPoint = 40;
+
+  protected readonly classNamesHi = [ClassName.StarGladiator];
+
+  protected readonly atkSkillListHi: AtkSkillModel[] = STAR_GLADIATOR_HEATS.map(heat);
+
+  protected readonly activeSkillListHi: ActiveSkillModel[] = [
+    // Kihop does NOT belong here: the client describes it as "Tipo: Passiva" and it
+    // already exists in the passive list below. While it was duplicated, the +85% ATK
+    // only applied when picked on the active-skills tab — and replay import could never
+    // do that, since it filters actives by an EFST being up and a passive has no EFST.
+    //
+    // The three Wrath skills: each one only applies to the target size that Oposição
+    // (434) marks with that alignment — Sun/Small, Moon/Medium, Star/Large — so leaving
+    // all three switched on is harmless, as at most one applies to any given target.
+    // The gate lives in StarEmperor.getWrathAtkBonus, which is what knows the target.
+    {
+      label: 'Wrath of Sun',
+      name: 'Wrath of Sun',
+      inputType: 'selectButton',
+      dropdown: [
+        { label: 'Sim', value: 3, skillLv: 3, isUse: true },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+    {
+      label: 'Wrath of Moon',
+      name: 'Wrath of Moon',
+      inputType: 'selectButton',
+      dropdown: [
+        { label: 'Sim', value: 3, skillLv: 3, isUse: true },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+    {
+      label: 'Wrath of',
+      name: 'Wrath of',
+      inputType: 'selectButton',
+      dropdown: [
+        { label: 'Sim', value: 3, skillLv: 3, isUse: true },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+  ];
+  protected readonly passiveSkillListHi: PassiveSkillModel[] = [
+    {
+      label: 'Power',
+      name: 'Power',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+      ],
+    },
+    {
+      label: 'Knowledge of Sun',
+      name: 'Knowledge of Sun, Moon and Star',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, isUse: true },
+        { label: 'Nv 2', value: 2, isUse: true },
+        { label: 'Nv 3', value: 3, isUse: true },
+        { label: 'Nv 4', value: 4, isUse: true },
+        { label: 'Nv 5', value: 5, isUse: true },
+        { label: 'Nv 6', value: 6, isUse: true },
+        { label: 'Nv 7', value: 7, isUse: true },
+        { label: 'Nv 8', value: 8, isUse: true },
+        { label: 'Nv 9', value: 9, isUse: true },
+        { label: 'Nv 10', value: 10, isUse: true },
+      ],
+    },
+  ];
+
+  constructor() {
+    super();
+
+    this.inheritSkills({
+      activeSkillList: this.activeSkillListHi,
+      atkSkillList: this.atkSkillListHi,
+      passiveSkillList: this.passiveSkillListHi,
+      classNames: this.classNamesHi,
+    });
+  }
+}

@@ -1,4 +1,8 @@
 // D57: a ficha mostra refino, grau, cartas e encantamentos, e a tela de simulação parte da build.
+// D59: com a build importada na ficha, a simulação calcula os efeitos dos itens e mostra o que foi
+// aplicado e o que foi ignorado.
+// D61: a tela do simulador completo troca a build e o alvo com a interface do simulador pelo
+// armazenamento do navegador.
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { type ComponentFixture, TestBed } from "@angular/core/testing";
@@ -10,9 +14,17 @@ import type { AtributosBuild, ItemEquipamento, SituacaoVinculo } from "../core/m
 import {
   type AlvosSimulacao,
   type MonstroAlvo,
+  type RespostaBuild,
   type RespostaSimulacao,
   SimuladorComponent,
 } from "./simulador.component";
+import {
+  CHAVE_BUILD,
+  CHAVE_MONSTRO,
+  CHAVE_PERSONAGEM_ABERTO,
+  type InstanciaDoHub,
+  SimuladorHubComponent,
+} from "./simulador-hub.component";
 import { VinculoComponent } from "./vinculo.component";
 
 const esperar = () => new Promise((r) => setTimeout(r));
@@ -95,6 +107,19 @@ const SITUACAO: SituacaoVinculo = {
         nivelBase: 250,
         equipamentos: { arma: ARMA },
         atributos: ATRIBUTOS,
+      },
+      {
+        id: "p-sage",
+        nome: "Ana-Sage",
+        ativo: true,
+        nivelBase: 105,
+        equipamentos: { arma: { id: 540031, nome: "Livro Feiticeiro do Éden" } },
+        atributos: {
+          nivelClasse: 50,
+          habilidade: { nome: "Fire Bolt", nivel: 10 },
+          classeSimulador: 8,
+          token: "N4Igzg1glgNjBiB7ATgWwK4",
+        },
       },
     ],
   },
@@ -271,6 +296,8 @@ describe("SimuladorComponent (D57)", () => {
       elemento: "FANTASMA",
       nivelElemento: 3,
       danoRecebidoPct: 100,
+      raca: "DEMONIO",
+      chefe: true,
     });
     expect(c.idMonstro).toBe(20996);
     const nota =
@@ -396,5 +423,333 @@ describe("SimuladorComponent (D57)", () => {
     await envio;
     expect(c.erro()).toContain("Nível do alvo");
     expect(c.resultado()).toBeNull();
+  });
+});
+
+describe("SimuladorComponent: efeitos dos equipamentos da build (D59)", () => {
+  const RESPOSTA: RespostaBuild = {
+    modo: "BUILD",
+    personagem: { id: "p-sage", nome: "Ana-Sage" },
+    classe: { id: 8, nome: "Feiticeiro" },
+    nivelBase: 105,
+    nivelClasse: 50,
+    habilidade: {
+      valor: "Fire Bolt==10",
+      nome: "Lanças de Fogo",
+      nivel: 10,
+      tipo: "MAGICO",
+      elemento: "FOGO",
+      acertos: 10,
+      pct: 100,
+      precisaoPct: 100,
+    },
+    habilidadesDisponiveis: [
+      { valor: "Fire Bolt==10", nome: "Lanças de Fogo nv. 10" },
+      { valor: "Cold Bolt==10", nome: "Lanças de Gelo nv. 10" },
+    ],
+    dano: { minimo: 75, maximo: 185 },
+    porUso: { minimo: 750, maximo: 1850, medio: 1300 },
+    basico: { minimo: 1, maximo: 1, criticoMinimo: 1, criticoMaximo: 1 },
+    atributos: {
+      ataque: 33,
+      ataqueMagico: 44,
+      precisao: 304,
+      critico: 3,
+      velocidadeDeAtaque: 156,
+      hpMaximo: 6454,
+      spMaximo: 1324,
+    },
+    alvo: { nome: "Naght Sieger", reducaoPct: 0, multiplicadorDef: 1 },
+    itens: [
+      {
+        slot: "Arma",
+        tipo: "EQUIPAMENTO",
+        id: 540031,
+        nome: "Livro Feiticeiro do Éden",
+        refino: 7,
+        efeitos: [
+          { rotulo: "ATQM", valor: 180 },
+          { rotulo: "Dano mágico %", valor: 5 },
+        ],
+      },
+      { slot: "Arma", tipo: "CARTA", id: 4040, nome: "Carta Poring", efeitos: [] },
+    ],
+    conjuntos: [{ item: "Manopla Sombria do Paraíso Mágico", com: ["Malha Sombria do Paraíso"] }],
+    ignorados: [
+      {
+        slot: "Acessório 1",
+        tipo: "EQUIPAMENTO",
+        id: 7508,
+        nome: "Anel da Allysia",
+        motivo: "o simulador da latam-tools ainda não tem os efeitos deste item",
+      },
+    ],
+    consumiveis: ["Poção de Guaraná"],
+    habilidadesEBuffs: ["Proteger Terreno nv. 5"],
+    bonusTotais: [{ rotulo: "ATQM", valor: 105 }],
+    avisos: [],
+    bonusNaoAplicados: ["ATQ de maestria"],
+    contraHp: {
+      hp: 300_000_000,
+      pctMinimo: 0.0003,
+      pctMaximo: 0.0006,
+      usosMinimo: 162_163,
+      usosMaximo: 400_000,
+    },
+    origem: { repositorio: "https://github.com/adsonpleal/latam-ro-calc", commit: "5c9afd71c02a73bd" },
+  };
+
+  async function abrir(personagem: string) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideNoopAnimations(),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap({ personagem }) } },
+        },
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const f = TestBed.createComponent(SimuladorComponent);
+    f.detectChanges();
+    http.expectOne("/api/vinculo").flush(SITUACAO);
+    http.expectOne("/api/simulador/alvos").flush(ALVOS);
+    await esperar();
+    f.detectChanges();
+    return { f, c: f.componentInstance, http };
+  }
+
+  it("ficha com a build importada já parte com os efeitos ligados; sem ela, parte à mão", async () => {
+    const { f, c } = await abrir("p-sage");
+    expect(c.comEfeitos()).toBeTrue();
+    expect(c.modoBuild()).toBeTrue();
+    const pagina = f.nativeElement as HTMLElement;
+    expect(pagina.querySelector('[data-testid="nota-efeitos"]')?.textContent).toContain("link importado");
+    expect(pagina.querySelector('[data-testid="aviso-estimativa"]')?.textContent).toContain("estimativa");
+    c.escolherPersonagem("p-dk");
+    expect(c.comEfeitos()).toBeFalse();
+    expect(c.modoBuild()).toBeFalse();
+  });
+
+  it("envia o personagem, o alvo com ID, raça e chefe e os bônus, e mostra o que foi aplicado e ignorado", async () => {
+    const { f, c, http } = await abrir("p-sage");
+    c.escolherInstancia("i-torre");
+    c.escolherChefe(20996);
+    c.tipo = "MAGICO";
+    c.bonusMagico.matkPct = 10;
+    const envio = c.simular();
+    const pedido = http.expectOne("/api/simulador/simular-build");
+    expect(pedido.request.body).toEqual({
+      personagemId: "p-sage",
+      tipo: "MAGICO",
+      bonus: jasmine.objectContaining({ matkPct: 10, matkEquipamento: 0 }),
+      alvo: {
+        nivel: 250,
+        def: 410,
+        mdef: 80,
+        vit: 90,
+        int: 220,
+        res: 300,
+        mres: 200,
+        tamanho: "GRANDE",
+        elemento: "FANTASMA",
+        nivelElemento: 3,
+        danoRecebidoPct: 100,
+        hp: 300_000_000,
+        idMonstro: 20996,
+        nome: "Naght Sieger",
+        raca: "DEMONIO",
+        chefe: true,
+      },
+    });
+    pedido.flush(RESPOSTA);
+    await envio;
+    f.detectChanges();
+    const pagina = f.nativeElement as HTMLElement;
+    const limpo = (seletor: string) =>
+      (pagina.querySelector(seletor)?.textContent ?? "").replace(/\s+/g, " ");
+    expect(pagina.querySelector('[data-testid="resultado"]')).toBeNull();
+    const resultado = limpo('[data-testid="resultado-build"]');
+    expect(resultado).toContain("Ana-Sage · Feiticeiro 105/50 contra Naght Sieger");
+    expect(resultado).toContain("Lanças de Fogo nv. 10 · Mágico · Fogo");
+    expect(resultado).toContain("Por acerto (10 acertos)");
+    expect(resultado).toMatch(/750 a 1[.,]850/);
+    expect(resultado).toMatch(/média 1[.,]300/);
+    const aplicados = limpo('[data-testid="aplicados"]');
+    expect(aplicados).toContain("Arma: Livro Feiticeiro do Éden +7 — ATQM +180, Dano mágico % +5");
+    expect(aplicados).toContain("Arma, carta: Carta Poring — nenhum efeito dele valeu nesta conta");
+    expect(aplicados).toContain("Conjunto: Manopla Sombria do Paraíso Mágico com Malha Sombria do Paraíso");
+    expect(aplicados).toContain("Consumíveis: Poção de Guaraná");
+    expect(aplicados).toContain("Habilidades e buffs: Proteger Terreno nv. 5");
+    const ignorados = limpo('[data-testid="ignorados"]');
+    expect(ignorados).toContain("Acessório 1: Anel da Allysia (ID 7508)");
+    expect(ignorados).toContain("ATQ de maestria não entra na conta com a build");
+    expect(limpo('[data-testid="origem-motor"]')).toContain("licença MIT, versão 5c9afd7");
+    expect(c.habilidades()).toEqual(RESPOSTA.habilidadesDisponiveis);
+
+    c.habilidadeEscolhida = "Cold Bolt==10";
+    const outra = c.simular();
+    const segundo = http.expectOne("/api/simulador/simular-build");
+    expect(segundo.request.body.habilidade).toBe("Cold Bolt==10");
+    segundo.flush({ ...RESPOSTA, ignorados: [], bonusNaoAplicados: [] });
+    await outra;
+    f.detectChanges();
+    expect(limpo('[data-testid="ignorados"]')).toContain("Nada: todos os itens da build foram lidos.");
+  });
+
+  it("desligar os efeitos volta para a simulação à mão; erro da API limpa o resultado da build", async () => {
+    const { c, http } = await abrir("p-sage");
+    const comErro = c.simular();
+    http
+      .expectOne("/api/simulador/simular-build")
+      .flush({ message: "Nível do alvo inválido." }, { status: 400, statusText: "Bad Request" });
+    await comErro;
+    expect(c.erro()).toContain("Nível do alvo");
+    expect(c.resultadoBuild()).toBeNull();
+    c.comEfeitos.set(false);
+    const envio = c.simular();
+    const pedido = http.expectOne("/api/simulador/simular");
+    expect(pedido.request.body.personagemId).toBeUndefined();
+    pedido.flush({}, { status: 400, statusText: "Bad Request" });
+    await envio;
+  });
+});
+
+describe("SimuladorHubComponent (D61)", () => {
+  const CHAVES = [CHAVE_BUILD, CHAVE_MONSTRO, CHAVE_PERSONAGEM_ABERTO, "ro-set-compare"];
+  const INSTANCIAS: InstanciaDoHub[] = [
+    { id: "i-covil", nome: "Covil de Vermes", nivelMinimo: 140, chefes: [] },
+    {
+      id: "i-torre",
+      nome: "Torre da Constelação",
+      nivelMinimo: 240,
+      chefes: [
+        {
+          idMonstro: 990001,
+          nome: "Rainha Verme",
+          observacao: null,
+          fonte: null,
+          monstro: null,
+          noSimulador: false,
+        },
+        {
+          idMonstro: 20996,
+          nome: "Naght Sieger",
+          observacao: null,
+          fonte: null,
+          monstro: NAGHT,
+          noSimulador: true,
+        },
+      ],
+    },
+  ];
+
+  async function abrir(personagem: string | null = null) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideNoopAnimations(),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap(personagem ? { personagem } : {}) } },
+        },
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const f = TestBed.createComponent(SimuladorHubComponent);
+    f.detectChanges();
+    http.expectOne("/api/vinculo").flush(SITUACAO);
+    http.expectOne("/api/simulador/alvos").flush({ divinePride: false, instancias: INSTANCIAS });
+    http
+      .match((pedido) => pedido.url.endsWith("simulador-latam/origem.json"))
+      .forEach((p) => p.flush({ imagens: null }));
+    await esperar();
+    f.detectChanges();
+    return { f, c: f.componentInstance, http };
+  }
+
+  beforeEach(() => CHAVES.forEach((chave) => localStorage.removeItem(chave)));
+  afterEach(() => CHAVES.forEach((chave) => localStorage.removeItem(chave)));
+
+  it("carrega o simulador servido pelo sistema e só lista instâncias com chefes", async () => {
+    const { f, c } = await abrir();
+    const quadro = (f.nativeElement as HTMLElement).querySelector("iframe");
+    expect(quadro?.getAttribute("src")).toContain("simulador-latam/index.html");
+    expect(c.instancias().map((i) => i.nome)).toEqual(["Torre da Constelação"]);
+    expect(c.chefeId()).toBe(20996);
+    expect(c.personagemId()).toBe("p-antigo");
+    expect(texto(f)).toContain("licença MIT");
+  });
+
+  it("abre a build do personagem pedido na URL: grava o rascunho do simulador e limpa a comparação", async () => {
+    localStorage.setItem("ro-set-compare", "{}");
+    const { f, c, http } = await abrir("p-sage");
+    http.expectOne("/api/simulador/personagens/p-sage/build").flush({
+      personagem: { id: "p-sage", nome: "Ana-Sage" },
+      build: { class: 8, level: 105 },
+      avisos: ["aviso"],
+    });
+    await esperar();
+    f.detectChanges();
+    expect(JSON.parse(localStorage.getItem(CHAVE_BUILD) ?? "")).toEqual({ class: 8, level: 105 });
+    expect(localStorage.getItem("ro-set-compare")).toBeNull();
+    expect(localStorage.getItem(CHAVE_PERSONAGEM_ABERTO)).toBe("p-sage");
+    expect(c.nota()).toBe("Build de Ana-Sage aberta no simulador.");
+    expect(c.avisos()).toEqual(["aviso"]);
+  });
+
+  it("aponta o chefe como alvo do simulador; chefe fora do simulador não pode ser escolhido", async () => {
+    const { c } = await abrir();
+    c.usarAlvo();
+    expect(localStorage.getItem(CHAVE_MONSTRO)).toBe("20996");
+    expect(c.nota()).toBe("Alvo do simulador: Naght Sieger.");
+    c.chefeId.set(990001);
+    expect(c.chefeNoSimulador()).toBeFalse();
+    c.usarAlvo();
+    expect(localStorage.getItem(CHAVE_MONSTRO)).toBe("20996");
+  });
+
+  it("grava na ficha a build que está no simulador e pede confirmação se ela veio de outro personagem", async () => {
+    const { c, http } = await abrir();
+    await c.salvar();
+    expect(c.erro()).toContain("ainda não tem uma build");
+
+    localStorage.setItem(CHAVE_BUILD, JSON.stringify({ class: 8, level: 110 }));
+    localStorage.setItem(CHAVE_PERSONAGEM_ABERTO, "p-dk");
+    c.personagemId.set("p-sage");
+    const confirmar = spyOn(window, "confirm").and.returnValue(false);
+    await c.salvar();
+    expect(confirmar).toHaveBeenCalledTimes(1);
+    http.expectNone("/api/simulador/personagens/p-sage/build");
+
+    confirmar.and.returnValue(true);
+    const envio = c.salvar();
+    const pedido = http.expectOne("/api/simulador/personagens/p-sage/build");
+    expect(pedido.request.method).toBe("POST");
+    expect(pedido.request.body).toEqual({ build: { class: 8, level: 110 } });
+    pedido.flush({
+      personagem: { id: "p-sage", nome: "Ana-Sage", nivelBase: 110, classe: "Feiticeiro" },
+      equipamentos: 9,
+      buildInteira: true,
+      avisos: [],
+    });
+    await envio;
+    expect(c.nota()).toBe("Ficha de Ana-Sage atualizada: Feiticeiro, nível 110, 9 equipamento(s).");
+    expect(localStorage.getItem(CHAVE_PERSONAGEM_ABERTO)).toBe("p-sage");
+
+    const falha = c.salvar();
+    http
+      .expectOne("/api/simulador/personagens/p-sage/build")
+      .flush(
+        { message: "O simulador não devolveu uma build válida." },
+        { status: 400, statusText: "Bad Request" },
+      );
+    await falha;
+    expect(c.erro()).toContain("não devolveu uma build válida");
   });
 });
