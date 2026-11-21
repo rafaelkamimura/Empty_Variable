@@ -98,9 +98,13 @@ describe("Abas do farm", () => {
     expect(perguntar).toHaveBeenCalled();
     http.expectOne("/api/farm/checkins/c1").flush(null);
     await esperar();
-    http.expectOne("/api/farm/estado").flush(ESTADO);
+    // Estado novo (outra referência), como a API devolve: os totais buscam o período de novo.
+    http.expectOne("/api/farm/estado").flush(structuredClone(ESTADO));
     await esperar();
-    http.match(() => true).forEach((r) => r.flush([]));
+    http.expectOne((r) => r.url === "/api/farm/checkins").flush([]);
+    await esperar();
+    expect(el.textContent).toContain("Nenhum check-in neste período.");
+    http.verify();
   });
 
   it("Importar: lê o backup, sugere o personagem e importa", async () => {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output } from "@angular/core";
 import {
   ehRecarga,
   formatarZenyCompleto,
@@ -81,7 +81,7 @@ export type SalvarPreco = (item: ItemFarm, precoZeny: number | null) => Promise<
           rotulo="Quem faz"
           multipla
           [opcoes]="opcoesPersonagens()"
-          [selecionados]="instancia().personagemIds"
+          [selecionados]="marcados()"
           (selecionadosChange)="mudarPersonagens($event)"
         />
 
@@ -258,12 +258,24 @@ export class InstanciaCadastroComponent {
     })),
   );
 
-  protected mudarPersonagens(ids: readonly string[]): void {
-    void this.salvar()({ personagemIds: [...ids] });
+  /**
+   * O que a tela mostra em "Quem faz". Segue o servidor (a cada recarga do estado) e muda na hora do
+   * clique; se a gravação falha, volta ao que o servidor tem. Sem isso, o chip ficaria marcado e o
+   * próximo clique gravaria a lista local, com o personagem que deu erro.
+   */
+  protected readonly marcados = linkedSignal<readonly string[]>(() => this.instancia().personagemIds);
+
+  protected async mudarPersonagens(ids: readonly string[]): Promise<void> {
+    this.marcados.set(ids);
+    if (!(await this.salvar()({ personagemIds: [...ids] })))
+      this.marcados.set([...this.instancia().personagemIds]);
   }
 
-  protected mudarRecarga(evento: Event): void {
-    const valor = (evento.target as HTMLSelectElement).value;
-    if (ehRecarga(valor)) void this.salvar()({ recarga: valor });
+  protected async mudarRecarga(evento: Event): Promise<void> {
+    const select = evento.target as HTMLSelectElement;
+    const valor = select.value;
+    if (!ehRecarga(valor)) return;
+    // Na falha, o select volta ao valor do servidor. O binding não basta: o valor ligado não mudou.
+    if (!(await this.salvar()({ recarga: valor }))) select.value = this.instancia().recarga;
   }
 }

@@ -63,6 +63,8 @@ export class CampoSalvoComponent<T> {
   readonly invalido = output();
 
   private readonly campo = viewChild.required<ElementRef<HTMLInputElement>>("campo");
+  /** Valor sendo gravado agora (para não mandar o mesmo duas vezes). */
+  private emAndamento: { valor: T } | null = null;
 
   protected async mudou(): Promise<void> {
     const el = this.campo().nativeElement;
@@ -76,6 +78,13 @@ export class CampoSalvoComponent<T> {
       el.value = this.valor();
       return;
     }
-    if (!(await this.salvar()(lido))) el.value = this.valor();
+    if (this.emAndamento && this.emAndamento.valor === lido) return;
+    const meu = { valor: lido };
+    this.emAndamento = meu;
+    try {
+      if (!(await this.salvar()(lido))) el.value = this.valor();
+    } finally {
+      if (this.emAndamento === meu) this.emAndamento = null;
+    }
   }
 }
