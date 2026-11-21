@@ -131,7 +131,7 @@ export async function criarApp(config: Partial<Configuracao> = {}): Promise<Cont
     await prisma.$transaction([
       prisma.$executeRawUnsafe("SET LOCAL session_replication_role = replica"),
       prisma.$executeRawUnsafe(
-        `TRUNCATE transferencia_pontos, imagem_cache, receita_peca, receita_componente, preco_receita, solicitacao_nebula, receita,
+        `TRUNCATE rascunho_run_participante, rascunho_run, transferencia_pontos, imagem_cache, receita_peca, receita_componente, preco_receita, solicitacao_nebula, receita,
          movimento_estoque, compra_lote, compra, lote_estoque, oferta_venda, preco_item, config_loja,
          lancamento_pontos, emprestimo, drop_run, participacao, run, config_pontuacao, funcao_classe, encontro, versao_instancia, instancia, classe,
          item_catalogo, solicitacao_vinculo, personagem, jogador, sessao, auditoria, usuario CASCADE`,
