@@ -1,9 +1,11 @@
 // Peças comuns às telas do Diário de farm (D48–D54). Classes antigas, anteriores às diretrizes
 // (docs/frontend/diretrizes.md §10): migram para shared/ui com a feature farm. As cores próprias do
 // farm (feito, zeny, perigo) agora são apelidos dos tokens de estado.
-// Global (importado em styles.scss) e escopado em app-farm: vale para a página e para as abas
-// (totais, cadastro, importar), que são componentes filhos.
-app-farm {
+// Global (importado em styles.scss) e escopado nas abas antigas (totais, cadastro, importar).
+// A página e a aba Hoje já migraram para features/farm e não usam nada daqui.
+app-farm-totais,
+app-farm-cadastro,
+app-farm-importar {
   & {
     --feito: var(--sucesso);
     --feito-fundo: var(--sucesso-fundo);
