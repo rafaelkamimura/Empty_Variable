@@ -114,6 +114,17 @@ Estes são os tokens que os componentes usam. Os contrastes foram medidos contra
 
 Um estado nunca é indicado só pela cor. Sempre há ícone e texto junto.
 
+**Tons de identidade.** Dão a cor estável do ícone de item e do emblema de classe (`tomDe()` em `core/visual.ts`). São decorativos: o nome do item ou da classe sempre aparece junto. Contraste medido contra `--superficie`, o fundo da arte do cartão.
+
+| Token            | Valor                         | Contraste |
+| ---------------- | ----------------------------- | --------- |
+| `--tom-orquidea` | `--ev-chave-fim` (#C65BFB)    | 5,9:1     |
+| `--tom-violeta`  | `--ev-chave-inicio` (#9155F6) | 4,5:1     |
+| `--tom-lavanda`  | `--ev-lavanda` (#E0C9F8)      | 12,9:1    |
+| `--tom-azul`     | `--info` (#8FB8FF)            | 9,8:1     |
+| `--tom-menta`    | `--sucesso` (#7EE0C3)         | 12,4:1    |
+| `--tom-nevoa`    | `--texto-suave` (#A99BC4)     | 7,6:1     |
+
 ### 2.3 Demais escalas
 
 | Escala     | Tokens                                                                                     |
@@ -159,7 +170,8 @@ web/src/
 │   ├── _tokens.scss        # primitivos + tokens semânticos (§2) — ÚNICO lugar com hex
 │   ├── _material.scss      # mapeamento --mat-sys-* → tokens
 │   ├── _base.scss          # reset, html/body, tipografia, foco global, reduced-motion
-│   └── _utilitarios.scss   # poucas classes utilitárias (ex.: .sr-only, .tabular)
+│   ├── _utilitarios.scss   # poucas classes utilitárias (ex.: .sr-only, .tabular)
+│   └── _legado*.scss       # classes globais antigas, só até a migração (§10); nada novo aqui
 ├── styles.scss             # só @use dos arquivos acima
 └── app/
     ├── core/               # singletons da aplicação, sem UI
@@ -230,7 +242,7 @@ O projeto usa o vocabulário do Atomic Design para decidir **o que um componente
   - O `caminhoBaseInterceptor` aplica o `APP_BASE_PATH`.
   - O que muda por ambiente entra por `environment.ts` ou por configuração servida pela API, e nunca por `if (location.host…)`.
 - **`public/`** guarda só arquivos estáticos, agrupados por tipo (`icones-classes/`, `imagens/`, `fontes/`). Imagens são otimizadas antes de entrar (PNG/WebP comprimido, no tamanho em que aparecem), e ícones de interface são SVG em `app-icone`.
-- **As fontes** (Inter e JetBrains Mono) são servidas pelo próprio projeto, com `font-display: swap` e só os pesos usados (400, 600 e 700). Elas não são carregadas de CDN.
+- **As fontes** (Inter e JetBrains Mono) são servidas pelo próprio projeto, com `font-display: swap` e só os pesos usados (400, 600 e 700). Elas vêm dos pacotes `@fontsource/*` (subconjunto `latin`), declarados em `styles` no `angular.json`, e não são carregadas de CDN.
 
 ---
 
@@ -461,7 +473,7 @@ Enquanto o código antigo não migrar, essas regras rodam como **erro** para arq
 
 A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**: quem mexer numa tela migra essa tela.
 
-1. **Fundação.** Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `core/visual.ts` é refeito com tons da paleta.
+1. **Fundação.** *(feita)* Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `core/visual.ts` é refeito com tons da paleta.
 2. **Ferramentas.** Ligar as regras de lint da §8.3 (aviso no código antigo) e montar o catálogo da §8.2, para que cada peça base já nasça com exemplo.
 3. **Peças base.** Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
 3. **Casca.** Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
