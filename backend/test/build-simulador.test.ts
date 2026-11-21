@@ -1,5 +1,6 @@
 // D55: importar para a ficha a build de um link do simulador de dano (simulador.latam-tools.com.br).
 // D57: a build vem inteira (refino, grau, cartas, encantamentos, atributos) e a ficha a guarda.
+// D59: a ficha guarda também a classe do simulador e o token do link, que a simulação lê de novo.
 import lzString from "lz-string";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { SeedService } from "../src/cadastros/seed.service.js";
@@ -123,20 +124,19 @@ describe("Link do simulador (D55)", () => {
         base: { str: 1, agi: 1, vit: 1, int: 1, dex: 1, luk: 1 },
         bonusClasse: { str: 3, agi: 3, vit: 5, int: 10, dex: 7, luk: 3 },
         habilidade: { nome: "Fire Bolt", nivel: 10 },
+        classeSimulador: 8,
+        token: TOKEN_REAL,
       },
     });
   });
 
   it("ignora campos fora do esperado e recusa o que não é build", () => {
-    expect(
-      decodificarBuild(
-        tokenDe({ class: "8", level: 999, weapon: -1, armor: 1.5, boot: 2404, headUpper: 5011 }),
-      ),
-    ).toEqual({
+    const token = tokenDe({ class: "8", level: 999, weapon: -1, armor: 1.5, boot: 2404, headUpper: 5011 });
+    expect(decodificarBuild(token)).toEqual({
       classe: null,
       nivelBase: null,
       equipamentos: { topo: { id: 5011 }, calcado: { id: 2404 } },
-      atributos: {},
+      atributos: { token },
     });
     expect(decodificarBuild(tokenDe([1, 2]))).toBeNull();
     expect(decodificarBuild("isto-nao-e-um-token")).toBeNull();
@@ -159,30 +159,43 @@ describe("Link do simulador (D55)", () => {
         talentos: { pow: 100, sta: 10, con: 50, crt: 0 },
         habilidade: { nome: "Dragonic Breath", nivel: 10 },
         elementoAtaque: "FOGO",
+        classeSimulador: 4252,
+        token: tokenDe(BUILD_COMPLETA),
       },
     });
   });
 
+  it("D59: um link grande demais para a ficha vem sem o token", () => {
+    const enorme = tokenDe({
+      class: 8,
+      rawOptionTxts: Array.from({ length: 6000 }, (_, i) => `atk:${(i * 7919) % 100003}`),
+    });
+    expect(enorme.length).toBeGreaterThan(16 * 1024);
+    expect(decodificarBuild(enorme)?.atributos).toEqual({ classeSimulador: 8 });
+  });
+
   it("D57: descarta refino, grau, cartas e atributos fora do esperado", () => {
-    expect(
-      decodificarBuild(
-        tokenDe({
-          weapon: 1291,
-          weaponRefine: 25,
-          weaponGrade: "S",
-          weaponCard1: -4,
-          weaponCard2: "4001",
-          weaponEnchant1: 4700.5,
-          armorRefine: 7,
-          str: 0,
-          jobStr: -1,
-          pow: 1000,
-          jobLevel: 0,
-          selectedAtkSkill: "==3",
-          propertyAtk: "Plasma",
-        }),
-      ),
-    ).toEqual({ classe: null, nivelBase: null, equipamentos: { arma: { id: 1291 } }, atributos: {} });
+    const token = tokenDe({
+      weapon: 1291,
+      weaponRefine: 25,
+      weaponGrade: "S",
+      weaponCard1: -4,
+      weaponCard2: "4001",
+      weaponEnchant1: 4700.5,
+      armorRefine: 7,
+      str: 0,
+      jobStr: -1,
+      pow: 1000,
+      jobLevel: 0,
+      selectedAtkSkill: "==3",
+      propertyAtk: "Plasma",
+    });
+    expect(decodificarBuild(token)).toEqual({
+      classe: null,
+      nivelBase: null,
+      equipamentos: { arma: { id: 1291 } },
+      atributos: { token },
+    });
   });
 });
 
@@ -233,7 +246,12 @@ describe("POST /api/vinculo/build-simulador (D55)", () => {
     expect(Object.keys(r.body.equipamentos).sort()).toEqual(
       ["acessorio2", "arma", "armadura", "baixo", "calcado", "capa", "escudo", "meio"].sort(),
     );
-    expect(r.body.atributos).toMatchObject({ nivelClasse: 50, habilidade: { nome: "Fire Bolt", nivel: 10 } });
+    expect(r.body.atributos).toMatchObject({
+      nivelClasse: 50,
+      habilidade: { nome: "Fire Bolt", nivel: 10 },
+      classeSimulador: 8,
+      token: TOKEN_REAL,
+    });
     expect(ctx.encurtador.chamadas).toEqual([]);
   });
 
@@ -319,6 +337,8 @@ describe("Ficha com a build completa (D57)", () => {
     talentos: { pow: 100, con: 50 },
     habilidade: { nome: "Dragonic Breath", nivel: 10 },
     elementoAtaque: "FOGO",
+    classeSimulador: 4252,
+    token: tokenDe(BUILD_COMPLETA),
   };
 
   beforeAll(async () => {

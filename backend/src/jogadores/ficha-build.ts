@@ -30,6 +30,9 @@ export const REFINO_MAXIMO = 20;
 /** A arma tem até quatro cartas e quatro encantamentos; os outros slots usam menos. */
 export const ENCAIXES_MAXIMOS = 4;
 const ID_MAXIMO = 2_147_483_647;
+/** D59: token do link do simulador guardado na ficha (a build inteira, compactada). */
+export const TOKEN_BUILD = /^[A-Za-z0-9.\-$]{8,}$/;
+export const TOKEN_BUILD_MAXIMO = 16 * 1024;
 
 /** Carta ou encantamento: o ID do jogo e, quando a Divine Pride respondeu, o nome. */
 export type EncaixeFicha = {
@@ -56,6 +59,13 @@ export type AtributosFicha = {
   /** Habilidade de ataque escolhida no simulador, com o nome que ele usa. */
   habilidade?: { nome: string; nivel?: number };
   elementoAtaque?: Elemento;
+  /** D59: número da classe no simulador, para calcular a build mesmo sem o link. */
+  classeSimulador?: number;
+  /**
+   * D59: token do link importado. Traz o que a ficha não mostra (sombrios, visuais, mascote,
+   * consumíveis, buffs e habilidades aprendidas) e é lido de novo a cada simulação.
+   */
+  token?: string;
 };
 
 function lerEncaixes(valor: unknown, campo: string): EncaixeFicha[] | undefined {
@@ -143,6 +153,15 @@ export function lerAtributos(valor: unknown): AtributosFicha {
         : { nivel: inteiro(nivel, "Nível da habilidade", 1, 999) }),
     };
   }
+  const classeSimulador = dados["classeSimulador"];
+  const token = dados["token"];
+  if (
+    token !== undefined &&
+    token !== null &&
+    (typeof token !== "string" || token.length > TOKEN_BUILD_MAXIMO || !TOKEN_BUILD.test(token))
+  ) {
+    throw new BadRequestException("Link da build inválido.");
+  }
   return {
     ...(nivelClasse === undefined || nivelClasse === null
       ? {}
@@ -152,5 +171,9 @@ export function lerAtributos(valor: unknown): AtributosFicha {
     ...(talentos === undefined ? {} : { talentos }),
     ...(habilidade === undefined ? {} : { habilidade }),
     ...(elemento === undefined || elemento === null ? {} : { elementoAtaque: elemento as Elemento }),
+    ...(classeSimulador === undefined || classeSimulador === null
+      ? {}
+      : { classeSimulador: inteiro(classeSimulador, "Classe do simulador", 1, 99_999) }),
+    ...(typeof token === "string" ? { token } : {}),
   };
 }

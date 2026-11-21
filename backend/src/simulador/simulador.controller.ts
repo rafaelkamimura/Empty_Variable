@@ -11,20 +11,24 @@ import {
   Query,
 } from "@nestjs/common";
 import type { Usuario } from "@prisma/client";
+import { type BonusExtrasMotor, RACAS_MOTOR } from "@betel/motor-latam";
 import {
   type Alvo,
   type Atacante,
   BONUS_FISICO_ZERADO,
   BONUS_MAGICO_ZERADO,
+  type BonusFisico,
+  type BonusMagico,
   CODIGOS_TIPO_ARMA,
   ELEMENTOS,
   TAMANHOS,
 } from "@betel/simulador";
 import { Papeis, UsuarioAtual } from "../auth/decoradores.js";
-import { inteiro, objeto, textoOpcional, uuid } from "../comum/validacao.js";
+import { booleano, inteiro, objeto, textoOpcional, uuid } from "../comum/validacao.js";
 import { FarmModule } from "../farm/farm.controller.js";
 import { MonstrosService } from "./monstros.service.js";
-import { type EntradaSimulacao, SimuladorService } from "./simulador.service.js";
+import { MotorService } from "./motor.service.js";
+import { type EntradaSimulacao, type SimulacaoDaBuild, SimuladorService } from "./simulador.service.js";
 
 const ID_MAXIMO = 2_147_483_647;
 /** Teto dos números da simulação: mantém as contas dentro dos inteiros exatos do JavaScript. */
@@ -126,6 +130,94 @@ function lerSimulacao(corpo: unknown): { entrada: EntradaSimulacao; hp: number |
   };
 }
 
+/**
+ * D59: passa os bônus digitados para o motor, que os soma aos efeitos lidos dos itens. O ATQ de
+ * maestria não tem um bônus equivalente no motor e volta como não aplicado.
+ * @param tipo Tipo de dano dos bônus digitados
+ * @param bonus Bônus digitados
+ */
+function bonusParaOMotor(
+  tipo: "FISICO" | "MAGICO",
+  bonus: BonusFisico | BonusMagico,
+): Pick<SimulacaoDaBuild, "bonus" | "bonusNaoAplicados"> {
+  if (tipo === "MAGICO") {
+    const m = bonus as BonusMagico;
+    return {
+      bonusNaoAplicados: [],
+      bonus: {
+        matk: m.matkEquipamento,
+        matkPct: m.matkPct,
+        magicoRacaPct: m.racaPct,
+        magicoTamanhoPct: m.tamanhoPct,
+        magicoElementoAlvoPct: m.elementoAlvoPct,
+        magicoElementoHabilidadePct: m.elementoHabilidadePct,
+        magicoClassePct: m.classePct,
+        sMatk: m.smatk,
+        habilidadePct: m.habilidadePct,
+        ignorarMdefPct: m.ignorarMdefPct,
+        ignorarMresPct: m.ignorarMresPct,
+        danoFinalPct: m.danoFinalPct,
+      },
+    };
+  }
+  const f = bonus as BonusFisico;
+  const extras: BonusExtrasMotor = {
+    atk: f.atkEquipamento,
+    atkPct: f.atkPct,
+    fisicoRacaPct: f.racaPct,
+    fisicoTamanhoPct: f.tamanhoPct,
+    fisicoElementoPct: f.elementoPct,
+    fisicoClassePct: f.classePct,
+    pAtk: f.patk,
+    distanciaPct: f.distanciaPct,
+    habilidadePct: f.habilidadePct,
+    ignorarDefPct: f.ignorarDefPct,
+    ignorarResPct: f.ignorarResPct,
+    danoFinalPct: f.danoFinalPct,
+    ignoraPenalidadeDeTamanho: f.ignoraPenalidadeDeTamanho,
+  };
+  return { bonus: extras, bonusNaoAplicados: f.atkMaestria > 0 ? ["ATQ de maestria"] : [] };
+}
+
+/**
+ * Lê o pedido de simulação da build (D59): o personagem, o alvo e, se vierem, a habilidade e os
+ * bônus digitados. Do alvo vão também o ID do monstro, a raça e se é chefe, que os efeitos dos
+ * itens usam.
+ */
+function lerSimulacaoDaBuild(corpo: unknown): SimulacaoDaBuild {
+  const b = objeto(corpo);
+  const a = objeto(b["alvo"]);
+  const alvo = lerAlvo(a);
+  const idMonstro = a["idMonstro"];
+  const nome = textoOpcional(a["nome"], "Nome do alvo", 1, 80);
+  const tipo = umDe(b["tipo"] ?? "FISICO", ["FISICO", "MAGICO"] as const, "Tipo de dano");
+  const habilidade = textoOpcional(b["habilidade"], "Habilidade", 1, 120);
+  return {
+    personagemId: uuid(b["personagemId"], "Personagem"),
+    alvo: {
+      ...alvo,
+      ...(idMonstro === undefined || idMonstro === null
+        ? {}
+        : { id: inteiro(idMonstro, "ID do monstro", 1, ID_MAXIMO) }),
+      ...(nome === undefined ? {} : { nome }),
+      ...(a["hp"] === undefined || a["hp"] === null
+        ? {}
+        : { hp: numero(a["hp"], "HP do alvo", 1, HP_MAXIMO) }),
+      ...(a["raca"] === undefined || a["raca"] === null
+        ? {}
+        : { raca: umDe(a["raca"], RACAS_MOTOR, "Raça do alvo") }),
+      ...(a["chefe"] === undefined || a["chefe"] === null ? {} : { chefe: booleano(a["chefe"], "Chefe") }),
+    },
+    ...(habilidade === undefined ? {} : { habilidade }),
+    ...bonusParaOMotor(
+      tipo,
+      tipo === "FISICO"
+        ? lerBonus(b["bonus"], BONUS_FISICO_ZERADO)
+        : lerBonus(b["bonus"], BONUS_MAGICO_ZERADO),
+    ),
+  };
+}
+
 /** D57: simulação de dano da build de um personagem contra um chefe de instância ou outro monstro. */
 @Controller("simulador")
 export class SimuladorController {
@@ -157,6 +249,13 @@ export class SimuladorController {
     return this.simulador.simular(entrada, hp);
   }
 
+  /** D59: simula a build de um personagem do membro com os efeitos dos equipamentos. */
+  @Post("simular-build")
+  @HttpCode(200)
+  simularBuild(@Body() corpo: unknown, @UsuarioAtual() usuario: Usuario) {
+    return this.simulador.simularBuild(usuario, lerSimulacaoDaBuild(corpo));
+  }
+
   @Post("instancias/:id/chefes")
   @Papeis("GESTOR")
   adicionarChefe(@Param("id") id: string, @Body() corpo: unknown, @UsuarioAtual() gestor: Usuario) {
@@ -185,6 +284,6 @@ export class SimuladorController {
 @Module({
   imports: [FarmModule],
   controllers: [SimuladorController],
-  providers: [SimuladorService, MonstrosService],
+  providers: [SimuladorService, MonstrosService, MotorService],
 })
 export class SimuladorModule {}
