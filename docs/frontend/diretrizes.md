@@ -488,7 +488,7 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 3. **Peças base.** *(feita)* Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
 3. **Casca.** *(feita: `layout/casca`, `layout/topo`, `layout/menu-lateral` e `features/acesso/paginas/login.page.ts`)* Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
 4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
-   - loja *(feita: `features/loja`)* e carteira;
+   - loja *(feita: `features/loja`)* e carteira *(feita: `features/carteira`)*;
    - farm;
    - Nebula;
    - instâncias e gestão;

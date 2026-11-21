@@ -5,8 +5,8 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
-import type { Extrato } from "../core/runs";
-import { ExtratoComponent } from "./extrato.component";
+import type { Extrato } from "../features/carteira/data/extrato.modelos";
+import { ExtratoComponent } from "../features/carteira/componentes/extrato.component";
 import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 interface SaldoJogador {

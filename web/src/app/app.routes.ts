@@ -9,6 +9,7 @@ import {
 } from "./core/guardas";
 import { TELAS_LIBERADAS } from "./core/telas-liberadas";
 import { ROTAS_DEV } from "./dev/dev.routes";
+import { ROTAS_CARTEIRA } from "./features/carteira/carteira.routes";
 import { ROTAS_LOJA } from "./features/loja/loja.routes";
 
 /** paineis §4: o painel vem da URL — /me, /loja e /nebula (Cliente), /gestao (Gestão), /admin (Administração). */
@@ -40,17 +41,12 @@ const rotasCompletas: Routes = [
 
   // ---- Cliente ----
   ...ROTAS_LOJA,
+  ...ROTAS_CARTEIRA,
   {
     path: "me",
     canActivate: [vinculadoGuard],
     title: "Minha área · Empty Variable",
     loadComponent: () => import("./paginas/me.component").then((m) => m.MeComponent),
-  },
-  {
-    path: "carteira",
-    canActivate: [autenticadoGuard],
-    title: "Carteira · Empty Variable",
-    loadComponent: () => import("./paginas/carteira.component").then((m) => m.CarteiraComponent),
   },
   {
     path: "farm",

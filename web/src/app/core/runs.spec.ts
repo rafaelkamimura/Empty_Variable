@@ -6,8 +6,6 @@ import {
   calcularPrevia,
   type Catalogos,
   type DetalheRun,
-  descreverLancamento,
-  type LancamentoExtrato,
   montarCorpo,
   novoEmprestimo,
   novoRascunho,
@@ -285,55 +283,6 @@ describe("Rascunho de run", () => {
       ],
     });
     expect(r.drops).toEqual([{ itemId: "i1", quantidade: 2 }]);
-  });
-
-  it("descreve a origem dos lançamentos do extrato (US-06)", () => {
-    const participacao = {
-      personagem: { nome: "Beto-GX" },
-      jogador: { id: "j-beto", apelido: "Beto" },
-      funcao: { nome: "Garra Sombria", classe: { nomeOficial: "Executor", apelidoGrupo: "GX" } },
-      rank: 3,
-      pesoCentesimos: 200,
-      multiplicadorChefeCentesimos: 100,
-      multiplicadorStatusCentesimos: 100,
-      fracaoCentesimos: 100,
-      pontosGerados: 200,
-    };
-    const emprestimo = {
-      categoria: "ESSENCIAL" as const,
-      pctSugeridoBp: 2000,
-      pctInformadoBp: null,
-      pctEfetivo: "20.000000",
-      pontos: 40,
-      itemDescricao: "Arma",
-      item: null,
-      credor: { id: "j-x", apelido: "X" },
-    };
-    const base = { id: "l", criadoEm: "", observacao: null, estornaLancamentoId: null, run: null };
-    const part = {
-      ...base,
-      valor: 200,
-      tipo: "PARTICIPACAO",
-      participacao,
-      emprestimo: null,
-    } as LancamentoExtrato;
-    const deb = {
-      ...base,
-      valor: -40,
-      tipo: "EMPRESTIMO_DEBITO",
-      participacao,
-      emprestimo,
-    } as LancamentoExtrato;
-    const cred = {
-      ...base,
-      valor: 40,
-      tipo: "EMPRESTIMO_CREDITO",
-      participacao,
-      emprestimo,
-    } as LancamentoExtrato;
-    expect(descreverLancamento(part)).toContain("rank 3, peso 2 × encontro 1 × status 1 × fração 1");
-    expect(descreverLancamento(deb)).toBe("Parcela para X pelo empréstimo de Arma (Essencial, 20%)");
-    expect(descreverLancamento(cred)).toContain("para Beto (Beto-GX)");
   });
 
   it("instância e encontro (D44): sem encontro é pendência; o multiplicador vem do encontro", () => {
