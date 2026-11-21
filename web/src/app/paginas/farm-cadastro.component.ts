@@ -9,7 +9,14 @@ import {
   lerZeny,
 } from "@betel/farm";
 import { Acao } from "../core/acao";
-import { type InstanciaCatalogo, type InstanciaFarm, type ItemFarm, FarmStore } from "../core/farm";
+import {
+  type InstanciaCatalogo,
+  type InstanciaFarm,
+  type ItemFarm,
+  type ItemLoot,
+  type LootInstancia,
+  FarmStore,
+} from "../core/farm";
 import { FarmBuscaItemComponent, type ItemEscolhido } from "../core/farm-busca-item.component";
 import { ImagemItemComponent } from "../core/imagem-item.component";
 import { mensagemDeErro } from "../core/modelos";
@@ -122,6 +129,62 @@ import { mensagemDeErro } from "../core/modelos";
                 rotulo="Adicionar item aos drops"
                 (escolher)="adicionarDrop(i, $event)"
               />
+
+              @if (i.instanciaId) {
+                <div class="loot" [attr.data-testid]="'loot-' + i.nome">
+                  <span class="rotulo">Loot dos chefes</span>
+                  @let loot = lootDe()[i.id];
+                  @if (!loot) {
+                    <p class="dica">
+                      Lista do que os chefes desta instância dropam, pela Divine Pride (servidor LATAM).
+                    </p>
+                    <button
+                      type="button"
+                      class="botao pequeno"
+                      [disabled]="carregandoLoot() === i.id"
+                      (click)="verLoot(i)"
+                    >
+                      {{ carregandoLoot() === i.id ? "Buscando…" : "Ver loot dos chefes" }}
+                    </button>
+                  } @else {
+                    <p class="dica">{{ resumoDoLoot(loot) }}</p>
+                    @let faltam = lootQueFalta(i, loot);
+                    @if (faltam.length) {
+                      <button type="button" class="botao pequeno" (click)="adicionarLoot(i, faltam)">
+                        Adicionar os {{ faltam.length }} aos drops
+                      </button>
+                      @for (item of faltam; track item.idJogo) {
+                        <div class="linha-loot">
+                          <span class="item-nome" [title]="origensDe(item)">
+                            <app-imagem-item
+                              [idJogo]="item.idJogo"
+                              [nome]="nomeDoLoot(item)"
+                              [tamanho]="24"
+                            />
+                            {{ nomeDoLoot(item) }}
+                          </span>
+                          <span class="chance">{{ chanceDe(item) }}</span>
+                          <button type="button" class="botao pequeno" (click)="adicionarLoot(i, [item])">
+                            Adicionar
+                          </button>
+                        </div>
+                      }
+                    } @else if (loot.itens.length) {
+                      <p class="dica">Todo o loot já está nos drops.</p>
+                    }
+                    @if (loot.pendentes) {
+                      <button
+                        type="button"
+                        class="botao pequeno"
+                        [disabled]="carregandoLoot() === i.id"
+                        (click)="verLoot(i)"
+                      >
+                        {{ carregandoLoot() === i.id ? "Buscando…" : "Buscar o que falta" }}
+                      </button>
+                    }
+                  }
+                </div>
+              }
 
               <div class="acoes direita">
                 <button
@@ -268,6 +331,22 @@ import { mensagemDeErro } from "../core/modelos";
     .linha > select {
       flex: 0 1 180px;
     }
+    .loot {
+      display: grid;
+      gap: 6px;
+      justify-items: start;
+    }
+    .linha-loot {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .linha-loot .chance {
+      color: var(--texto-suave);
+      font-size: 13px;
+    }
     .linha-drop {
       display: grid;
       grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto;
@@ -315,6 +394,9 @@ export class FarmCadastroComponent implements OnInit {
   readonly novoNome = signal("");
   readonly novaRecarga = signal<Recarga>("DIARIA");
   readonly novaDoCatalogo = signal<string | null>(null);
+  /** D60: loot já buscado, pela instância do diário. */
+  readonly lootDe = signal<Record<string, LootInstancia>>({});
+  readonly carregandoLoot = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
     try {
@@ -389,6 +471,72 @@ export class FarmCadastroComponent implements OnInit {
 
   async adicionarDrop(i: InstanciaFarm, item: ItemEscolhido): Promise<void> {
     await this.salvar(() => this.farm.adicionarDrop(i.id, { nome: item.nome, idJogo: item.idJogo }));
+  }
+
+  /** D60: busca a lista de loot dos chefes da instância do catálogo ligada a esta. */
+  async verLoot(i: InstanciaFarm): Promise<void> {
+    if (!i.instanciaId || this.carregandoLoot()) return;
+    this.carregandoLoot.set(i.id);
+    try {
+      const loot = await this.farm.lootDaInstancia(i.instanciaId);
+      this.lootDe.update((atual) => ({ ...atual, [i.id]: loot }));
+    } catch (e) {
+      this.acao.avisar(mensagemDeErro(e));
+    } finally {
+      this.carregandoLoot.set(null);
+    }
+  }
+
+  nomeDoLoot(item: ItemLoot): string {
+    return item.nome ?? `Item ${item.idJogo}`;
+  }
+
+  /** Itens do loot que ainda não estão nos drops da instância (pelo ID do jogo ou pelo nome). */
+  lootQueFalta(i: InstanciaFarm, loot: LootInstancia): ItemLoot[] {
+    const meus = i.drops.map((id) => this.farm.itemPorId().get(id)).filter((item) => item !== undefined);
+    const ids = new Set(meus.map((item) => item.idJogo));
+    const nomes = new Set(meus.map((item) => item.nome.toLowerCase()));
+    return loot.itens.filter(
+      (item) => !ids.has(item.idJogo) && !nomes.has(this.nomeDoLoot(item).toLowerCase()),
+    );
+  }
+
+  resumoDoLoot(loot: LootInstancia): string {
+    if (loot.chefes === 0) {
+      return "Esta instância ainda não tem chefes cadastrados: o gestor cadastra na Simulação de dano.";
+    }
+    const partes = [
+      `${loot.itens.length} item(ns) de ${loot.chefes - loot.pendentes} de ${loot.chefes} chefe(s).`,
+    ];
+    if (loot.pendentes) {
+      partes.push(
+        loot.divinePride
+          ? `Faltam os drops de ${loot.pendentes} chefe(s): a Divine Pride responde um por vez.`
+          : "A busca na Divine Pride está desligada neste servidor.",
+      );
+    }
+    return partes.join(" ");
+  }
+
+  chanceDe(item: ItemLoot): string {
+    if (item.chance === null) return "";
+    const pct = item.chance * 100;
+    return `${pct.toLocaleString("pt-BR", { maximumFractionDigits: pct < 1 ? 2 : 1 })}%`;
+  }
+
+  origensDe(item: ItemLoot): string {
+    return [...new Set(item.origens.map((origem) => origem.monstro))].join(", ");
+  }
+
+  async adicionarLoot(i: InstanciaFarm, itens: readonly ItemLoot[]): Promise<void> {
+    await this.salvar(
+      () =>
+        this.farm.adicionarDrops(
+          i.id,
+          itens.map((item) => ({ nome: this.nomeDoLoot(item).slice(0, 80), idJogo: item.idJogo })),
+        ),
+      itens.length > 1 ? `${itens.length} itens adicionados aos drops.` : null,
+    );
   }
 
   async removerDrop(i: InstanciaFarm, item: ItemFarm): Promise<void> {

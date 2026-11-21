@@ -1107,6 +1107,17 @@ model Monstro {
 
 /// D57: chefe (monstro, pelo ID do jogo) de uma instância do catálogo. Remover só desativa, para a
 /// referência inicial não voltar sozinha.
+/// D60: drops de um monstro pela Divine Pride. `itens` é a lista `{idItem, nome, tipo, chance}`.
+model LootMonstro {
+  idMonstro Int      @id @map("id_monstro")
+  existe    Boolean
+  servidor  String?
+  itens     Json     @default("[]")
+  buscadoEm DateTime @map("buscado_em") @db.Timestamptz(3)
+
+  @@map("loot_monstro")
+}
+
 model ChefeInstancia {
   id          String   @id @default(uuid()) @db.Uuid
   instanciaId String   @map("instancia_id") @db.Uuid

@@ -113,6 +113,27 @@ describe("Diário de farm", () => {
       ]);
     });
 
+    it("vários drops de uma vez: cria os itens que faltam e não repete os que já estão (D60)", async () => {
+      const i = await criarInstancia(ana, { nome: "Torre", recarga: "SEMANAL" });
+      await enviar("post", `/api/farm/instancias/${i.id}/drops`, ana, { nome: "Sombridecon" }).expect(201);
+      const url = `/api/farm/instancias/${i.id}/drops/lote`;
+      await enviar("post", url, ana, { itens: [] }).expect(400);
+      await enviar("post", url, beto, { itens: [{ nome: "Sombridecon" }] }).expect(404);
+      const r = await enviar("post", url, ana, {
+        itens: [
+          { nome: "Alma de Naght Sieger", idJogo: 1000396 },
+          { nome: "sombridecon", idJogo: 25729 },
+        ],
+      }).expect(201);
+      expect(r.body.map((item: { nome: string; idJogo: number }) => [item.nome, item.idJogo])).toEqual([
+        ["Alma de Naght Sieger", 1000396],
+        ["Sombridecon", 25729],
+      ]);
+      const estado = await ler("/api/farm/estado", ana);
+      const torre = estado.body.instancias.find((x: { id: string }) => x.id === i.id);
+      expect(torre.drops).toHaveLength(2);
+    });
+
     it("excluir instância com histórico só desativa; recriar com o mesmo nome reativa", async () => {
       const i = await criarInstancia(ana, { nome: "Cripta", recarga: "DIARIA" });
       await enviar("post", "/api/farm/checkins", ana, {

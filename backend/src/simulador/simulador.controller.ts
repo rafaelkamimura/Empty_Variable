@@ -23,6 +23,7 @@ import {
 import { Papeis, UsuarioAtual } from "../auth/decoradores.js";
 import { inteiro, objeto, textoOpcional, uuid } from "../comum/validacao.js";
 import { FarmModule } from "../farm/farm.controller.js";
+import { LootService } from "./loot.service.js";
 import { MonstrosService } from "./monstros.service.js";
 import { type EntradaSimulacao, SimuladorService } from "./simulador.service.js";
 
@@ -129,7 +130,10 @@ function lerSimulacao(corpo: unknown): { entrada: EntradaSimulacao; hp: number |
 /** D57: simulação de dano da build de um personagem contra um chefe de instância ou outro monstro. */
 @Controller("simulador")
 export class SimuladorController {
-  constructor(private readonly simulador: SimuladorService) {}
+  constructor(
+    private readonly simulador: SimuladorService,
+    private readonly loot: LootService,
+  ) {}
 
   @Get("alvos")
   alvos() {
@@ -155,6 +159,12 @@ export class SimuladorController {
   simular(@Body() corpo: unknown) {
     const { entrada, hp } = lerSimulacao(corpo);
     return this.simulador.simular(entrada, hp);
+  }
+
+  /** D60: loot da instância, pelos drops dos chefes cadastrados nela. */
+  @Get("instancias/:id/loot")
+  lootDaInstancia(@Param("id") id: string) {
+    return this.loot.daInstancia(uuid(id, "Instância"));
   }
 
   @Post("instancias/:id/chefes")
@@ -185,6 +195,6 @@ export class SimuladorController {
 @Module({
   imports: [FarmModule],
   controllers: [SimuladorController],
-  providers: [SimuladorService, MonstrosService],
+  providers: [SimuladorService, MonstrosService, LootService],
 })
 export class SimuladorModule {}
