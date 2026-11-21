@@ -491,7 +491,7 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
    - loja *(feita: `features/loja`)* e carteira *(feita: `features/carteira`)*;
    - farm *(feita: `features/farm`)*;
-   - Nebula;
+   - Nebula *(feita: `features/nebula`, com a fila do admin em `/admin/nebula`; o cadastro de receitas fica com o admin)*;
    - instâncias e gestão;
    - admin;
    - simulador.
