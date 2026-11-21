@@ -4,6 +4,7 @@ import { AuditoriaModule } from "./auditoria/auditoria.service.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { CadastrosModule } from "./cadastros/cadastros.module.js";
 import { EstoqueModule } from "./estoque/estoque.module.js";
+import { FarmModule } from "./farm/farm.controller.js";
 import { LojaModule } from "./loja/loja.module.js";
 import { NebulaModule } from "./nebula/nebula.module.js";
 import { ImagensModule } from "./imagens/imagens.controller.js";
@@ -51,6 +52,7 @@ export class ConfiguracaoModule {}
     NotificacoesModule,
     GruposProgramadosIntegracaoModule,
     ConsultasIntegracaoModule,
+    FarmModule,
   ],
   controllers: [SaudeController],
   providers: [
