@@ -76,6 +76,21 @@ const NOMES_ELEMENTO: Readonly<Record<string, Elemento>> = {
 
 const chave = (texto: string) => texto.toLowerCase().replace(/[^a-z]/g, "");
 
+/**
+ * Parte do dano que o monstro recebe, em %, quando a Divine Pride traz o atributo
+ * "Taking only 1% of the damage dealt to it"; null quando não traz.
+ * @param atributos campo `attributes` da resposta
+ */
+function danoRecebido(atributos: unknown): number | null {
+  if (!Array.isArray(atributos)) return null;
+  for (const atributo of atributos) {
+    const achado =
+      typeof atributo === "string" ? /only\s+(\d{1,3})\s*%\s+of\s+the\s+damage/i.exec(atributo) : null;
+    if (achado?.[1] !== undefined) return numero(100, achado[1]);
+  }
+  return null;
+}
+
 function numero(max: number, ...valores: unknown[]): number | null {
   for (const valor of valores) {
     const n = typeof valor === "string" && valor.trim() !== "" ? Number(valor) : valor;
@@ -91,8 +106,8 @@ function daLista<T>(lista: readonly T[], nomes: Readonly<Record<string, T>>, val
 
 /**
  * Lê a resposta de `/api/database/Monster/{id}` da Divine Pride. Aceita os dois formatos conhecidos:
- * campos soltos com texto (`race: "Plant"`, `size`, `element` + `elementLevel`, `def`, `mDef`), como
- * a documentação pública mostra, e o objeto `stats` com números (`race`, `scale`, `element` no código
+ * campos soltos com texto (`race: "Plant"`, `size`, `element: "Water 1"` + `elementLevel`, `def`,
+ * `mDef`, `attributes`), que é o que a API devolve (conferido em 2026-11-21), e o objeto `stats` com números (`race`, `scale`, `element` no código
  * do cliente, nível × 20 + propriedade). O que não der para ler fica null.
  * @param corpo JSON devolvido pela API
  */
@@ -141,7 +156,7 @@ export function lerMonstroDivinePride(corpo: unknown): DadosMonstro | null {
     elemento,
     nivelElemento,
     chefe,
-    danoRecebidoPct: null,
+    danoRecebidoPct: danoRecebido(raiz["attributes"]),
   };
   return dados.nome === null && dados.nivel === null && dados.hp === null ? null : dados;
 }
@@ -243,7 +258,11 @@ export class MonstrosService {
     return true;
   }
 
-  /** Busca na API e guarda. A URL leva a chave, então os avisos no log dizem só o ID. */
+  /**
+   * Busca na API e guarda. A URL leva a chave, então os avisos no log dizem só o ID. De um chefe de
+   * referência ficam o nome e o HP citados: a API devolve o nome em coreano para o que ainda não
+   * saiu no servidor configurado, e o HP dela é o do banco de dados, não o da instância.
+   */
   private async buscarEGuardar(
     idJogo: number,
     { chave: chaveApi, servidor }: { chave: string; servidor: string },
@@ -282,14 +301,16 @@ export class MonstrosService {
       this.log.warn(`Resposta da Divine Pride para o monstro ${idJogo} fora do formato esperado.`);
       return guardado;
     }
+    const referencia = guardado?.origem === "REFERENCIA" ? guardado : null;
+    const hp = referencia?.hp ?? dados.hp;
     const linha = {
-      nome: dados.nome ?? guardado?.nome ?? null,
+      nome: referencia?.nome ?? dados.nome ?? guardado?.nome ?? null,
       existe: true,
       origem: "DIVINE_PRIDE",
       servidor,
       fonte: `https://www.divine-pride.net/database/monster/${idJogo}`,
       nivel: dados.nivel,
-      hp: dados.hp === null ? null : BigInt(dados.hp),
+      hp: hp === null ? null : BigInt(hp),
       def: dados.def,
       mdef: dados.mdef,
       vit: dados.vit ?? guardado?.vit ?? null,
@@ -301,7 +322,7 @@ export class MonstrosService {
       elemento: dados.elemento,
       nivelElemento: dados.nivelElemento,
       chefe: dados.chefe,
-      danoRecebidoPct: guardado?.danoRecebidoPct ?? null,
+      danoRecebidoPct: dados.danoRecebidoPct ?? guardado?.danoRecebidoPct ?? null,
       buscadoEm: new Date(),
     };
     return daLinha(

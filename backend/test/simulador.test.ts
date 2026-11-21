@@ -17,14 +17,15 @@ const PORING = {
   name: "Poring",
   level: 1,
   race: "Plant",
-  element: "Water",
+  element: "Water 1",
   elementLevel: 1,
   size: "Medium",
   type: "Normal",
+  attributes: [],
   health: 50,
   def: 0,
   mDef: 5,
-  region: "bRO",
+  region: "LATAM",
 };
 
 /** Resposta no formato com `stats` numérico (códigos do cliente do jogo). */
@@ -47,7 +48,50 @@ const DRAGAO = {
   },
 };
 
+/** Campos da resposta real da API para o Betelgeuse (x-server LATAM, 2026-11-21). */
+const BETELGEUSE_REAL = {
+  id: 20994,
+  name: "베텔기우스",
+  availableServers: ["GGH", "iRO", "kROM", "kROZS", "thROG", "twRO"],
+  level: 250,
+  race: "Dragon",
+  element: "Neutral 2",
+  elementLevel: 2,
+  size: "Large",
+  type: "MVP",
+  attributes: ["Taking only 1% of the damage dealt to it"],
+  health: 2_000_000_000,
+  magicHealth: null,
+  def: 346,
+  mDef: 102,
+  res: 500,
+  mRes: 500,
+  vit: 132,
+  int: 152,
+  region: "LATAM",
+};
+
 describe("leitura do monstro da Divine Pride", () => {
+  it("resposta real da API: propriedade com o nível no texto e dano recebido nos atributos", () => {
+    expect(lerMonstroDivinePride(BETELGEUSE_REAL)).toEqual({
+      nome: "베텔기우스",
+      nivel: 250,
+      hp: 2_000_000_000,
+      def: 346,
+      mdef: 102,
+      vit: 132,
+      int: 152,
+      res: 500,
+      mres: 500,
+      raca: "DRAGAO",
+      tamanho: "GRANDE",
+      elemento: "NEUTRO",
+      nivelElemento: 2,
+      chefe: true,
+      danoRecebidoPct: 1,
+    });
+  });
+
   it("formato com campos soltos e texto", () => {
     expect(lerMonstroDivinePride(PORING)).toEqual({
       nome: "Poring",
@@ -365,13 +409,14 @@ describe("Simulação de dano (D57)", () => {
       expect(ctx.divinePride.chamadas).toHaveLength(5);
     });
 
-    it("a resposta da API substitui a referência, mantendo o que só a referência tem", async () => {
+    it("a resposta da API substitui a referência, mantendo o nome, o HP da instância e o que só a referência tem", async () => {
       ctx.divinePride.monstros.set(20996, {
         status: 200,
         corpo: {
           ...PORING,
           id: 20996,
-          name: "Naght Sieger Mutante",
+          name: "변종 나흐트 지거",
+          attributes: ["Taking only 10% of the damage dealt to it"],
           level: 250,
           health: 2_000_000_000,
           def: 400,
@@ -379,14 +424,14 @@ describe("Simulação de dano (D57)", () => {
       });
       const r = await ler("/api/simulador/monstros/20996").expect(200);
       expect(r.body).toMatchObject({
-        nome: "Naght Sieger Mutante",
+        nome: "Naght Sieger",
         origem: "DIVINE_PRIDE",
-        hp: 2_000_000_000,
+        hp: 300_000_000,
         def: 400,
         vit: 90,
         res: 300,
         mres: 200,
-        danoRecebidoPct: 100,
+        danoRecebidoPct: 10,
       });
     });
 
@@ -406,7 +451,7 @@ describe("Simulação de dano (D57)", () => {
       expect(r.body).toMatchObject({
         idMonstro: 20994,
         nome: "Betelgeuse",
-        monstro: { origem: "DIVINE_PRIDE", hp: 2_000_000_000, raca: "DRAGAO", danoRecebidoPct: 1 },
+        monstro: { origem: "DIVINE_PRIDE", hp: 1_100_000_000, raca: "DRAGAO", danoRecebidoPct: 1 },
       });
     });
 
