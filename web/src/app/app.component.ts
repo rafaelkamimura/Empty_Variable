@@ -81,6 +81,9 @@ export function painelDaUrl(url: string): Painel {
           >
             <app-icone nome="usuarios" /> <span>Inst&acirc;ncias</span>
           </a>
+          <a class="item" routerLink="/farm" routerLinkActive="ativo" ariaCurrentWhenActive="page">
+            <app-icone nome="ampulheta" /> <span>Di&aacute;rio de farm</span>
+          </a>
         </nav>
       }
       <main class="principal">
