@@ -326,6 +326,26 @@ describe("Simulação de dano (D57)", () => {
       expect(betelgeuse.body).toMatchObject({ nome: "Demi Freya", danoRecebidoPct: 1 });
     });
 
+    it("loot: chefes e recompensas de cada instância vêm da browiki, sem a chave (D60)", async () => {
+      const lista = (await ler("/api/simulador/alvos").expect(200)).body.instancias;
+      const operacao = lista.find((i: { nome: string }) => i.nome === "Operação Destruição");
+      expect(operacao.chefes).toMatchObject([
+        { idMonstro: 21531, nome: "Aquila", fonte: "https://browiki.org/wiki/Operação_Destruição" },
+      ]);
+      const r = await ler(`/api/simulador/instancias/${operacao.id}/loot`).expect(200);
+      expect(r.body).toMatchObject({
+        fonte: "https://browiki.org/wiki/Operação_Destruição",
+        chefes: 1,
+        pendentes: 1,
+        itens: [
+          { idJogo: 1000608, nome: "Pétala de Flor Invernal", chance: null, recompensa: true, origens: [] },
+        ],
+      });
+      expect(lista.filter((i: { chefes: unknown[] }) => i.chefes.length > 0).length).toBeGreaterThanOrEqual(
+        45,
+      );
+    });
+
     it("loot sem a chave: nada sai para a internet e os chefes ficam pendentes (D60)", async () => {
       const t = await torre();
       const r = await ler(`/api/simulador/instancias/${t.id}/loot`).expect(200);
@@ -563,24 +583,28 @@ describe("Simulação de dano (D57)", () => {
           idJogo: 1232,
           nome: "Adaga do Algoz",
           chance: 0.0075,
+          recompensa: false,
           origens: [{ idMonstro: 1038, monstro: "Osíris", tipo: "COMUM", chance: 0.0075 }],
         },
         {
           idJogo: 1000396,
           nome: "Alma de Naght Sieger",
           chance: 0.05,
+          recompensa: false,
           origens: [{ idMonstro: 20996, monstro: "Naght Sieger", tipo: "MAPA", chance: 0.05 }],
         },
         {
           idJogo: 608,
           nome: "Semente de Yggdrasil",
           chance: 0.3,
+          recompensa: false,
           origens: [{ idMonstro: 1038, monstro: "Osíris", tipo: "MVP", chance: 0.3 }],
         },
         {
           idJogo: 25729,
           nome: "Sombridecon",
           chance: 0.2,
+          recompensa: false,
           origens: [
             { idMonstro: 20996, monstro: "Naght Sieger", tipo: "MAPA", chance: 0.2 },
             { idMonstro: 1038, monstro: "Osíris", tipo: "COMUM", chance: 0.005 },

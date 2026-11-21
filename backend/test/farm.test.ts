@@ -113,6 +113,25 @@ describe("Diário de farm", () => {
       ]);
     });
 
+    it("instância do catálogo já nasce com as recompensas dela nos drops (D60)", async () => {
+      const mausoleu = await ctx.prisma.instancia.upsert({
+        where: { codigo: "BROWIKI_MAUSOLEU_DAS_MAGOAS" },
+        create: { nome: "Mausoléu das Mágoas", codigo: "BROWIKI_MAUSOLEU_DAS_MAGOAS" },
+        update: {},
+      });
+      const i = await criarInstancia(ana, {
+        nome: "Mausoléu das Mágoas",
+        recarga: "DIARIA",
+        instanciaId: mausoleu.id,
+      });
+      const estado = (await ler("/api/farm/estado", ana)).body;
+      const criada = estado.instancias.find((x: { id: string }) => x.id === i.id);
+      const itens = estado.itens.filter((item: { id: string }) => criada.drops.includes(item.id));
+      expect(itens.map((item: { nome: string; idJogo: number }) => [item.nome, item.idJogo])).toEqual([
+        ["Mineas", 1000367],
+      ]);
+    });
+
     it("vários drops de uma vez: cria os itens que faltam e não repete os que já estão (D60)", async () => {
       const i = await criarInstancia(ana, { nome: "Torre", recarga: "SEMANAL" });
       await enviar("post", `/api/farm/instancias/${i.id}/drops`, ana, { nome: "Sombridecon" }).expect(201);

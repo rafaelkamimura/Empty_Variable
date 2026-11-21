@@ -64,6 +64,8 @@ export interface ItemLoot {
   nome: string | null;
   /** Maior chance entre os chefes que dropam o item, de 0 a 1. */
   chance: number | null;
+  /** Recompensa da própria instância (moeda ou prêmio dela), pela browiki. */
+  recompensa: boolean;
   origens: { idMonstro: number; monstro: string; tipo: "COMUM" | "MVP" | "MAPA"; chance: number | null }[];
 }
 

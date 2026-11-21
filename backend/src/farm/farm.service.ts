@@ -18,6 +18,7 @@ import {
   situacao,
 } from "@betel/farm";
 import { ehViolacaoUnicidade } from "../comum/filtro-prisma.js";
+import { LOOT_BROWIKI } from "../instancias/loot-browiki.js";
 import { PrismaService, type Tx } from "../prisma/prisma.service.js";
 import { DivinePrideService } from "./divine-pride.service.js";
 
@@ -228,9 +229,15 @@ export class FarmService {
     const personagens = await this.exigirPersonagens(usuario.id);
     const personagemIds = e.personagemIds ?? personagens.map((p) => p.id);
     await this.conferirPersonagens(usuario.id, personagemIds, this.prisma);
+    let recompensas: readonly (readonly [number, string])[] = [];
     if (e.instanciaId) {
-      const existe = await this.prisma.instancia.count({ where: { id: e.instanciaId } });
-      if (existe === 0) throw new BadRequestException("Instância do catálogo não encontrada.");
+      const doCatalogo = await this.prisma.instancia.findUnique({
+        where: { id: e.instanciaId },
+        select: { codigo: true },
+      });
+      if (doCatalogo === null) throw new BadRequestException("Instância do catálogo não encontrada.");
+      recompensas =
+        (doCatalogo.codigo === null ? undefined : LOOT_BROWIKI[doCatalogo.codigo])?.recompensas ?? [];
     }
     return this.prisma.$transaction(async (tx) => {
       // Uma instância excluída com histórico fica desativada; recriar com o mesmo nome a reativa.
@@ -247,10 +254,29 @@ export class FarmService {
       await tx.farmInstanciaPersonagem.createMany({
         data: personagemIds.map((personagemId) => ({ farmInstanciaId: id, personagemId })),
       });
+      if (!antiga) await this.adicionarRecompensas(tx, usuario.id, id, recompensas);
       return formatarInstancia(
         await tx.farmInstancia.findUniqueOrThrow({ where: { id }, select: SELECAO_INSTANCIA }),
       );
     });
+  }
+
+  /** D60: a instância que vem do catálogo já nasce com as recompensas dela (browiki) nos drops. */
+  private async adicionarRecompensas(
+    tx: Tx,
+    usuarioId: string,
+    farmInstanciaId: string,
+    recompensas: readonly (readonly [number, string])[],
+  ): Promise<void> {
+    let ordem = 0;
+    for (const [idJogo, nome] of recompensas) {
+      const item = await this.obterOuCriarItem(tx, usuarioId, { nome: nome.slice(0, 80), idJogo });
+      await tx.farmInstanciaDrop.upsert({
+        where: { farmInstanciaId_farmItemId: { farmInstanciaId, farmItemId: item.id } },
+        create: { farmInstanciaId, farmItemId: item.id, ordem: ++ordem },
+        update: {},
+      });
+    }
   }
 
   async atualizarInstancia(
