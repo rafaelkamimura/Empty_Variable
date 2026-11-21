@@ -6,7 +6,6 @@ import {
   inject,
   NgZone,
   signal,
-  viewChild,
 } from "@angular/core";
 import { MatTabsModule } from "@angular/material/tabs";
 import { RouterLink } from "@angular/router";
@@ -23,6 +22,7 @@ import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
 import type { EstadoFarm } from "../data/farm.modelos";
 import { FarmStore } from "../data/farm.store";
 import { HojeAbaComponent } from "./hoje.aba";
+import { RascunhoHoje } from "./rascunho-hoje";
 
 const ABAS = ["hoje", "totais", "cadastro", "importar"] as const;
 type Aba = (typeof ABAS)[number];
@@ -35,6 +35,7 @@ type Aba = (typeof ABAS)[number];
 @Component({
   selector: "app-farm-page",
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [RascunhoHoje],
   imports: [
     MatTabsModule,
     RouterLink,
@@ -57,6 +58,12 @@ type Aba = (typeof ABAS)[number];
         (tentarNovamente)="carregar()"
       >
         <ng-template uiEstadoPronto [tipo]="tela()" let-est>
+          @if (erro(); as mensagem) {
+            <ui-aviso class="aviso-recarga" tom="erro" titulo="Não foi possível atualizar.">
+              {{ mensagem }} Os dados abaixo podem estar desatualizados.
+              <button uiBotao tamanho="p" slot="acoes" (click)="carregar()">Tentar novamente</button>
+            </ui-aviso>
+          }
           @if (!est.vinculado) {
             <ui-aviso tom="info" titulo="Falta o vínculo com o seu jogador">
               O Diário usa os personagens do seu jogador. Peça o vínculo e, depois da aprovação, volte aqui.
@@ -71,18 +78,18 @@ type Aba = (typeof ABAS)[number];
             >
               <mat-tab label="Hoje">
                 <ng-template matTabContent>
-                  <app-farm-hoje class="aba" [(selecionado)]="personagem" (irPara)="irPara($event)" />
+                  <app-farm-hoje class="aba" (irPara)="irPara($event)" />
                 </ng-template>
               </mat-tab>
               <mat-tab label="Totais">
-                <ng-template matTabContent><app-farm-totais class="aba antiga" /></ng-template>
+                <ng-template matTabContent><app-farm-totais class="aba" /></ng-template>
               </mat-tab>
               <mat-tab label="Cadastro">
-                <ng-template matTabContent><app-farm-cadastro class="aba antiga" /></ng-template>
+                <ng-template matTabContent><app-farm-cadastro class="aba" /></ng-template>
               </mat-tab>
               <mat-tab label="Importar">
                 <ng-template matTabContent
-                  ><app-farm-importar class="aba antiga" (importado)="irPara('hoje')"
+                  ><app-farm-importar class="aba" (importado)="irPara('hoje')"
                 /></ng-template>
               </mat-tab>
             </mat-tab-group>
@@ -92,26 +99,27 @@ type Aba = (typeof ABAS)[number];
     </ui-pagina>
   `,
   styles: `
-    /* A aba Hoje já é grid (no próprio :host); as antigas precisam de bloco. */
+    /* Só o espaço do topo: cada aba define o próprio display (e o gap entre as seções). */
     .aba {
       padding-top: var(--esp-4);
     }
-    .antiga {
+    .aviso-recarga {
       display: block;
+      margin-bottom: var(--esp-4);
     }
   `,
 })
 export class FarmPage {
   protected readonly farm = inject(FarmStore);
-  private readonly hoje = viewChild(HojeAbaComponent);
   protected readonly erro = signal<string | null>(null);
   protected readonly indice = signal(0);
-  protected readonly personagem = signal("todos");
+  private readonly rascunho = inject(RascunhoHoje);
 
   protected readonly tela = computed<Carregavel<EstadoFarm>>(() => {
     const erro = this.erro();
     const est = this.farm.estado();
-    return erro !== null ? comErro(erro) : est ? pronto(est) : carregando();
+    // Com dados na tela, um erro ao recarregar vira aviso em cima deles (não os esconde).
+    return est ? pronto(est) : erro !== null ? comErro(erro) : carregando();
   });
   protected readonly relogio = computed(() => {
     const agora = this.farm.agora();
@@ -133,7 +141,7 @@ export class FarmPage {
       setInterval(() => {
         const antes = this.farm.hoje();
         this.farm.agora.set(Date.now());
-        if (this.farm.hoje() !== antes && !this.hoje()?.editorAberto())
+        if (this.farm.hoje() !== antes && this.rascunho.aberto() === null)
           void this.farm.carregar().catch(() => undefined);
       }, 30_000),
     );

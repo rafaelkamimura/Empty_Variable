@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, model, output, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from "@angular/core";
 import { formatarZeny, formatarZenyCompleto, RECARGAS, ROTULO_RECARGA, type Recarga } from "@betel/farm";
 import { Acao } from "../../../core/acao";
 import { Confirmacao } from "../../../core/confirmacao";
 import { mensagemDeErro } from "../../../core/modelos";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
+import { CartaoComponent } from "../../../shared/ui/cartao/cartao.component";
 import { ChipsFiltroComponent, type OpcaoChip } from "../../../shared/ui/chips-filtro/chips-filtro.component";
 import { ResumoComponent } from "../../../shared/ui/resumo/resumo.component";
 import { VazioComponent } from "../../../shared/ui/vazio/vazio.component";
@@ -21,6 +22,7 @@ import {
   nomesDosDrops,
 } from "../data/farm.modelos";
 import { FarmStore } from "../data/farm.store";
+import { RascunhoHoje } from "./rascunho-hoje";
 
 /** Aba "Hoje" do Diário de farm: o check-in das instâncias de cada personagem (D48–D50). */
 @Component({
@@ -28,6 +30,7 @@ import { FarmStore } from "../data/farm.store";
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     BotaoComponent,
+    CartaoComponent,
     ChipsFiltroComponent,
     ResumoComponent,
     VazioComponent,
@@ -38,14 +41,18 @@ import { FarmStore } from "../data/farm.store";
   template: `
     @if (farm.estado(); as est) {
       @if (est.instancias.length === 0) {
-        <ui-vazio
-          mensagem="Comece pelo cadastro: as instâncias que você faz, os itens que dropam e quem faz cada uma. Depois, volte aqui para o check-in."
-        >
-          <span slot="acao" class="acoes">
+        <ui-cartao class="comece">
+          <h2>Comece pelo cadastro</h2>
+          <ol>
+            <li>Cadastre as instâncias que você faz e o tipo de recarga de cada uma.</li>
+            <li>Liste os itens que costumam dropar. O preço de venda é opcional.</li>
+            <li>Marque quais personagens fazem cada instância e volte aqui para o check-in.</li>
+          </ol>
+          <div class="acoes">
             <button uiBotao variante="principal" (click)="irPara.emit('cadastro')">Ir para o cadastro</button>
             <button uiBotao (click)="irPara.emit('importar')">Importar do artefato</button>
-          </span>
-        </ui-vazio>
+          </div>
+        </ui-cartao>
       } @else {
         <ui-chips-filtro
           rotulo="Personagem"
@@ -154,8 +161,14 @@ import { FarmStore } from "../data/farm.store";
     .acoes {
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
       gap: var(--esp-2);
+    }
+    .comece ol {
+      display: grid;
+      gap: var(--esp-1);
+      margin: 0;
+      padding-left: var(--esp-5);
+      color: var(--texto);
     }
     .resumos {
       display: grid;
@@ -199,14 +212,14 @@ export class HojeAbaComponent {
 
   protected readonly recargas = RECARGAS;
   protected readonly rotuloRecarga = ROTULO_RECARGA;
-  /** Personagem escolhido (ou "todos"); fica na página para sobreviver à troca de aba. */
-  readonly selecionado = model("todos");
-  /** Cartão com o editor aberto: "personagem|instância". */
-  protected readonly aberto = signal<string | null>(null);
-  protected readonly editando = signal<CheckinFarm | null>(null);
-  protected readonly rascunho = signal<Record<string, string>>({});
-  protected readonly extras = signal<string[]>([]);
-  protected readonly lembrar = signal(true);
+  /** Rascunho do check-in e personagem escolhido: ficam na página, para sobreviver à troca de aba. */
+  private readonly estado = inject(RascunhoHoje);
+  protected readonly selecionado = this.estado.selecionado;
+  protected readonly aberto = this.estado.aberto;
+  protected readonly editando = this.estado.editando;
+  protected readonly rascunho = this.estado.rascunho;
+  protected readonly extras = this.estado.extras;
+  protected readonly lembrar = this.estado.lembrar;
   protected readonly enviando = signal(false);
 
   protected readonly checkinsHoje = computed(() =>
@@ -226,11 +239,6 @@ export class HojeAbaComponent {
       };
     }),
   ]);
-
-  /** A página está com o editor aberto (o relógio não recarrega o estado no meio da digitação). */
-  editorAberto(): boolean {
-    return this.aberto() !== null;
-  }
 
   protected curto(v: number): string {
     return formatarZeny(v);
@@ -286,19 +294,11 @@ export class HojeAbaComponent {
   }
 
   protected abrir(personagemId: string, i: InstanciaFarm, checkin: CheckinFarm | null): void {
-    this.aberto.set(this.chave(personagemId, i));
-    this.editando.set(checkin);
-    this.extras.set([]);
-    const r: Record<string, string> = {};
-    for (const d of checkin?.drops ?? []) r[d.farmItemId] = String(d.quantidade);
-    this.rascunho.set(r);
+    this.estado.abrir(this.chave(personagemId, i), checkin);
   }
 
   protected fechar(): void {
-    this.aberto.set(null);
-    this.editando.set(null);
-    this.rascunho.set({});
-    this.extras.set([]);
+    this.estado.fechar();
   }
 
   protected definir(itemId: string, valor: string): void {

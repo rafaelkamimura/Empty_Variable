@@ -130,4 +130,38 @@ describe("FarmPage", () => {
     expect(perguntar).toHaveBeenCalled();
     http.expectNone("/api/farm/checkins/c1");
   });
+
+  it("o rascunho do check-in sobrevive à troca de aba", async () => {
+    const { http, el } = montar();
+    http.expectOne("/api/farm/estado").flush(estado());
+    await esperar();
+    chip(el, "Lyra").click();
+    await esperar();
+    botao(el.querySelector("[data-testid='inst-Cripta']")!, "Check-in").click();
+    await esperar();
+    el.querySelector<HTMLButtonElement>("[aria-label='Mais Oridecon']")!.click();
+    await esperar();
+    (el.querySelectorAll("[role='tab']")[2] as HTMLElement).click();
+    await esperar();
+    http.match(() => true).forEach((r) => r.flush([]));
+    expect(el.querySelector("app-farm-hoje")).toBeNull();
+    (el.querySelectorAll("[role='tab']")[0] as HTMLElement).click();
+    await esperar();
+    const campo = el.querySelector<HTMLInputElement>("[data-testid='inst-Cripta'] input[type='number']");
+    expect(campo?.value).toBe("1");
+  });
+
+  it("erro ao recarregar mantém os dados na tela, com um aviso por cima", async () => {
+    const { http, el, f } = montar();
+    http.expectOne("/api/farm/estado").flush(estado());
+    await esperar();
+    chip(el, "Lyra").click();
+    await esperar();
+    void f.componentInstance.carregar();
+    http.expectOne("/api/farm/estado").flush("falhou", { status: 500, statusText: "Erro" });
+    await esperar();
+    await esperar();
+    expect(el.textContent).toContain("Não foi possível atualizar.");
+    expect(el.querySelector("[data-testid='inst-Cripta']")).not.toBeNull();
+  });
 });
