@@ -53,4 +53,15 @@ describe("CampoSalvoComponent", () => {
     expect(salvar).toHaveBeenCalledWith(2000);
     expect(campo.value).toBe("1.000");
   });
+
+  it("o mesmo valor enquanto a gravação anterior não volta não é mandado de novo", async () => {
+    const { salvar, digitar } = montar(true);
+    let liberar: (ok: boolean) => void = () => undefined;
+    salvar.and.returnValue(new Promise<boolean>((r) => (liberar = r)));
+    digitar("2k");
+    digitar("2k");
+    expect(salvar).toHaveBeenCalledTimes(1);
+    liberar(true);
+    await esperar();
+  });
 });
