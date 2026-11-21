@@ -302,6 +302,10 @@ const SLOTS = [
                       rows="4"
                     ></textarea>
                   </label>
+                  <ng-container
+                    [ngTemplateOutlet]="importarFicha"
+                    [ngTemplateOutletContext]="{ $implicit: ficha }"
+                  />
                 }
               }
               @if (erroFicha(); as mensagem) {
@@ -364,6 +368,9 @@ const SLOTS = [
             <small id="limite-nivel-base">De 1 a 250</small>
           </label>
         </div>
+      </ng-template>
+
+      <ng-template #importarFicha let-ficha>
         <div class="importar-build">
           <label class="campo"
             >Importar do simulador
@@ -606,7 +613,7 @@ export class VinculoComponent implements OnInit {
   readonly secoes = [
     { id: "dados", rotulo: "Personagem" },
     { id: "equipamentos", rotulo: "Equipamentos" },
-    { id: "notas", rotulo: "Notas" },
+    { id: "notas", rotulo: "Build" },
   ] as const;
   readonly secaoFicha = signal<(typeof this.secoes)[number]["id"]>("dados");
   readonly slotAtivo = signal<(typeof SLOTS)[number]>(SLOTS[0]);
