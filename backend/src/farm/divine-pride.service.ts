@@ -56,11 +56,16 @@ export class DivinePrideService {
     idJogo: number,
     { chave, servidor }: { chave: string; servidor: string },
   ): Promise<string | null> {
-    const url = `${API}/${idJogo}?apiKey=${encodeURIComponent(chave)}&server=${encodeURIComponent(servidor)}`;
+    // Como levantado no Épico IV (§1.1): chave em `apiKey` e servidor no cabeçalho `x-server`.
+    const url = `${API}/${idJogo}?apiKey=${encodeURIComponent(chave)}`;
     let resposta: RespostaDivinePride;
     try {
       resposta = await this.buscar(url, {
-        headers: { Accept: "application/json", "User-Agent": "EmptyVariable/1.0 (diario de farm)" },
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "EmptyVariable/1.0 (diario de farm)",
+          "x-server": servidor,
+        },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch {

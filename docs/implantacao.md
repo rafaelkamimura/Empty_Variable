@@ -37,6 +37,7 @@ Preencha o `.env.producao`:
 - `SESSION_SECRET`: gere com `openssl rand -base64 48`.
 - `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` e `DISCORD_GUILD_ID`.
 - `ADMIN_DISCORD_IDS`: o seu ID do Discord (e o de outros admins, separados por vírgula). Quem estiver aqui vira admin ao entrar.
+- `DIVINE_PRIDE_API_KEY` (opcional): chave da API da Divine Pride. Com ela, o Diário de farm mostra o nome do item ao digitar o ID (D53). Sem ela, a busca usa só os itens já conhecidos.
 
 Suba tudo:
 

@@ -55,6 +55,13 @@ Fonte única de verdade para todos os agentes. Agentes técnicos não alteram re
 | D45 | Épico IV: funções e ranks | APROVADO 2026-11-16 | Cada instância tem a própria tabela de funções e ranks. A Torre herda a tabela de hoje; uma instância nova começa vazia | epico4 §3 |
 | D46 | Épico IV: versionamento | APROVADO 2026-11-16 | Multiplicadores dos encontros e a tabela de funções e ranks de cada instância são versionados: mudar cria uma versão que vale para as runs seguintes; as runs gravam a versão usada (D2) | epico4 §3 |
 | D47 | Transferências da carteira | APROVADO 2026-11-18 | Jogadores vinculados podem transferir pontos inteiros a outro jogador com vínculo ativo, até o saldo disponível. Envio imediato, sem taxa, com confirmação prévia e registro nas duas carteiras. | Carteira |
+| D48 | Diário de farm: escopo | APROVADO 2026-11-20 (usuário) | Cada membro controla o próprio farm de instâncias (check-in, drops e totais). Os dados são só dele: nem outros membros nem admins os veem. Não mexe em pontos, loja nem estoque | planejamento/epico5-farm.md |
+| D49 | Diário de farm: personagens | APROVADO 2026-11-20 (usuário) | Usa os personagens ativos do vínculo aprovado (D12). Sem vínculo, a tela pede o vínculo | epico5 §2 |
+| D50 | Diário de farm: instâncias | APROVADO 2026-11-20 (usuário) | Cada membro cadastra as próprias instâncias, podendo partir de uma instância do catálogo do grupo (D43). Excluir uma instância com check-ins só a desativa | epico5 §2 |
+| D51 | Diário de farm: recarga | APROVADO 2026-11-20 (usuário) | Horário do servidor: Brasília (UTC-3), o dia vira às 04:00. Diária libera no dia seguinte; 3 dias libera no dia do check-in + 3 (quinta → domingo); semanal vira na segunda; mensal vira no dia 1 | epico5 §3 |
+| D52 | Diário de farm: preços | APROVADO 2026-11-20 (usuário) | Preço de venda em zeny por item, opcional e pessoal, separado dos pontos da loja. Itens sem preço entram na quantidade e ficam fora do valor | epico5 §2 |
+| D53 | Diário de farm: busca de itens | APROVADO 2026-11-20 (usuário) | A busca junta os itens do membro, o catálogo do grupo e o nome pelo ID na API da Divine Pride (com DIVINE_PRIDE_API_KEY, opcional, guardado em cache como as imagens da D41). Ajusta a D42: a chave passa a ser usada quando configurada | epico5 §4 |
+| D54 | Diário de farm: migração do artefato | APROVADO 2026-11-20 (usuário) | O artefato Diário de Instâncias continua no ar. Ele exporta um backup completo, e o membro o importa escolhendo o personagem do vínculo de cada um; repetir a importação não duplica | epico5 §5 |
 
 ## Esclarecimentos do orquestrador (2026-11-14)
 

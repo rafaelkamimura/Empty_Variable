@@ -87,10 +87,12 @@ export class BuscadorImagemFalso {
 /** Dublê da API da Divine Pride (D53): respostas por ID; sem resposta configurada, 404. */
 export class DivinePrideFalso {
   readonly chamadas: string[] = [];
+  readonly servidores: (string | undefined)[] = [];
   readonly respostas = new Map<number, { status: number; corpo?: unknown } | "falha">();
 
-  readonly buscar = async (url: string) => {
+  readonly buscar = async (url: string, init?: RequestInit) => {
     this.chamadas.push(url);
+    this.servidores.push((init?.headers as Record<string, string> | undefined)?.["x-server"]);
     const id = Number(/\/Item\/(\d+)/.exec(url)?.[1]);
     const r = this.respostas.get(id) ?? { status: 404 };
     if (r === "falha") throw new Error("rede indisponível");

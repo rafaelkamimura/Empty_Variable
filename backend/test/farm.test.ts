@@ -247,7 +247,7 @@ describe("Diário de farm", () => {
     let cookie: string;
 
     beforeAll(async () => {
-      dp = await criarApp({ divinePride: { chave: "chave-secreta", servidor: "LATAM" } });
+      dp = await criarApp({ divinePride: { chave: "chave-secreta", servidor: "bRO" } });
     });
     afterAll(async () => {
       await dp.fechar();
@@ -255,6 +255,7 @@ describe("Diário de farm", () => {
     beforeEach(async () => {
       await dp.limparBanco();
       dp.divinePride.chamadas.length = 0;
+      dp.divinePride.servidores.length = 0;
       dp.divinePride.respostas.clear();
       cookie = await dp.login("3001", "ana");
     });
@@ -267,8 +268,9 @@ describe("Diário de farm", () => {
         resultados: [{ nome: "Oridecon", idJogo: 984, origem: "divine-pride", farmItemId: null }],
       });
       expect(dp.divinePride.chamadas).toEqual([
-        "https://www.divine-pride.net/api/database/Item/984?apiKey=chave-secreta&server=LATAM",
+        "https://www.divine-pride.net/api/database/Item/984?apiKey=chave-secreta",
       ]);
+      expect(dp.divinePride.servidores).toEqual(["bRO"]);
       await dp.http().get("/api/farm/itens/busca?q=984").set("Cookie", cookie).expect(200);
       expect(dp.divinePride.chamadas).toHaveLength(1);
       const porNome = await dp.http().get("/api/farm/itens/busca?q=ORIDE").set("Cookie", cookie).expect(200);
