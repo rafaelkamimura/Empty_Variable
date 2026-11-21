@@ -13,6 +13,7 @@ import {
 } from "./dados-iniciais.js";
 import { MULTIPLICADORES_TORRE_V1 } from "@betel/scoring";
 import { CODIGO_TORRE, PREFIXO_BROWIKI } from "../instancias/instancias.service.js";
+import { LOOT_BROWIKI } from "../instancias/loot-browiki.js";
 import { REFERENCIA_BROWIKI } from "../instancias/referencia-browiki.js";
 import { CHEFES_DE_REFERENCIA } from "../simulador/chefes-referencia.js";
 import { FONTE_LATAM_TOOLS, MAPAS_TORRE, MONSTROS_LATAM_TOOLS } from "../simulador/monstros-latam-tools.js";
@@ -35,6 +36,8 @@ export interface ResultadoSeed {
   chefes: boolean;
   /** D58: monstros do simulador da latam-tools e os chefes da Torre que vêm de lá. */
   monstrosLatamTools: boolean;
+  /** D60: chefes de cada instância do catálogo, pela página dela na browiki. */
+  chefesBrowiki: boolean;
 }
 
 /** Código estável de uma instância do catálogo da browiki (ex.: "BROWIKI_GLASTHEIM_SOMBRIA"). */
@@ -300,6 +303,29 @@ export class SeedService implements OnApplicationBootstrap {
     return monstros.count > 0 || chefes.count > 0;
   }
 
+  /**
+   * D60: cadastra em cada instância do catálogo os chefes que a página dela na browiki nomeia.
+   * Só cria o que falta: chefe que o gestor removeu fica desativado e não volta.
+   */
+  private async garantirChefesBrowiki(tx: Tx): Promise<boolean> {
+    const instancias = await tx.instancia.findMany({
+      where: { codigo: { in: Object.keys(LOOT_BROWIKI) } },
+      select: { id: true, codigo: true },
+    });
+    const chefes = instancias.flatMap((instancia) => {
+      const loot = instancia.codigo === null ? undefined : LOOT_BROWIKI[instancia.codigo];
+      return (loot?.chefes ?? []).map(([idMonstro, nome]) => ({
+        instanciaId: instancia.id,
+        idMonstro,
+        nome,
+        fonte: loot?.fonte ?? null,
+      }));
+    });
+    if (chefes.length === 0) return false;
+    const criados = await tx.chefeInstancia.createMany({ data: chefes, skipDuplicates: true });
+    return criados.count > 0;
+  }
+
   async aplicar(): Promise<ResultadoSeed> {
     return this.prisma.$transaction(async (tx) => {
       // Trava para duas instâncias subindo juntas não semearem em dobro.
@@ -315,6 +341,7 @@ export class SeedService implements OnApplicationBootstrap {
         instanciasBrowiki: false,
         chefes: false,
         monstrosLatamTools: false,
+        chefesBrowiki: false,
       };
 
       if ((await tx.configPontuacao.count()) === 0) {
@@ -373,6 +400,7 @@ export class SeedService implements OnApplicationBootstrap {
       }
       r.chefes = await this.garantirChefes(tx);
       r.monstrosLatamTools = await this.garantirMonstrosLatamTools(tx);
+      r.chefesBrowiki = await this.garantirChefesBrowiki(tx);
       return r;
     });
   }

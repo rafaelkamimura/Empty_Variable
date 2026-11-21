@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
+import { LOOT_BROWIKI } from "../instancias/loot-browiki.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { MonstrosService } from "./monstros.service.js";
 
@@ -20,11 +21,15 @@ export interface ItemLoot {
   nome: string | null;
   /** Maior chance entre os chefes que dropam o item, de 0 a 1. */
   chance: number | null;
+  /** Recompensa da própria instância (moeda ou prêmio dela), pela página da browiki. */
+  recompensa: boolean;
   origens: { idMonstro: number; monstro: string; tipo: TipoDrop; chance: number | null }[];
 }
 
 export interface LootInstancia {
   instancia: { id: string; nome: string };
+  /** Página da browiki de onde vêm as recompensas da instância; null se não há. */
+  fonte: string | null;
   /** Chefes ativos da instância e quantos ainda não tiveram os drops buscados. */
   chefes: number;
   pendentes: number;
@@ -103,8 +108,8 @@ function dropsGuardados(itens: Prisma.JsonValue): DropMonstro[] {
 }
 
 /**
- * D60: lista de loot de uma instância, montada com os drops dos chefes cadastrados nela. Os drops
- * vêm da Divine Pride (servidor LATAM), um monstro por vez, e ficam guardados.
+ * D60: lista de loot de uma instância: as recompensas dela (página da browiki) e os drops dos chefes
+ * cadastrados nela. Os drops vêm da Divine Pride (servidor LATAM), um monstro por vez, e ficam guardados.
  */
 @Injectable()
 export class LootService {
@@ -124,6 +129,7 @@ export class LootService {
       select: {
         id: true,
         nome: true,
+        codigo: true,
         chefes: { where: { ativo: true }, orderBy: { nome: "asc" }, select: { idMonstro: true, nome: true } },
       },
     });
@@ -154,13 +160,18 @@ export class LootService {
       else pendentes++;
     }
 
+    const referencia = instancia.codigo === null ? undefined : LOOT_BROWIKI[instancia.codigo];
     const itens = new Map<number, ItemLoot>();
+    for (const [idJogo, nome] of referencia?.recompensas ?? []) {
+      itens.set(idJogo, { idJogo, nome, chance: null, recompensa: true, origens: [] });
+    }
     for (const chefe of instancia.chefes) {
       for (const drop of drops.get(chefe.idMonstro) ?? []) {
         const item = itens.get(drop.idItem) ?? {
           idJogo: drop.idItem,
           nome: drop.nome,
           chance: null,
+          recompensa: false,
           origens: [],
         };
         item.nome ??= drop.nome;
@@ -176,11 +187,15 @@ export class LootService {
     }
     return {
       instancia: { id: instancia.id, nome: instancia.nome },
+      fonte: referencia?.fonte ?? null,
       chefes: ids.length,
       pendentes,
       divinePride: this.monstros.configurada,
       itens: [...itens.values()].sort(
-        (a, b) => (a.nome ?? "").localeCompare(b.nome ?? "", "pt-BR") || a.idJogo - b.idJogo,
+        (a, b) =>
+          Number(b.recompensa) - Number(a.recompensa) ||
+          (a.nome ?? "").localeCompare(b.nome ?? "", "pt-BR") ||
+          a.idJogo - b.idJogo,
       ),
     };
   }
