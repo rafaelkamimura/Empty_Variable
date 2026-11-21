@@ -18,7 +18,7 @@ import {
 import { Acao } from "../core/acao";
 import { type CheckinFarm, type InstanciaFarm, type SituacaoCard, FarmStore } from "../core/farm";
 import { FarmBuscaItemComponent, type ItemEscolhido } from "../core/farm-busca-item.component";
-import { ImagemItemComponent } from "../core/imagem-item.component";
+import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 import { mensagemDeErro } from "../core/modelos";
 import { FarmCadastroComponent } from "./farm-cadastro.component";
 import { FarmImportarComponent } from "./farm-importar.component";

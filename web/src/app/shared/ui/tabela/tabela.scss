@@ -13,6 +13,27 @@ table.ui-tabela {
   }
 }
 
+// Aparência base das células. :where() deixa a especificidade em zero: o mat-table e as tabelas
+// antigas, que têm estilo próprio, continuam como estão; as telas novas não precisam de CSS.
+:where(table.ui-tabela) :where(th, td) {
+  padding: var(--esp-2) var(--esp-3);
+  border-bottom: 1px solid var(--borda);
+  text-align: left;
+  vertical-align: middle;
+}
+
+:where(table.ui-tabela) :where(th) {
+  font-size: var(--fs-s);
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+// Números alinhados à direita e em colunas (diretrizes §6.5). Fora do modo cartão.
+:where(table.ui-tabela) :where(th, td).numero {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 @container conteudo (max-width: 760px) {
   table.ui-tabela {
     thead {

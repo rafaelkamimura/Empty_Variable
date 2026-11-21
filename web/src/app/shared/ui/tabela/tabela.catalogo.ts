@@ -9,11 +9,11 @@ import { TabelaDirective } from "./tabela.directive";
   imports: [TabelaDirective, BotaoComponent],
   template: `
     <p class="meta">Abaixo de 760 px de conteúdo, cada linha vira um cartão "rótulo: valor".</p>
-    <table uiTabela class="exemplo">
+    <table uiTabela>
       <thead>
         <tr>
           <th>Item</th>
-          <th class="num">Quantidade</th>
+          <th class="numero">Quantidade</th>
           <th>Origem</th>
           <th></th>
         </tr>
@@ -22,7 +22,7 @@ import { TabelaDirective } from "./tabela.directive";
         @for (l of linhas; track l.item) {
           <tr>
             <td>{{ l.item }}</td>
-            <td class="num">{{ l.qtd }}</td>
+            <td class="numero">{{ l.qtd }}</td>
             <td>{{ l.origem }}</td>
             <td><button uiBotao variante="fantasma" tamanho="p">Editar</button></td>
           </tr>
@@ -38,21 +38,6 @@ import { TabelaDirective } from "./tabela.directive";
     .meta {
       margin: 0;
       color: var(--texto-suave);
-    }
-    .exemplo th,
-    .exemplo td {
-      padding: var(--esp-2) var(--esp-3);
-      border-bottom: 1px solid var(--borda);
-      text-align: left;
-    }
-    .exemplo th {
-      font-size: var(--fs-s);
-      color: var(--texto-suave);
-      font-weight: 600;
-    }
-    .num {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
     }
   `,
 })

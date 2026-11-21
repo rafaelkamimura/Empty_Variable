@@ -13,7 +13,7 @@ import { type ItemCatalogo, TIPOS_ITEM, type TipoItem } from "../core/cadastros"
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
-import { ImagemItemComponent } from "../core/imagem-item.component";
+import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 
 /** Item ativo cuja negociabilidade ou vínculo à conta ainda não foi verificado no jogo. */
 export const itemAConferir = (i: ItemCatalogo): boolean =>

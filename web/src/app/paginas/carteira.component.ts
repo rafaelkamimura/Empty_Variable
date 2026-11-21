@@ -5,7 +5,7 @@ import { FormsModule } from "@angular/forms";
 import { MatTabsModule } from "@angular/material/tabs";
 import { firstValueFrom } from "rxjs";
 import { AuthService } from "../core/auth.service";
-import { ROTULO_STATUS_COMPRA, type Compra } from "../core/loja";
+import { ROTULO_STATUS_COMPRA, type Compra } from "../features/loja/data/loja.modelos";
 import { mensagemDeErro } from "../core/modelos";
 import type { Extrato } from "../core/runs";
 import { SaldoService } from "../core/saldo.service";

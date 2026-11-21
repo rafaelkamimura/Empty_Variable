@@ -297,7 +297,7 @@ O projeto usa o vocabulário do Atomic Design para decidir **o que um componente
 
 O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no código atual.
 
-**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Na etapa 4 entraram `ui-marca` e o pipe `pontos` (`shared/pipes/pontos.pipe.ts`). Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
+**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Na etapa 4 entraram `ui-marca` e o pipe `pontos` (`shared/pipes/pontos.pipe.ts`). Com a loja: `ui-badge`, `ui-campo` (com a diretiva `uiCampo` no controle) e `ui-confirmacao` (aberto pelo serviço `Confirmacao`, em `core/confirmacao.ts`). `app-icone`, `app-imagem-item` e `visual.ts` já estão em `shared/dominio/`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
 
 | Componente                | Nível | Responsabilidade                                                                  | Substitui hoje                                       |
 | ------------------------- | --------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
@@ -315,7 +315,7 @@ O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no c
 | `ui-painel-lateral`       | Organismo | Formulário de criar e editar à direita, com o foco preso e devolvido ao fechar     | `app-painel-lateral` (de `core/layout.ts`)           |
 | `ui-como-funciona`        | Molécula | Explicação recolhida                                                              | `app-como-funciona` (de `core/layout.ts`)            |
 | `ui-confirmacao`          | Organismo | Diálogo de confirmação para ações destrutivas, com descrição do efeito            | `confirm()` e confirmações ad hoc                    |
-| `table[uiTabela]`         | Organismo | Tabela responsiva. É **diretiva**, porque também vai em `<table mat-table>`; o estilo fica em `tabela/tabela.scss`, escopado em `table.ui-tabela` e carregado por `styles.scss` | `appResponsiva`, `.tabela-responsiva` |
+| `table[uiTabela]`         | Organismo | Tabela responsiva. É **diretiva**, porque também vai em `<table mat-table>`; o estilo fica em `tabela/tabela.scss`, escopado em `table.ui-tabela` e carregado por `styles.scss`. Dá a aparência base das células com especificidade zero (`:where`), e `class="numero"` alinha números à direita | `appResponsiva`, `.tabela-responsiva` |
 | `ui-badge`                | Átomo | Rótulo de status com tom semântico                                                | chips de status de compra e run                      |
 | `ui-marca`                | Átomo | Logotipo `{∅_}` com o cursor animado                                              | (novo)                                               |
 | Pipes `pontos` e `zeny`   | — | Formatação pt-BR com sufixo e `tabular-nums`                                      | `number` + " pts" repetido                           |
@@ -488,7 +488,7 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 3. **Peças base.** *(feita)* Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
 3. **Casca.** *(feita: `layout/casca`, `layout/topo`, `layout/menu-lateral` e `features/acesso/paginas/login.page.ts`)* Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
 4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
-   - loja e carteira;
+   - loja *(feita: `features/loja`)* e carteira;
    - farm;
    - Nebula;
    - instâncias e gestão;

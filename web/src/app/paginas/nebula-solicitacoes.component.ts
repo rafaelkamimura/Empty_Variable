@@ -5,10 +5,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
-import { IconeComponent } from "../core/icone.component";
+import { IconeComponent } from "../shared/dominio/icone.component";
 import { mensagemDeErro } from "../core/modelos";
 import { ROTULO_STATUS_NEBULA, type SolicitacaoNebula, type StatusSolicitacaoNebula } from "../core/nebula";
-import { tomDe } from "../core/visual";
+import { tomDe } from "../shared/dominio/visual";
 
 type Filtro = StatusSolicitacaoNebula | "TODAS";
 

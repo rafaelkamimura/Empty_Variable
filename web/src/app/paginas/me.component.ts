@@ -5,7 +5,7 @@ import { firstValueFrom } from "rxjs";
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { mensagemDeErro, type SituacaoVinculo } from "../core/modelos";
 import type { Extrato } from "../core/runs";
-import { siglaDaClasse, tomDe } from "../core/visual";
+import { siglaDaClasse, tomDe } from "../shared/dominio/visual";
 import { ExtratoComponent } from "./extrato.component";
 
 /**

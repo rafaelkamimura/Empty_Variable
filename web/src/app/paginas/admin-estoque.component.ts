@@ -25,7 +25,7 @@ import {
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
-import { ImagemItemComponent } from "../core/imagem-item.component";
+import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 
 /**
  * US-09 / T-29: estoque do grupo. Entradas, ajustes com motivo e histórico de movimentos.

@@ -1,6 +1,6 @@
 import { Component, inject, input, output, signal } from "@angular/core";
 import { type ResultadoBuscaItem, FarmStore } from "./farm";
-import { ImagemItemComponent } from "./imagem-item.component";
+import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 
 export interface ItemEscolhido {
   nome: string;

@@ -8,7 +8,12 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
-import { type Compra, origemCompra, ROTULO_STATUS_COMPRA, type StatusCompra } from "../core/loja";
+import {
+  type Compra,
+  origemCompra,
+  ROTULO_STATUS_COMPRA,
+  type StatusCompra,
+} from "../features/loja/data/loja.modelos";
 import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 

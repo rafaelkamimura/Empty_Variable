@@ -13,7 +13,7 @@ import {
 } from "@betel/farm";
 import { Acao } from "../core/acao";
 import { type CheckinFarm, FarmStore } from "../core/farm";
-import { ImagemItemComponent } from "../core/imagem-item.component";
+import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 import { mensagemDeErro } from "../core/modelos";
 
 /** Totais do farm por dia, semana (segunda a domingo) ou mês, da conta inteira ou de um personagem. */
