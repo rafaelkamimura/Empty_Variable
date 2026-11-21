@@ -58,7 +58,7 @@ Pacote puro, usado pela API (para recusar check-in repetido) e pelo site (para p
 
 Todo id recebido é conferido contra o usuário da sessão; o que é de outra pessoa responde 404 ou 400. Sem vínculo aprovado, o estado vem vazio e as escritas respondem 403.
 
-**Divine Pride (D53).** Com `DIVINE_PRIDE_API_KEY`, digitar um ID na busca consulta `GET /api/database/Item/{id}?apiKey=...` (servidor no cabeçalho `x-server`, padrão `bRO`, configurável em `DIVINE_PRIDE_SERVER`). Cada ID é buscado uma vez e guardado; ID desconhecido é revisto depois de uma semana; falha de rede não é guardada. A chave nunca aparece em log. Sem a chave, nada sai para a internet e a busca usa só os itens conhecidos. Os ícones continuam vindo pelo ID, sem chave (D41).
+**Divine Pride (D53).** Com `DIVINE_PRIDE_API_KEY`, digitar um ID na busca consulta `GET /api/database/Item/{id}?apiKey=...` (servidor no cabeçalho `x-server`, padrão `LATAM`, configurável em `DIVINE_PRIDE_SERVER`). Cada ID é buscado uma vez e guardado; ID desconhecido é revisto depois de uma semana; falha de rede não é guardada. A chave nunca aparece em log. Sem a chave, nada sai para a internet e a busca usa só os itens conhecidos. Os ícones continuam vindo pelo ID, sem chave (D41).
 
 ## 5. Migração do artefato (D54)
 
