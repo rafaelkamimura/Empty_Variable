@@ -111,6 +111,73 @@ describe("VinculoComponent", () => {
     expect(texto(f)).toContain("Solicitação em análise");
   });
 
+  it("importa a build de um link do simulador para a ficha aberta (D55)", async () => {
+    const { f, http } = await abrir({ jogador: null, solicitacao: null });
+    const c = f.componentInstance;
+    const ficha = {
+      nome: "Nova-Feiticeira",
+      classeId: "",
+      nivelBase: null,
+      build: "",
+      equipamentos: { topo: { id: 5011, nome: "Antena" } },
+    };
+    c.editando.set(ficha);
+    c.linkSimulador = " https://short.latam-tools.com.br/Ukxuq4 ";
+    const importacao = c.importarBuild(ficha);
+    const req = http.expectOne("/api/vinculo/build-simulador");
+    expect(req.request.body).toEqual({ link: "https://short.latam-tools.com.br/Ukxuq4" });
+    req.flush({
+      classeId: "feiticeiro",
+      classeNome: "Feiticeiro",
+      nivelBase: 105,
+      equipamentos: {
+        arma: { id: 540031, nome: "Nome da Divine Pride" },
+        escudo: { id: 28901, nome: "Coelho Macabro" },
+        capa: { id: 20940, nome: null },
+      },
+    });
+    http
+      .expectOne("/equipamentos-latam.json")
+      .flush({ slots: { arma: [{ id: 540031, nome: "Livro Feiticeiro do Éden" }] } });
+    await importacao;
+    expect(ficha.classeId).toBe("feiticeiro");
+    expect(ficha.nivelBase as number | null).toBe(105);
+    expect(ficha.equipamentos as object).toEqual({
+      arma: { id: 540031, nome: "Livro Feiticeiro do Éden" },
+      escudo: { id: 28901, nome: "Coelho Macabro" },
+      capa: { id: 20940, nome: "Item 20940" },
+    });
+    expect(c.linkSimulador).toBe("");
+    expect(c.avisoImportacao()).toBe(
+      "Build importada: Feiticeiro, nível 105, 3 equipamentos. Revise e salve.",
+    );
+  });
+
+  it("importação sem classe cadastrada avisa, e o erro da API aparece na ficha (D55)", async () => {
+    const { f, http } = await abrir({ jogador: null, solicitacao: null });
+    const c = f.componentInstance;
+    const ficha = { nome: "Nova", classeId: "rg", nivelBase: 200, build: "", equipamentos: {} };
+    c.editando.set(ficha);
+    c.linkSimulador = "https://short.latam-tools.com.br/Ukxuq4";
+    let importacao = c.importarBuild(ficha);
+    http
+      .expectOne("/api/vinculo/build-simulador")
+      .flush({ classeId: null, classeNome: "Feiticeiro", nivelBase: null, equipamentos: {} });
+    http.expectOne("/equipamentos-latam.json").flush({ slots: {} });
+    await importacao;
+    expect(ficha).toEqual({ nome: "Nova", classeId: "rg", nivelBase: 200, build: "", equipamentos: {} });
+    expect(c.avisoImportacao()).toContain("A classe Feiticeiro não está cadastrada no grupo");
+
+    c.linkSimulador = "https://exemplo.com/x";
+    importacao = c.importarBuild(ficha);
+    http
+      .expectOne("/api/vinculo/build-simulador")
+      .flush({ message: "Cole um link do simulador." }, { status: 400, statusText: "Bad Request" });
+    await importacao;
+    expect(c.erroFicha()).toContain("Cole um link do simulador.");
+    expect(c.avisoImportacao()).toBeNull();
+  });
+
   it("mostra o erro da API (ex.: jogador já vinculado)", async () => {
     const { f, http } = await abrir({ jogador: null, solicitacao: null });
     const c = f.componentInstance;

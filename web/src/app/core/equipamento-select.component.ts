@@ -15,8 +15,9 @@ const normalizar = (nome: string) =>
     .replace(/\p{Diacritic}/gu, "")
     .toLocaleLowerCase("pt-BR");
 
+/** Catálogo de equipamentos do RO LATAM por slot (equipamentos-latam.json), carregado uma vez. */
 @Injectable({ providedIn: "root" })
-class EquipamentosLatam {
+export class EquipamentosLatam {
   private readonly http = inject(HttpClient);
   readonly slots = signal<CatalogoEquipamentos["slots"] | null>(null);
   readonly erro = signal(false);
@@ -34,6 +35,11 @@ class EquipamentosLatam {
     } finally {
       this.carregando = false;
     }
+  }
+
+  /** Nome do equipamento com esse ID no slot, ou null se o catálogo não o tiver (ou não tiver carregado). */
+  nomeDoItem(slot: string, id: number): string | null {
+    return this.slots()?.[slot]?.find((item) => item.id === id)?.nome ?? null;
   }
 }
 

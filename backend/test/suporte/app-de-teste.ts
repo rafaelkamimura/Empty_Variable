@@ -10,6 +10,7 @@ import { configurarApp } from "../../src/configurar-app.js";
 import { PrismaService } from "../../src/prisma/prisma.service.js";
 import { BUSCADOR_IMAGEM } from "../../src/imagens/imagens.service.js";
 import { BUSCADOR_DIVINE_PRIDE } from "../../src/farm/divine-pride.service.js";
+import { BUSCADOR_LINK_CURTO } from "../../src/jogadores/build-simulador.js";
 
 process.env["DATABASE_URL"] = inject("databaseUrl");
 
@@ -100,12 +101,28 @@ export class DivinePrideFalso {
   };
 }
 
+/** Dublê do encurtador do simulador (D55): destino por slug; sem destino configurado, 404. */
+export class EncurtadorFalso {
+  readonly chamadas: string[] = [];
+  readonly destinos = new Map<string, string | "falha">();
+
+  readonly buscar = async (url: string) => {
+    this.chamadas.push(url);
+    const destino = this.destinos.get(url.split("/").pop() ?? "");
+    if (destino === "falha") throw new Error("rede indisponível");
+    return destino === undefined
+      ? { status: 404, json: async () => null }
+      : { status: 200, json: async () => ({ url: destino }) };
+  };
+}
+
 export interface Contexto {
   app: INestApplication;
   prisma: PrismaService;
   discord: DiscordFalso;
   imagens: BuscadorImagemFalso;
   divinePride: DivinePrideFalso;
+  encurtador: EncurtadorFalso;
   http: () => ReturnType<typeof request>;
   /** Faz o fluxo OAuth completo com o dublê e devolve o cookie de sessão. */
   login: (discordId: string, username?: string) => Promise<string>;
@@ -117,11 +134,14 @@ export async function criarApp(config: Partial<Configuracao> = {}): Promise<Cont
   const discord = new DiscordFalso();
   const imagens = new BuscadorImagemFalso();
   const divinePride = new DivinePrideFalso();
+  const encurtador = new EncurtadorFalso();
   const modulo = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(BUSCADOR_IMAGEM)
     .useValue(imagens.buscar)
     .overrideProvider(BUSCADOR_DIVINE_PRIDE)
     .useValue(divinePride.buscar)
+    .overrideProvider(BUSCADOR_LINK_CURTO)
+    .useValue(encurtador.buscar)
     .overrideProvider(CONFIGURACAO)
     .useValue({ ...CONFIG_TESTE, ...config })
     .overrideProvider(DISCORD_CLIENTE)
@@ -167,6 +187,7 @@ export async function criarApp(config: Partial<Configuracao> = {}): Promise<Cont
     discord,
     imagens,
     divinePride,
+    encurtador,
     http,
     login,
     limparBanco,

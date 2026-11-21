@@ -223,5 +223,6 @@ export class FarmController {
       useValue: ((url, init) => fetch(url, init)) satisfies BuscadorDivinePride,
     },
   ],
+  exports: [DivinePrideService],
 })
 export class FarmModule {}
