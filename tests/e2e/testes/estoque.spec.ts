@@ -282,6 +282,10 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   await page.getByRole("button", { name: "Arma", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "Arma", exact: true })).toHaveValue("13083");
   await expect.poll(semRolagem).toBe(true);
+  await page.getByRole("button", { name: "Build", exact: true }).click();
+  await expect(fichaEditavel.getByRole("textbox", { name: "Importar do simulador" })).toBeVisible();
+  await expect(fichaEditavel.getByRole("button", { name: "Importar build" })).toBeDisabled();
+  await expect.poll(semRolagem).toBe(true);
   if (viewportAnterior) await page.setViewportSize(viewportAnterior);
   expect((await page.request.get("/api/gestao/grupos")).status()).toBe(403);
   await login(adminId);

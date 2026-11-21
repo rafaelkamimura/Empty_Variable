@@ -10,7 +10,7 @@ import { ImagemItemComponent } from "../core/imagem-item.component";
 import { agruparClasses } from "../core/grupos-classes";
 import { iconeDaClasse } from "../core/icones-classes";
 import { firstValueFrom } from "rxjs";
-import { EquipamentoSelectComponent } from "../core/equipamento-select.component";
+import { EquipamentoSelectComponent, EquipamentosLatam } from "../core/equipamento-select.component";
 import { AuthService } from "../core/auth.service";
 import {
   type EquipamentoFicha,
@@ -33,6 +33,28 @@ interface Ficha {
   build: string;
   equipamentos: Partial<Record<string, EquipamentoFicha>>;
 }
+/** D55: resposta de POST /api/vinculo/build-simulador. */
+export interface BuildImportada {
+  classeId: string | null;
+  classeNome: string | null;
+  nivelBase: number | null;
+  equipamentos: Partial<Record<string, { id: number; nome: string | null }>>;
+}
+/** Frase que confirma o que a importação preencheu e o que ficou para o membro escolher. */
+export function resumoDaImportacao(build: BuildImportada, equipamentos: number): string {
+  const partes = [
+    ...(build.classeId && build.classeNome ? [build.classeNome] : []),
+    ...(build.nivelBase !== null ? [`nível ${build.nivelBase}`] : []),
+    equipamentos === 1 ? "1 equipamento" : `${equipamentos} equipamentos`,
+  ];
+  const semClasse = build.classeId
+    ? ""
+    : build.classeNome
+      ? ` A classe ${build.classeNome} não está cadastrada no grupo: escolha a classe.`
+      : " Escolha a classe.";
+  return `Build importada: ${partes.join(", ")}.${semClasse} Revise e salve.`;
+}
+
 const novaFicha = (): Ficha => ({ nome: "", classeId: "", nivelBase: null, build: "", equipamentos: {} });
 
 const SLOTS = [
@@ -280,6 +302,10 @@ const SLOTS = [
                       rows="4"
                     ></textarea>
                   </label>
+                  <ng-container
+                    [ngTemplateOutlet]="importarFicha"
+                    [ngTemplateOutletContext]="{ $implicit: ficha }"
+                  />
                 }
               }
               @if (erroFicha(); as mensagem) {
@@ -341,6 +367,40 @@ const SLOTS = [
             />
             <small id="limite-nivel-base">De 1 a 250</small>
           </label>
+        </div>
+      </ng-template>
+
+      <ng-template #importarFicha let-ficha>
+        <div class="importar-build">
+          <label class="campo"
+            >Importar do simulador
+            <input
+              type="url"
+              inputmode="url"
+              placeholder="Link do simulador.latam-tools.com.br"
+              aria-describedby="ajuda-importar-build"
+              autocomplete="off"
+              spellcheck="false"
+              [(ngModel)]="linkSimulador"
+              [ngModelOptions]="{ standalone: true }"
+              (keydown.enter)="$event.preventDefault(); importarBuild(ficha)"
+            />
+          </label>
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="importando() || !linkSimulador.trim()"
+            (click)="importarBuild(ficha)"
+          >
+            {{ importando() ? "Lendo build…" : "Importar build" }}
+          </button>
+          <small id="ajuda-importar-build">
+            Preenche a classe, o n&iacute;vel e os equipamentos com os da simula&ccedil;&atilde;o (link
+            completo ou curto). Refino, cartas e encantamentos n&atilde;o entram.
+          </small>
+          @if (avisoImportacao(); as aviso) {
+            <p class="aviso-importacao" role="status">{{ aviso }}</p>
+          }
         </div>
       </ng-template>
 
@@ -553,7 +613,7 @@ export class VinculoComponent implements OnInit {
   readonly secoes = [
     { id: "dados", rotulo: "Personagem" },
     { id: "equipamentos", rotulo: "Equipamentos" },
-    { id: "notas", rotulo: "Notas" },
+    { id: "notas", rotulo: "Build" },
   ] as const;
   readonly secaoFicha = signal<(typeof this.secoes)[number]["id"]>("dados");
   readonly slotAtivo = signal<(typeof SLOTS)[number]>(SLOTS[0]);
@@ -561,6 +621,10 @@ export class VinculoComponent implements OnInit {
   private fichaVinculada = false;
   nomeAnterior: string | null = null;
   readonly erroFicha = signal<string | null>(null);
+  private readonly catalogoEquipamentos = inject(EquipamentosLatam);
+  linkSimulador = "";
+  readonly importando = signal(false);
+  readonly avisoImportacao = signal<string | null>(null);
   motivo = "";
   readonly erro = signal<string | null>(null);
   readonly enviando = signal(false);
@@ -662,6 +726,8 @@ export class VinculoComponent implements OnInit {
     this.editandoId = id;
     this.nomeAnterior = nomeAnterior;
     this.erroFicha.set(null);
+    this.linkSimulador = "";
+    this.avisoImportacao.set(null);
     this.slotAtivo.set(SLOTS[0]);
     this.secaoFicha.set("dados");
     this.editando.set(ficha);
@@ -678,6 +744,40 @@ export class VinculoComponent implements OnInit {
         this.editando.set(null);
       }
     });
+  }
+
+  /**
+   * D55: preenche a ficha aberta com a classe, o nível e os equipamentos de um link do simulador.
+   * Os equipamentos da build substituem os da ficha; nada é salvo até o membro confirmar.
+   */
+  async importarBuild(ficha: Ficha): Promise<void> {
+    const link = this.linkSimulador.trim();
+    if (!link || this.importando()) return;
+    this.importando.set(true);
+    this.erroFicha.set(null);
+    this.avisoImportacao.set(null);
+    try {
+      const [build] = await Promise.all([
+        firstValueFrom(this.http.post<BuildImportada>("/api/vinculo/build-simulador", { link })),
+        this.catalogoEquipamentos.carregar(),
+      ]);
+      if (this.editando() !== ficha) return;
+      if (build.classeId) ficha.classeId = build.classeId;
+      if (build.nivelBase !== null) ficha.nivelBase = build.nivelBase;
+      const equipamentos: Ficha["equipamentos"] = {};
+      for (const [slot, item] of Object.entries(build.equipamentos)) {
+        if (!item) continue;
+        const nome = this.catalogoEquipamentos.nomeDoItem(slot, item.id) ?? item.nome ?? `Item ${item.id}`;
+        equipamentos[slot] = { id: item.id, nome };
+      }
+      ficha.equipamentos = equipamentos;
+      this.linkSimulador = "";
+      this.avisoImportacao.set(resumoDaImportacao(build, Object.keys(equipamentos).length));
+    } catch (erro) {
+      this.erroFicha.set(mensagemDeErro(erro));
+    } finally {
+      this.importando.set(false);
+    }
   }
 
   async salvarFicha(ficha: Ficha): Promise<void> {

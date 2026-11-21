@@ -16,15 +16,16 @@
   "dependencies": {
     "@betel/farm": "workspace:*",
     "@betel/scoring": "workspace:*",
+    "@emptyvariable/discord": "workspace:*",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@prisma/client": "6.19.3",
     "cookie-parser": "1.4.7",
+    "lz-string": "1.5.0",
     "prisma": "6.19.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "@emptyvariable/discord": "workspace:*"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@nestjs/testing": "^11.0.0",

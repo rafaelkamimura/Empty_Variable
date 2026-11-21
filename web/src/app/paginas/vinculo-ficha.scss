@@ -32,6 +32,22 @@
 .identidade small {
   color: var(--texto-suave);
 }
+.importar-build {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 6px 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda, rgb(255 255 255 / 12%));
+}
+.importar-build :is(small, .aviso-importacao) {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.importar-build small {
+  color: var(--texto-suave);
+}
 .ficha-corpo :is(input, select, textarea, summary, button):focus-visible {
   outline: 2px solid #e4c17b;
   outline-offset: 2px;

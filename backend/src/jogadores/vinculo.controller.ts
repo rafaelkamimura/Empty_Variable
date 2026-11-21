@@ -21,6 +21,7 @@ import {
   textoOpcional,
   uuid,
 } from "../comum/validacao.js";
+import { BuildSimuladorService } from "./build-simulador.js";
 import { VinculoService } from "./vinculo.service.js";
 
 const STATUS: readonly StatusSolicitacao[] = ["PENDENTE", "APROVADA", "REJEITADA"];
@@ -67,7 +68,10 @@ function lerFicha(valor: unknown) {
 /** US-08: reivindicação do vínculo Discord ↔ jogador e fila de aprovação dos admins (D12). */
 @Controller("vinculo")
 export class VinculoController {
-  constructor(private readonly vinculo: VinculoService) {}
+  constructor(
+    private readonly vinculo: VinculoService,
+    private readonly buildSimulador: BuildSimuladorService,
+  ) {}
 
   @Get()
   minhaSituacao(@UsuarioAtual() usuario: Usuario) {
@@ -82,6 +86,13 @@ export class VinculoController {
   @Get("classes")
   classes() {
     return this.vinculo.classes();
+  }
+
+  /** D55: lê um link do simulador de dano e devolve classe, nível e equipamentos para preencher a ficha. */
+  @Post("build-simulador")
+  @HttpCode(200)
+  importarBuild(@Body() corpo: unknown) {
+    return this.buildSimulador.importar(texto(objeto(corpo)["link"], "Link do simulador", 1, 65_536));
   }
 
   @Post("personagens")
