@@ -11,6 +11,7 @@ import {
   type BonusExtrasMotor,
   type EquipamentoMotor,
   ErroDoMotor,
+  fecharBuild,
   type FichaMotor,
   SLOTS_FICHA_MOTOR,
 } from "@betel/motor-latam";
@@ -22,8 +23,8 @@ import {
   simularMagico,
 } from "@betel/simulador";
 import { AuditoriaService } from "../auditoria/auditoria.service.js";
-import { CLASSES_SIMULADOR } from "../jogadores/build-simulador.js";
-import type { AtributosFicha, EquipamentoFicha } from "../jogadores/ficha-build.js";
+import { CLASSES_SIMULADOR, decodificarBuild } from "../jogadores/build-simulador.js";
+import type { AtributosFicha, EncaixeFicha, EquipamentoFicha } from "../jogadores/ficha-build.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { MonstrosService } from "./monstros.service.js";
 import { MotorService } from "./motor.service.js";
@@ -115,6 +116,17 @@ function fichaDoMotor(personagem: {
   };
 }
 
+/** Campos da ficha que a build do simulador lê e grava. */
+const SELECAO_BUILD = {
+  id: true,
+  nome: true,
+  nivelBase: true,
+  classeId: true,
+  equipamentos: true,
+  atributos: true,
+  classe: { select: { nomeOficial: true } },
+} as const;
+
 const SELECAO_CHEFE = { idMonstro: true, nome: true, observacao: true, fonte: true } as const;
 
 /**
@@ -153,6 +165,7 @@ export class SimuladorService {
         chefes: instancia.chefes.map((chefe) => ({
           ...chefe,
           monstro: guardados.get(chefe.idMonstro) ?? null,
+          noSimulador: this.motor.obter().temMonstro(chefe.idMonstro),
         })),
       })),
     };
@@ -286,5 +299,136 @@ export class SimuladorService {
         "Não foi possível calcular esta build. Preencha a simulação à mão.",
       );
     }
+  }
+
+  /**
+   * D61: build de um personagem do próprio membro para abrir na interface do simulador. Parte do
+   * link guardado na ficha (com sombrios, visuais, consumíveis, buffs e rotação) e aplica por cima o
+   * que a ficha mostra, como na simulação da D59.
+   */
+  async abrirBuild(usuario: Usuario, personagemId: string) {
+    const personagem = await this.prisma.personagem.findFirst({
+      where: { id: personagemId, ativo: true, jogador: { usuarioId: usuario.id } },
+      select: SELECAO_BUILD,
+    });
+    if (personagem === null) throw new NotFoundException("Personagem não encontrado no seu vínculo.");
+    const { ficha, token, avisos } = fichaDoMotor(personagem);
+    if (token === undefined) {
+      avisos.push(
+        "A ficha não guarda a build inteira: o simulador abriu só com os dez slots, o nível e os atributos. Salve por aqui para guardar o resto.",
+      );
+    }
+    try {
+      const build = this.motor.obter().buildDaFicha({ ...(token === undefined ? {} : { token }), ficha });
+      if (typeof build["class"] !== "number") {
+        avisos.push(
+          "A classe da ficha não existe no simulador com esse nome: escolha a classe na tela do simulador.",
+        );
+      }
+      return { personagem: { id: personagem.id, nome: personagem.nome }, build, avisos };
+    } catch (erro) {
+      if (erro instanceof ErroDoMotor) throw new BadRequestException(erro.message);
+      throw erro;
+    }
+  }
+
+  /**
+   * D61: grava na ficha de um personagem do próprio membro a build montada na interface do
+   * simulador: os dez slots (com refino, grau, cartas e encantamentos), nível, atributos, talentos,
+   * habilidade e o token da build inteira. A classe só muda se o grupo tiver uma classe ativa com
+   * o nome da classe do simulador. Slots que a ficha guarda só pelo nome continuam quando a build
+   * os deixa vazios.
+   * @param bruta Build como a interface do simulador guarda no navegador
+   */
+  async salvarBuild(usuario: Usuario, personagemId: string, bruta: unknown) {
+    const fechada = fecharBuild(bruta);
+    const build = fechada === null ? null : decodificarBuild(fechada.token);
+    if (fechada === null || build === null) {
+      throw new BadRequestException(
+        "O simulador não devolveu uma build válida. Abra-o de novo e tente outra vez.",
+      );
+    }
+    const motor = this.motor.obter();
+    const avisos: string[] = [];
+    if (fechada.personalizados) {
+      avisos.push("A build traz itens personalizados do simulador, que não entram na conta do sistema.");
+    }
+    if (build.atributos.token === undefined) {
+      avisos.push(
+        "A build é grande demais para ser guardada inteira: a ficha ficou com os dez slots, o nível e os atributos, sem sombrios, visuais, consumíveis e buffs.",
+      );
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const atual = await tx.personagem.findFirst({
+        where: { id: personagemId, ativo: true, jogador: { usuarioId: usuario.id } },
+        select: SELECAO_BUILD,
+      });
+      if (atual === null) throw new NotFoundException("Personagem não encontrado no seu vínculo.");
+      const anteriores = (atual.equipamentos ?? {}) as Record<string, string | EquipamentoFicha>;
+      const nomeAnterior = new Map<number, string>();
+      for (const item of Object.values(anteriores)) {
+        if (typeof item !== "string") nomeAnterior.set(item.id, item.nome);
+      }
+      const encaixes = (ids: number[] | undefined): EncaixeFicha[] | undefined =>
+        ids?.map((id) => ({ id, nome: motor.nomeDoItem(id) }));
+      const equipamentos: Record<string, string | EquipamentoFicha> = {};
+      for (const slot of SLOTS_FICHA_MOTOR) {
+        const item = build.equipamentos[slot];
+        const anterior = anteriores[slot];
+        if (item === undefined) {
+          if (typeof anterior === "string") equipamentos[slot] = anterior;
+          continue;
+        }
+        const cartas = encaixes(item.cartas);
+        const encantamentos = encaixes(item.encantamentos);
+        equipamentos[slot] = {
+          id: item.id,
+          nome: (motor.nomeDoItem(item.id) ?? nomeAnterior.get(item.id) ?? `Item ${item.id}`).slice(0, 160),
+          ...(item.refino === undefined ? {} : { refino: item.refino }),
+          ...(item.grau === undefined ? {} : { grau: item.grau }),
+          ...(cartas === undefined ? {} : { cartas }),
+          ...(encantamentos === undefined ? {} : { encantamentos }),
+        };
+      }
+      let classeId = atual.classeId;
+      const nomeDaClasse = build.classe === null ? undefined : CLASSES_SIMULADOR[build.classe];
+      if (
+        nomeDaClasse !== undefined &&
+        semAcentos(nomeDaClasse) !== semAcentos(atual.classe?.nomeOficial ?? "")
+      ) {
+        const classes = await tx.classe.findMany({
+          where: { ativa: true },
+          select: { id: true, nomeOficial: true },
+        });
+        const achada = classes.find((classe) => semAcentos(classe.nomeOficial) === semAcentos(nomeDaClasse));
+        if (achada) classeId = achada.id;
+        else {
+          avisos.push(
+            `A classe da build (${nomeDaClasse}) não está entre as classes ativas do grupo: a classe da ficha não mudou.`,
+          );
+        }
+      }
+      const salvo = await tx.personagem.update({
+        where: { id: atual.id },
+        data: {
+          equipamentos,
+          atributos: build.atributos,
+          nivelBase: build.nivelBase ?? atual.nivelBase,
+          classeId,
+        },
+        select: SELECAO_BUILD,
+      });
+      return {
+        personagem: {
+          id: salvo.id,
+          nome: salvo.nome,
+          nivelBase: salvo.nivelBase,
+          classe: salvo.classe?.nomeOficial ?? null,
+        },
+        equipamentos: Object.keys(equipamentos).length,
+        buildInteira: build.atributos.token !== undefined,
+        avisos,
+      };
+    });
   }
 }

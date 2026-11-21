@@ -5,6 +5,7 @@ import {
   carregarDados,
   ELEMENTOS_MOTOR,
   ErroDoMotor,
+  fecharBuild,
   MotorLatam,
   RACAS_MOTOR,
   TAMANHOS_MOTOR,
@@ -258,5 +259,49 @@ describe("abrirToken", () => {
     expect(aberto?.personalizados).toBe(false);
     expect(aberto?.build).toMatchObject({ class: 8, level: 105, weapon: 540031, shadowWeapon: 24705 });
     expect(abrirToken("abc")).toBeNull();
+  });
+});
+
+describe("build para a interface do simulador (D61)", () => {
+  it("abre a build do link inteira e a fecha de volta no mesmo conteúdo", () => {
+    const build = motor.buildDaFicha({ token: TOKEN_EXEMPLO });
+    expect(build).toMatchObject({ class: 8, level: 105, weapon: 540031, shadowWeapon: 24705 });
+    const fechada = fecharBuild(build);
+    expect(fechada?.personalizados).toBe(false);
+    expect(abrirToken(fechada?.token ?? "")?.build).toEqual(abrirToken(TOKEN_EXEMPLO)?.build);
+  });
+
+  it("o que a ficha mostra vale por cima do link, e o resto da build continua", () => {
+    const build = motor.buildDaFicha({
+      token: TOKEN_EXEMPLO,
+      ficha: { nivelBase: 99, equipamentos: { arma: { id: 1601, refino: 7, cartas: [4035] } } },
+    });
+    expect(build).toMatchObject({ level: 99, weapon: 1601, weaponRefine: 7, weaponCard1: 4035 });
+    expect(build["armor"]).toBeUndefined();
+    expect(build["shadowWeapon"]).toBe(24705);
+  });
+
+  it("a build salva pela interface vem com o modelo inteiro e fecha só com o que não é padrão", () => {
+    const fechada = fecharBuild({ class: 8, level: 105, jobLevel: 50, weapon: 540031, armor: 0, foo: "x" });
+    expect(abrirToken(fechada?.token ?? "")?.build).toEqual({
+      class: 8,
+      level: 105,
+      jobLevel: 50,
+      weapon: 540031,
+    });
+  });
+
+  it("recusa o que não é uma build e o token guardado que não abre", () => {
+    expect(fecharBuild(null)).toBeNull();
+    expect(fecharBuild([1])).toBeNull();
+    expect(fecharBuild({ level: 99 })).toBeNull();
+    expect(() => motor.buildDaFicha({ token: "abc" })).toThrow(ErroDoMotor);
+  });
+
+  it("diz se o simulador tem o monstro e o nome do item", () => {
+    expect(motor.temMonstro(20996)).toBe(true);
+    expect(motor.temMonstro(1)).toBe(false);
+    expect(motor.nomeDoItem(540031)).toEqual(expect.any(String));
+    expect(motor.nomeDoItem(999_999_999)).toBeNull();
   });
 });

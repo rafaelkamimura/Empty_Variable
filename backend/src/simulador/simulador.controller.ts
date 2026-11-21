@@ -256,6 +256,19 @@ export class SimuladorController {
     return this.simulador.simularBuild(usuario, lerSimulacaoDaBuild(corpo));
   }
 
+  /** D61: build de um personagem do membro, para abrir na interface do simulador. */
+  @Get("personagens/:id/build")
+  abrirBuild(@Param("id") id: string, @UsuarioAtual() usuario: Usuario) {
+    return this.simulador.abrirBuild(usuario, uuid(id, "Personagem"));
+  }
+
+  /** D61: grava na ficha a build montada na interface do simulador. */
+  @Post("personagens/:id/build")
+  @HttpCode(200)
+  salvarBuild(@Param("id") id: string, @Body() corpo: unknown, @UsuarioAtual() usuario: Usuario) {
+    return this.simulador.salvarBuild(usuario, uuid(id, "Personagem"), objeto(corpo)["build"]);
+  }
+
   @Post("instancias/:id/chefes")
   @Papeis("GESTOR")
   adicionarChefe(@Param("id") id: string, @Body() corpo: unknown, @UsuarioAtual() gestor: Usuario) {

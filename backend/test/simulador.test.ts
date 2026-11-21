@@ -261,7 +261,9 @@ describe("Simulação de dano (D57)", () => {
         monstro: null,
       });
       const lista = (await ler("/api/simulador/alvos").expect(200)).body.instancias;
-      expect(lista.find((i: { id: string }) => i.id === instancia.id).chefes).toEqual([criado.body]);
+      expect(lista.find((i: { id: string }) => i.id === instancia.id).chefes).toEqual([
+        { ...criado.body, noSimulador: false },
+      ]);
     });
 
     it("busca por nome: acha os monstros da latam-tools sem diferenciar maiúsculas (D58)", async () => {
@@ -722,5 +724,136 @@ describe("Simulação da build com os efeitos dos equipamentos (D59)", () => {
       ...ficha,
       atributos: { token: "a".repeat(16 * 1024 + 1) },
     }).expect(400);
+  });
+
+  describe("build na interface do simulador (D61)", () => {
+    let hubId: string;
+    const urlDaBuild = () => `/api/simulador/personagens/${hubId}/build`;
+    const abrir = (cookie = membro) => ctx.http().get(urlDaBuild()).set("Cookie", cookie);
+    const fichaDoHub = async () => {
+      const situacao = (await ctx.http().get("/api/vinculo").set("Cookie", membro).expect(200)).body;
+      return situacao.jogador.personagens.find((p: { id: string }) => p.id === hubId);
+    };
+
+    beforeAll(async () => {
+      const importada = (
+        await enviar("post", "/api/vinculo/build-simulador", {
+          link: `https://simulador.latam-tools.com.br/s/${TOKEN_FEITICEIRO}/`,
+        }).expect(200)
+      ).body;
+      const equipamentos = Object.fromEntries(
+        Object.entries(importada.equipamentos as Record<string, { id: number; nome: string | null }>).map(
+          ([slot, item]) => [slot, { ...item, nome: item.nome ?? `Item ${item.id}` }],
+        ),
+      );
+      const criada = await enviar("post", "/api/vinculo/personagens", {
+        nome: "Ana-Hub",
+        classeId: importada.classeId,
+        nivelBase: importada.nivelBase,
+        build: "anotação da Ana",
+        equipamentos,
+        atributos: importada.atributos,
+      }).expect(201);
+      hubId = criada.body.id;
+    });
+
+    it("abre a build da ficha inteira: os dez slots e o que só o link guarda", async () => {
+      const r = await abrir().expect(200);
+      expect(r.body.personagem).toEqual({ id: hubId, nome: "Ana-Hub" });
+      expect(r.body.avisos).toEqual([]);
+      expect(r.body.build).toMatchObject({
+        class: 8,
+        level: 105,
+        jobLevel: 50,
+        weapon: 540031,
+        shadowWeapon: 24705,
+      });
+    });
+
+    it("grava na ficha a build mudada no simulador, e ela volta igual ao abrir de novo", async () => {
+      const { build } = (await abrir().expect(200)).body;
+      const mudada = { ...build, level: 110, weaponRefine: 9, shadowWeapon: 0, foraDoModelo: "x" };
+      const r = await enviar("post", urlDaBuild(), { build: mudada }).expect(200);
+      expect(r.body).toMatchObject({
+        personagem: { id: hubId, nome: "Ana-Hub", nivelBase: 110, classe: "Feiticeiro" },
+        buildInteira: true,
+        avisos: [],
+      });
+      const ficha = await fichaDoHub();
+      expect(ficha.nivelBase).toBe(110);
+      expect(ficha.build).toBe("anotação da Ana");
+      expect(ficha.equipamentos.arma).toMatchObject({
+        id: 540031,
+        nome: "Livro Feiticeiro do Éden",
+        refino: 9,
+      });
+      expect(ficha.atributos.classeSimulador).toBe(8);
+      const reaberta = (await abrir().expect(200)).body.build;
+      expect(reaberta).toMatchObject({ class: 8, level: 110, weapon: 540031, weaponRefine: 9 });
+      expect(reaberta.shadowWeapon).toBeUndefined();
+      expect(reaberta.foraDoModelo).toBeUndefined();
+      const simulada = await simular({ personagemId: hubId, alvo: await alvoDe(21067) }).expect(200);
+      expect(simulada.body.nivelBase).toBe(110);
+    });
+
+    it("classe do simulador que o grupo não tem não muda a classe da ficha, e avisa", async () => {
+      const { build } = (await abrir().expect(200)).body;
+      await ctx.prisma.classe.update({ where: { nomeOficial: "Animista" }, data: { ativa: false } });
+      const r = await enviar("post", urlDaBuild(), { build: { ...build, class: 4308 } }).expect(200);
+      await ctx.prisma.classe.update({ where: { nomeOficial: "Animista" }, data: { ativa: true } });
+      expect(r.body.personagem.classe).toBe("Feiticeiro");
+      expect(r.body.avisos).toEqual([expect.stringContaining("Animista")]);
+    });
+
+    it("exige sessão, só aceita personagem do próprio membro e recusa o que não é uma build", async () => {
+      await ctx.http().get(urlDaBuild()).expect(401);
+      await abrir(outro).expect(404);
+      const { build } = (await abrir().expect(200)).body;
+      await enviar("post", urlDaBuild(), { build }, outro).expect(404);
+      await enviar("post", urlDaBuild(), {}).expect(400);
+      await enviar("post", urlDaBuild(), { build: [1] }).expect(400);
+      await enviar("post", urlDaBuild(), { build: { level: 99 } }).expect(400);
+      await enviar("post", "/api/simulador/personagens/nao-e-uuid/build", { build }).expect(400);
+    });
+
+    it("ficha sem a build importada abre só com o que ela mostra, e avisa", async () => {
+      const feiticeiro = await ctx.prisma.classe.findUniqueOrThrow({ where: { nomeOficial: "Feiticeiro" } });
+      const criada = await enviar("post", "/api/vinculo/personagens", {
+        nome: "Ana-Simples",
+        classeId: feiticeiro.id,
+        nivelBase: 90,
+        build: "",
+        equipamentos: {
+          arma: { id: 540031, nome: "Livro Feiticeiro do Éden", refino: 4 },
+          capa: "Manto velho",
+        },
+      }).expect(201);
+      const url = `/api/simulador/personagens/${criada.body.id}/build`;
+      const r = await ctx.http().get(url).set("Cookie", membro).expect(200);
+      expect(r.body.build).toEqual({ class: 8, level: 90, weapon: 540031, weaponRefine: 4 });
+      expect(r.body.avisos).toEqual([
+        expect.stringContaining("Manto velho"),
+        expect.stringContaining("não guarda a build inteira"),
+      ]);
+      const salva = await enviar("post", url, { build: { ...r.body.build, level: 91 } }).expect(200);
+      expect(salva.body).toMatchObject({
+        personagem: { nivelBase: 91 },
+        equipamentos: 2,
+        buildInteira: true,
+      });
+      const situacao = (await ctx.http().get("/api/vinculo").set("Cookie", membro).expect(200)).body;
+      const ficha = situacao.jogador.personagens.find((p: { id: string }) => p.id === criada.body.id);
+      expect(ficha.equipamentos.capa).toBe("Manto velho");
+      expect(ficha.atributos.token).toEqual(expect.any(String));
+    });
+
+    it("os alvos dizem quais chefes o simulador conhece", async () => {
+      const alvos = (await ctx.http().get("/api/simulador/alvos").set("Cookie", membro).expect(200)).body;
+      const chefes = alvos.instancias.flatMap((i: { chefes: { noSimulador: boolean }[] }) => i.chefes);
+      expect(chefes.length).toBeGreaterThan(0);
+      expect(chefes.every((chefe: { noSimulador: unknown }) => typeof chefe.noSimulador === "boolean")).toBe(
+        true,
+      );
+    });
   });
 });

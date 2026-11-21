@@ -34,7 +34,7 @@ import {
 } from "../vendor/latam-ro-calc/src/app/core/calculator-controller";
 import { customOptionScripts } from "../vendor/latam-ro-calc/src/app/core/custom-attachments";
 import { parseOptionScripts } from "../vendor/latam-ro-calc/src/app/core/option-scripts";
-import { decodeShared } from "../vendor/latam-ro-calc/src/app/core/share-codec";
+import { decodeShared, encodeBuild } from "../vendor/latam-ro-calc/src/app/core/share-codec";
 import { SKILL_ID_BY_NAME, SKILL_META } from "../vendor/latam-ro-calc/src/app/skills";
 import {
   calcDmgDpsDetailed,
@@ -417,6 +417,35 @@ export function abrirToken(
   return { build, personalizados: (aberto.items?.length ?? 0) > 0 };
 }
 
+/** Chave em que o simulador guarda os itens personalizados, no link e no rascunho do navegador. */
+const CHAVE_PERSONALIZADOS = "__customItems";
+
+/**
+ * Fecha num token a build que a interface do simulador guarda no navegador. Só os campos do modelo
+ * do simulador entram, com o valor que vier, mais os itens personalizados; o resultado é o mesmo
+ * token do link de compartilhamento dele.
+ * @param bruta Build como a interface salva (o modelo inteiro ou só o que mudou)
+ * @returns O token, ou null se o valor não for uma build com classe ou não puder ser lido de volta
+ */
+export function fecharBuild(bruta: unknown): { token: string; personalizados: boolean } | null {
+  if (typeof bruta !== "object" || bruta === null || Array.isArray(bruta)) return null;
+  const recebida = bruta as Record<string, unknown>;
+  if (typeof recebida["class"] !== "number") return null;
+  const build: Record<string, unknown> = {};
+  for (const [campo] of CAMPOS_DO_MODELO) {
+    if (recebida[campo] !== undefined) build[campo] = recebida[campo];
+  }
+  const itens = recebida[CHAVE_PERSONALIZADOS];
+  const personalizados = Array.isArray(itens) && itens.length > 0;
+  let token: string;
+  try {
+    token = encodeBuild(build, null, personalizados ? (itens as never[]) : undefined);
+  } catch {
+    return null;
+  }
+  return decodeShared(token, BUILD_MAXIMA) === null ? null : { token, personalizados };
+}
+
 const tipoDoEncaixe = (campo: string): TipoEncaixe =>
   /Card\d?$/.test(campo) ? "CARTA" : /Enchant\d$/.test(campo) ? "ENCANTAMENTO" : "EQUIPAMENTO";
 
@@ -612,6 +641,47 @@ export class MotorLatam {
    */
   temClasse(classe: number): boolean {
     return this.classes.has(classe);
+  }
+
+  /**
+   * Diz se o simulador tem o monstro, para ele poder ser escolhido como alvo na interface.
+   * @param id ID do monstro no jogo
+   */
+  temMonstro(id: number): boolean {
+    return this.dados.monstros[id] !== undefined;
+  }
+
+  /**
+   * Nome do item nos dados do simulador.
+   * @param id ID do item no jogo
+   * @returns O nome, ou null se o simulador não conhece o item
+   */
+  nomeDoItem(id: number): string | null {
+    const nome = this.dados.itens[id]?.name ?? this.dados.itensSemRegistro[id]?.name;
+    return typeof nome === "string" && nome !== "" ? nome : null;
+  }
+
+  /**
+   * Monta a build para abrir na interface do simulador: a do link guardado na ficha, inteira (com
+   * rotação, comparação à parte e itens personalizados), e por cima o que a ficha mostra.
+   * @param entrada Token guardado e campos da ficha
+   * @returns A build no formato que a interface guarda no navegador
+   * @throws ErroDoMotor quando o token guardado não é uma build
+   */
+  buildDaFicha(entrada: Pick<EntradaMotor, "token" | "ficha">): Record<string, unknown> {
+    let build: Record<string, unknown> = {};
+    if (entrada.token !== undefined) {
+      const aberto = decodeShared(entrada.token, BUILD_MAXIMA);
+      if (aberto === null || Array.isArray(aberto.preset)) {
+        throw new ErroDoMotor("O link guardado na ficha não traz uma build do simulador.");
+      }
+      for (const [campo] of CAMPOS_DO_MODELO) {
+        if (aberto.preset[campo] !== undefined) build[campo] = aberto.preset[campo];
+      }
+      if (aberto.items?.length) build[CHAVE_PERSONALIZADOS] = aberto.items;
+    }
+    build = comAFicha(build, entrada.ficha);
+    return JSON.parse(JSON.stringify(build)) as Record<string, unknown>;
   }
 
   /**
