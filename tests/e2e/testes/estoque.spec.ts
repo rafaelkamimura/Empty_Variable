@@ -42,6 +42,7 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   await expect(page.getByRole("navigation", { name: "Menu principal" }).getByRole("link")).toHaveText([
     "Loja",
     "Instâncias",
+    "Diário de farm",
   ]);
   await page.getByRole("button", { name: "Menu do perfil" }).click();
   await page.getByRole("menuitem", { name: "Estoque" }).click();
@@ -114,6 +115,7 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   await expect(page.getByRole("navigation", { name: "Menu principal" }).getByRole("link")).toHaveText([
     "Loja",
     "Instâncias",
+    "Diário de farm",
   ]);
   await page.getByRole("button", { name: "Menu do perfil" }).click();
   await expect(page.getByRole("menuitem", { name: "Estoque" })).toHaveCount(0);
