@@ -1,0 +1,47 @@
+// Base global (docs/frontend/diretrizes.md §2.3, §3 e §7): documento, tipografia, foco e movimento.
+// As fontes (Inter e JetBrains Mono, pesos 400/600/700, subconjunto latin) vêm do próprio projeto
+// pelo @fontsource, declarado em "styles" no angular.json. Nada de CDN.
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fonte);
+  background: var(--fundo);
+  color: var(--texto);
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--fonte-mono);
+}
+
+/* Foco visível em tudo que é interativo (§7). :where() mantém especificidade zero, para que um
+ * componente com foco próprio (ex.: cartão com --brilho-acento) possa ajustar sem !important. */
+:where(:focus-visible) {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--acento-fundo);
+  color: var(--texto-forte);
+}
+
+/* Movimento: desliga animações, transições e o cursor piscando (§2.3 e §7). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

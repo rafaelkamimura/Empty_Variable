@@ -11,10 +11,11 @@ describe("visual dos cartões", () => {
     expect(iconeDoItem("Desconhecido", null)).toBe("caixa");
   });
 
-  it("tom estável e sempre da paleta fria", () => {
+  it("tom estável e sempre um token de tom da paleta", () => {
     expect(tomDe("MTK")).toBe(tomDe("MTK"));
     for (const n of ["MTK", "Magus", "Alma de Naght Sieger", ""])
       expect(TONS as readonly string[]).toContain(tomDe(n));
+    for (const t of TONS) expect(t).toMatch(/^var\(--tom-[a-z]+\)$/);
   });
 
   it("sigla da classe", () => {
