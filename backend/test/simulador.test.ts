@@ -188,12 +188,18 @@ describe("Simulação de dano (D57)", () => {
       await ctx.http().post("/api/simulador/simular").set("Origin", ORIGEM).send({}).expect(401);
     });
 
-    it("alvos: a Torre já vem com os dois chefes de referência e a fonte de cada um", async () => {
+    it("alvos: a Torre já vem com os chefes de referência, os dos andares e a fonte de cada um", async () => {
       const r = await ler("/api/simulador/alvos").expect(200);
       expect(r.body.divinePride).toBe(false);
       const t = await torre();
-      expect(t.chefes.map((c: { nome: string }) => c.nome)).toEqual(["Betelgeuse", "Naght Sieger"]);
-      expect(t.chefes[1]).toMatchObject({
+      const chefes: { idMonstro: number; nome: string; monstro: unknown }[] = t.chefes;
+      expect(chefes).toHaveLength(27);
+      expect(chefes.find((c) => c.idMonstro === 21356)).toMatchObject({
+        nome: "Ifrit",
+        fonte: "https://simulador.latam-tools.com.br/",
+        monstro: { origem: "LATAM_TOOLS", servidor: "LATAM", hp: 693_500_000, elemento: "FOGO" },
+      });
+      expect(chefes.find((c) => c.idMonstro === 20996)).toMatchObject({
         idMonstro: 20996,
         fonte: "https://browiki.org/wiki/Torre_da_Constelação",
         monstro: {
@@ -212,7 +218,7 @@ describe("Simulação de dano (D57)", () => {
           danoRecebidoPct: 100,
         },
       });
-      expect(t.chefes[0].monstro).toMatchObject({
+      expect(chefes.find((c) => c.idMonstro === 20994)?.monstro).toMatchObject({
         idJogo: 20994,
         raca: "DRAGAO",
         res: 500,
@@ -233,20 +239,20 @@ describe("Simulação de dano (D57)", () => {
     it("chefes: só o gestor cadastra; sem chave o nome é obrigatório", async () => {
       const instancia = await ctx.prisma.instancia.create({ data: { nome: "Instância de Teste" } });
       const url = `/api/simulador/instancias/${instancia.id}/chefes`;
-      await enviar("post", url, membro, { idMonstro: 2529, nome: "Rainha Verme" }).expect(403);
-      await enviar("post", url, admin, { idMonstro: 2529 }).expect(400);
+      await enviar("post", url, membro, { idMonstro: 990_001, nome: "Rainha Verme" }).expect(403);
+      await enviar("post", url, admin, { idMonstro: 990_001 }).expect(400);
       await enviar("post", url, admin, { idMonstro: 0, nome: "X" }).expect(400);
       await enviar("post", `/api/simulador/instancias/${crypto.randomUUID()}/chefes`, admin, {
-        idMonstro: 2529,
+        idMonstro: 990_001,
         nome: "Rainha Verme",
       }).expect(404);
       const criado = await enviar("post", url, admin, {
-        idMonstro: 2529,
+        idMonstro: 990_001,
         nome: "Rainha Verme",
         observacao: "Último andar",
       }).expect(201);
       expect(criado.body).toEqual({
-        idMonstro: 2529,
+        idMonstro: 990_001,
         nome: "Rainha Verme",
         observacao: "Último andar",
         fonte: null,
@@ -256,6 +262,23 @@ describe("Simulação de dano (D57)", () => {
       expect(lista.find((i: { id: string }) => i.id === instancia.id).chefes).toEqual([criado.body]);
     });
 
+    it("busca por nome: acha os monstros da latam-tools sem diferenciar maiúsculas (D58)", async () => {
+      await ctx.http().get("/api/simulador/monstros?busca=bafo").expect(401);
+      await ler("/api/simulador/monstros?busca=b").expect(400);
+      const r = await ler("/api/simulador/monstros?busca=valqu%C3%ADria%20rand").expect(200);
+      expect(r.body.map((m: { idJogo: number }) => m.idJogo)).toEqual([21357, 1751]);
+      expect(r.body[1]).toMatchObject({
+        nome: "Valquíria Randgris",
+        origem: "LATAM_TOOLS",
+        raca: "ANJO",
+        danoRecebidoPct: 10,
+        chefe: true,
+      });
+      expect((await ler("/api/simulador/monstros?busca=zzzz").expect(200)).body).toEqual([]);
+      const betelgeuse = await ler("/api/simulador/monstros/21361").expect(200);
+      expect(betelgeuse.body).toMatchObject({ nome: "Demi Freya", danoRecebidoPct: 1 });
+    });
+
     it("chefe removido não volta com o seed, e pode ser cadastrado de novo", async () => {
       const t = await torre();
       const url = `/api/simulador/instancias/${t.id}/chefes`;
@@ -263,9 +286,11 @@ describe("Simulação de dano (D57)", () => {
       await enviar("delete", `${url}/20996`, admin).expect(204);
       await enviar("delete", `${url}/20996`, admin).expect(404);
       expect((await ctx.app.get(SeedService).aplicar()).chefes).toBe(false);
-      expect((await torre()).chefes.map((c: { idMonstro: number }) => c.idMonstro)).toEqual([20994]);
+      const restantes: number[] = (await torre()).chefes.map((c: { idMonstro: number }) => c.idMonstro);
+      expect(restantes).toHaveLength(26);
+      expect(restantes).not.toContain(20996);
       await enviar("post", url, admin, { idMonstro: 20996 }).expect(201);
-      expect((await torre()).chefes).toHaveLength(2);
+      expect((await torre()).chefes).toHaveLength(27);
     });
 
     it("simula dano físico: o resultado é o do pacote de regras, com a comparação de HP", async () => {
@@ -305,7 +330,7 @@ describe("Simulação de dano (D57)", () => {
     });
 
     it("simula dano mágico contra um chefe de referência, sem HP informado", async () => {
-      const chefe = (await torre()).chefes[1].monstro;
+      const chefe = (await torre()).chefes.find((c: { idMonstro: number }) => c.idMonstro === 20996).monstro;
       const entrada = {
         atacante: { nivelBase: 250, str: 1, dex: 150, int: 200, luk: 60, pow: 0, spl: 100, con: 50 },
         arma: { tipo: "CAJADO", ataque: 400, nivel: 5, refino: 11 },

@@ -15,6 +15,7 @@ import { MULTIPLICADORES_TORRE_V1 } from "@betel/scoring";
 import { CODIGO_TORRE, PREFIXO_BROWIKI } from "../instancias/instancias.service.js";
 import { REFERENCIA_BROWIKI } from "../instancias/referencia-browiki.js";
 import { CHEFES_DE_REFERENCIA } from "../simulador/chefes-referencia.js";
+import { FONTE_LATAM_TOOLS, MAPAS_TORRE, MONSTROS_LATAM_TOOLS } from "../simulador/monstros-latam-tools.js";
 
 /** D22: a taxa da loja existe como parâmetro e começa em 0%. */
 export const TAXA_CONSIGNACAO_V1_BP = 0;
@@ -32,6 +33,8 @@ export interface ResultadoSeed {
   instanciasBrowiki: boolean;
   /** D57: chefes de instância e monstros de referência da simulação de dano. */
   chefes: boolean;
+  /** D58: monstros do simulador da latam-tools e os chefes da Torre que vêm de lá. */
+  monstrosLatamTools: boolean;
 }
 
 /** Código estável de uma instância do catálogo da browiki (ex.: "BROWIKI_GLASTHEIM_SOMBRIA"). */
@@ -266,6 +269,37 @@ export class SeedService implements OnApplicationBootstrap {
     return mudou;
   }
 
+  /**
+   * D58: guarda os monstros do simulador da latam-tools e cadastra os da Torre da Constelação como
+   * chefes dela. Só cria o que falta: monstro já guardado (referência ou Divine Pride) e chefe que o
+   * gestor removeu ficam como estão.
+   */
+  private async garantirMonstrosLatamTools(tx: Tx): Promise<boolean> {
+    const buscadoEm = new Date();
+    const monstros = await tx.monstro.createMany({
+      data: MONSTROS_LATAM_TOOLS.map(({ mapas: _mapas, int, hp, ...monstro }) => ({
+        ...monstro,
+        hp: BigInt(hp),
+        inteligencia: int,
+        existe: true,
+        origem: "LATAM_TOOLS",
+        servidor: "LATAM",
+        fonte: FONTE_LATAM_TOOLS,
+        buscadoEm,
+      })),
+      skipDuplicates: true,
+    });
+    const torre = await tx.instancia.findUnique({ where: { codigo: CODIGO_TORRE }, select: { id: true } });
+    if (torre === null) return monstros.count > 0;
+    const chefes = await tx.chefeInstancia.createMany({
+      data: MONSTROS_LATAM_TOOLS.filter((m) => m.mapas.some((mapa) => MAPAS_TORRE.includes(mapa))).map(
+        (m) => ({ instanciaId: torre.id, idMonstro: m.idJogo, nome: m.nome, fonte: FONTE_LATAM_TOOLS }),
+      ),
+      skipDuplicates: true,
+    });
+    return monstros.count > 0 || chefes.count > 0;
+  }
+
   async aplicar(): Promise<ResultadoSeed> {
     return this.prisma.$transaction(async (tx) => {
       // Trava para duas instâncias subindo juntas não semearem em dobro.
@@ -280,6 +314,7 @@ export class SeedService implements OnApplicationBootstrap {
         receitas: false,
         instanciasBrowiki: false,
         chefes: false,
+        monstrosLatamTools: false,
       };
 
       if ((await tx.configPontuacao.count()) === 0) {
@@ -337,6 +372,7 @@ export class SeedService implements OnApplicationBootstrap {
         r.receitas = await this.semearReceitas(tx);
       }
       r.chefes = await this.garantirChefes(tx);
+      r.monstrosLatamTools = await this.garantirMonstrosLatamTools(tx);
       return r;
     });
   }

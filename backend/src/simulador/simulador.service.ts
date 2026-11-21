@@ -59,6 +59,11 @@ export class SimuladorService {
     };
   }
 
+  /** D58: monstros guardados cujo nome contém o texto. */
+  buscarMonstros(texto: string) {
+    return this.monstros.porNome(texto);
+  }
+
   /** Atributos de um monstro pelo ID do jogo. */
   async monstro(idJogo: number) {
     const monstro = await this.monstros.porId(idJogo);

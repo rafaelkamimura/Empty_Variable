@@ -14,7 +14,10 @@ const INT_MAXIMO = 2_147_483_647;
 export const BUSCAS_POR_HORA = 60;
 const HORA_MS = 3_600_000;
 
-export type OrigemMonstro = "DIVINE_PRIDE" | "REFERENCIA";
+export type OrigemMonstro = "DIVINE_PRIDE" | "LATAM_TOOLS" | "REFERENCIA";
+const ORIGENS: readonly OrigemMonstro[] = ["DIVINE_PRIDE", "LATAM_TOOLS", "REFERENCIA"];
+/** Quantos monstros a busca por nome devolve. */
+export const RESULTADOS_DA_BUSCA = 20;
 
 /** Atributos de um monstro para a simulação. null é o que a fonte não trouxe: a tela pede o valor. */
 export interface MonstroAlvo {
@@ -167,7 +170,7 @@ function daLinha(linha: Monstro): MonstroAlvo {
   return {
     idJogo: linha.idJogo,
     nome: linha.nome,
-    origem: linha.origem === "DIVINE_PRIDE" ? "DIVINE_PRIDE" : "REFERENCIA",
+    origem: ORIGENS.find((origem) => origem === linha.origem) ?? "REFERENCIA",
     servidor: linha.servidor,
     fonte: linha.fonte,
     nivel: linha.nivel,
@@ -219,12 +222,27 @@ export class MonstrosService {
   }
 
   /**
+   * D58: monstros guardados cujo nome contém o texto, os de nível mais alto primeiro. Nada sai para
+   * a internet: quem não está guardado se busca pelo ID.
+   * @param texto Parte do nome, sem diferenciar maiúsculas
+   */
+  async porNome(texto: string): Promise<MonstroAlvo[]> {
+    const linhas = await this.prisma.monstro.findMany({
+      where: { existe: true, nome: { contains: texto, mode: "insensitive" } },
+      orderBy: [{ nivel: "desc" }, { nome: "asc" }, { idJogo: "asc" }],
+      take: RESULTADOS_DA_BUSCA,
+    });
+    return linhas.map(daLinha);
+  }
+
+  /**
    * Atributos do monstro, ou null (sem chave, ID desconhecido ou Divine Pride fora do ar).
    * Atingido o teto de buscas da hora, devolve o que já está guardado ou recusa com 429.
    */
   async porId(idJogo: number): Promise<MonstroAlvo | null> {
     const cache = await this.prisma.monstro.findUnique({ where: { idJogo } });
     const guardado = cache?.existe ? daLinha(cache) : null;
+    if (cache?.origem === "LATAM_TOOLS") return guardado;
     if (cache?.origem === "DIVINE_PRIDE") {
       if (cache.existe) return guardado;
       if (Date.now() - cache.buscadoEm.getTime() < REVISAR_AUSENTE_MS) return null;

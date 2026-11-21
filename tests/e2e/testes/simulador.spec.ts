@@ -1,5 +1,5 @@
-// Simulação de dano (D57): um membro escolhe um chefe de referência da Torre, preenche o ataque e
-// vê a estimativa, no computador e no celular.
+// Simulação de dano (D57, D58): um membro escolhe um chefe da Torre, busca um monstro pelo nome,
+// preenche o ataque e vê a estimativa, no computador e no celular.
 import { type Page, expect, test } from "@playwright/test";
 import { ORIGEM } from "../playwright.config";
 
@@ -21,11 +21,18 @@ test("membro simula o dano contra um chefe da Torre e vê a estimativa", async (
   await expect(page.getByRole("heading", { name: "Simulação de dano", level: 1 })).toBeVisible();
   await expect(page.getByTestId("aviso-estimativa")).toContainText("estimativa");
 
-  await page.locator('select[name="instancia"]').selectOption({ label: "Torre da Constelação (2)" });
+  await page.locator('select[name="instancia"]').selectOption({ label: "Torre da Constelação (27)" });
   await page.locator('select[name="chefe"]').selectOption({ label: "Naght Sieger" });
   await expect(page.getByTestId("observacao-chefe")).toContainText("Andar 25");
   await expect(campo("DEF")).toHaveValue("410");
   await expect(campo("HP")).toHaveValue("300000000");
+
+  await page.getByRole("textbox", { name: "Nome do monstro" }).fill("valquíria rand");
+  await page.getByRole("button", { name: "Buscar pelo nome" }).click();
+  await page.getByRole("button", { name: "Valquíria Randgris · nv. 141 · ID 1751" }).click();
+  await expect(campo("Dano recebido %")).toHaveValue("10");
+  await expect(page.getByTestId("nota-alvo")).toContainText("latam-tools");
+  await page.locator('select[name="chefe"]').selectOption({ label: "Naght Sieger" });
 
   await campo("Nível base").fill("250");
   await campo("FOR").fill("200");
