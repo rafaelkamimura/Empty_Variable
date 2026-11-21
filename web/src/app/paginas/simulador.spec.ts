@@ -3,6 +3,7 @@
 // aplicado e o que foi ignorado.
 // D61: a tela do simulador completo troca a build e o alvo com a interface do simulador pelo
 // armazenamento do navegador.
+// D62: a tela abre no simulador a build de um link de compartilhamento do simulador público.
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { type ComponentFixture, TestBed } from "@angular/core/testing";
@@ -10,6 +11,7 @@ import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ActivatedRoute, convertToParamMap, provideRouter } from "@angular/router";
 import { NAO_CONSIDERA } from "@betel/simulador";
 import { atributoDaBuild, detalhesDoEquipamento, refinoEGrau, resumoDosAtributos } from "../core/build";
+import { lerLinkColado } from "../core/link-simulador";
 import type { AtributosBuild, ItemEquipamento, SituacaoVinculo } from "../core/modelos";
 import {
   type AlvosSimulacao,
@@ -22,6 +24,7 @@ import {
   CHAVE_BUILD,
   CHAVE_MONSTRO,
   CHAVE_PERSONAGEM_ABERTO,
+  enderecoDoSimulador,
   type InstanciaDoHub,
   SimuladorHubComponent,
 } from "./simulador-hub.component";
@@ -751,5 +754,203 @@ describe("SimuladorHubComponent (D61)", () => {
       );
     await falha;
     expect(c.erro()).toContain("não devolveu uma build válida");
+  });
+
+  describe("link do simulador público (D62)", () => {
+    const TOKEN = "N4IgTokenDeTeste.-$";
+    const LINK = `https://simulador.latam-tools.com.br/s/${TOKEN}/`;
+    const IMPORTADA = JSON.stringify({ class: 8, level: 105 });
+    /** Faz o papel da interface do simulador: grava o rascunho da build que abriu. */
+    const interfaceGrava = () => setTimeout(() => localStorage.setItem(CHAVE_BUILD, IMPORTADA));
+
+    it("reconhece o que foi colado: só os dois endereços do simulador passam", () => {
+      expect(lerLinkColado(`  ${LINK}  `)).toEqual({ link: LINK });
+      expect(lerLinkColado(`<${LINK}>`)).toEqual({ link: LINK });
+      expect(lerLinkColado("short.latam-tools.com.br/Ukxuq4")).toEqual({
+        link: "short.latam-tools.com.br/Ukxuq4",
+      });
+      expect(lerLinkColado("https://simulador.latam-tools.com.br/#/?b=abc")).toEqual({
+        link: "https://simulador.latam-tools.com.br/#/?b=abc",
+      });
+      const vazio = lerLinkColado("   ");
+      expect("erro" in vazio && vazio.erro).toContain("Cole o link");
+      for (const fora of [
+        "https://exemplo.com/s/abc/",
+        "https://simulador.latam-tools.com.br.exemplo.com/s/abc/",
+        "https://exemplo.com/?u=simulador.latam-tools.com.br",
+        "isto não é um link",
+      ]) {
+        const lido = lerLinkColado(fora);
+        expect("erro" in lido && lido.erro).toContain("não é do simulador");
+      }
+      const grande = lerLinkColado(`https://simulador.latam-tools.com.br/s/${"A".repeat(70_000)}/`);
+      expect("erro" in grande && grande.erro).toContain("grande demais");
+    });
+
+    it("monta o endereço do quadro com o token depois do #, como a interface o lê, e sem ele na recarga comum", () => {
+      const base = "https://ev.exemplo/emptyvariable/";
+      expect(enderecoDoSimulador(base, 3)).toBe(
+        "https://ev.exemplo/emptyvariable/simulador-latam/index.html?v=3",
+      );
+      expect(enderecoDoSimulador(base, 4, TOKEN)).toBe(
+        `https://ev.exemplo/emptyvariable/simulador-latam/index.html?v=4#/?b=${TOKEN}`,
+      );
+    });
+
+    it("mostra o campo com rótulo e dica", async () => {
+      const { f } = await abrir();
+      const raiz = f.nativeElement as HTMLElement;
+      const campo = raiz.querySelector<HTMLInputElement>('[data-testid="simulador-link"]');
+      expect(raiz.querySelector(`label[for="${campo?.id}"]`)?.textContent).toContain("Link do simulador");
+      expect(campo?.getAttribute("aria-describedby")).toContain("simulador-link-dica");
+      expect(raiz.querySelector("#simulador-link-dica")?.textContent).toContain(
+        "entra no lugar da que está no simulador",
+      );
+      expect(raiz.querySelector('[data-testid="simulador-importar-link"]')?.textContent).toContain(
+        "Abrir o link no simulador",
+      );
+    });
+
+    it("recusa outro endereço junto do campo, sem chamar a API", async () => {
+      const { f, c, http } = await abrir();
+      c.link.set("https://exemplo.com/s/abc/");
+      await c.importar();
+      f.detectChanges();
+      const raiz = f.nativeElement as HTMLElement;
+      const erro = raiz.querySelector('[data-testid="simulador-link-erro"]');
+      expect(erro?.getAttribute("role")).toBe("alert");
+      expect(erro?.textContent).toContain("não é do simulador");
+      expect(raiz.querySelector('[data-testid="simulador-link"]')?.getAttribute("aria-invalid")).toBe("true");
+      http.expectNone("/api/simulador/link");
+    });
+
+    it("abre a build do link: a API confere, a interface recebe o token no endereço e a build fica sem ficha", async () => {
+      localStorage.setItem(CHAVE_PERSONAGEM_ABERTO, "p-sage");
+      localStorage.setItem("ro-set-compare", "{}");
+      const { f, c, http } = await abrir();
+      const confirmar = spyOn(window, "confirm").and.returnValue(true);
+      c.link.set(` ${LINK} `);
+      const importacao = c.importar();
+      expect(c.ocupado()).toBeTrue();
+      expect(c.importando()).toBeTrue();
+      const pedido = http.expectOne("/api/simulador/link");
+      expect(pedido.request.method).toBe("POST");
+      expect(pedido.request.body).toEqual({ link: LINK });
+      pedido.flush({ token: TOKEN, personalizados: true });
+      interfaceGrava();
+      await importacao;
+      f.detectChanges();
+      expect(confirmar).not.toHaveBeenCalled();
+      expect(localStorage.getItem(CHAVE_BUILD)).toBe(IMPORTADA);
+      expect(localStorage.getItem(CHAVE_PERSONAGEM_ABERTO)).toBeNull();
+      expect(localStorage.getItem("ro-set-compare")).toBeNull();
+      expect(c.link()).toBe("");
+      expect(c.erroDoLink()).toBe("");
+      expect(c.nota()).toContain("Build do link aberta no simulador.");
+      expect(c.nota()).toContain("ainda não está em nenhuma ficha");
+      expect(c.avisos()).toEqual([jasmine.stringContaining("itens personalizados")]);
+      expect(c.ocupado()).toBeFalse();
+    });
+
+    it("grava a build importada numa ficha só depois da confirmação", async () => {
+      const { c, http } = await abrir();
+      c.link.set(LINK);
+      const importacao = c.importar();
+      http.expectOne("/api/simulador/link").flush({ token: TOKEN, personalizados: false });
+      interfaceGrava();
+      await importacao;
+      c.personagemId.set("p-sage");
+      const confirmar = spyOn(window, "confirm").and.returnValue(false);
+      await c.salvar();
+      expect(confirmar).toHaveBeenCalledTimes(1);
+      expect(confirmar.calls.mostRecent().args[0]).toContain("não foi aberta da ficha de Ana-Sage");
+      http.expectNone("/api/simulador/personagens/p-sage/build");
+      confirmar.and.returnValue(true);
+      const envio = c.salvar();
+      const pedido = http.expectOne("/api/simulador/personagens/p-sage/build");
+      expect(pedido.request.body).toEqual({ build: { class: 8, level: 105 } });
+      pedido.flush({
+        personagem: { id: "p-sage", nome: "Ana-Sage", nivelBase: 105, classe: "Feiticeiro" },
+        equipamentos: 8,
+        buildInteira: true,
+        avisos: [],
+      });
+      await envio;
+      expect(localStorage.getItem(CHAVE_PERSONAGEM_ABERTO)).toBe("p-sage");
+    });
+
+    it("pergunta antes de trocar um rascunho com trabalho não gravado; o inicial da interface e o importado trocam direto", async () => {
+      const { c, http } = await abrir();
+      const confirmar = spyOn(window, "confirm").and.returnValue(false);
+      const mexida = JSON.stringify({ class: 8, level: 110 });
+      localStorage.setItem(CHAVE_BUILD, mexida);
+      c.link.set(LINK);
+      await c.importar();
+      expect(confirmar).toHaveBeenCalledTimes(1);
+      expect(confirmar.calls.mostRecent().args[0]).toContain("o que não foi gravado numa ficha se perde");
+      http.expectNone("/api/simulador/link");
+      expect(localStorage.getItem(CHAVE_BUILD)).toBe(mexida);
+      expect(c.link()).toBe(LINK);
+
+      const inicial = JSON.stringify({ class: 1, level: 99 });
+      localStorage.setItem(CHAVE_BUILD, inicial);
+      window.dispatchEvent(
+        new StorageEvent("storage", { key: CHAVE_BUILD, oldValue: null, newValue: inicial }),
+      );
+      let importacao = c.importar();
+      http.expectOne("/api/simulador/link").flush({ token: TOKEN, personalizados: false });
+      interfaceGrava();
+      await importacao;
+      expect(confirmar).toHaveBeenCalledTimes(1);
+      expect(localStorage.getItem(CHAVE_BUILD)).toBe(IMPORTADA);
+
+      c.link.set(LINK);
+      importacao = c.importar();
+      http.expectOne("/api/simulador/link").flush({ token: TOKEN, personalizados: false });
+      interfaceGrava();
+      await importacao;
+      expect(confirmar).toHaveBeenCalledTimes(1);
+    });
+
+    it("mostra o erro da API junto do campo e não mexe no rascunho", async () => {
+      const { c, http } = await abrir();
+      const rascunho = JSON.stringify({ class: 8, level: 110 });
+      localStorage.setItem(CHAVE_BUILD, rascunho);
+      localStorage.setItem(CHAVE_PERSONAGEM_ABERTO, "p-sage");
+      spyOn(window, "confirm").and.returnValue(true);
+      c.link.set("https://short.latam-tools.com.br/Ukxuq4");
+      const importacao = c.importar();
+      http
+        .expectOne("/api/simulador/link")
+        .flush(
+          { message: "Não foi possível abrir o link curto agora. Tente o link completo." },
+          { status: 502, statusText: "Bad Gateway" },
+        );
+      await importacao;
+      expect(c.erroDoLink()).toBe("Não foi possível abrir o link curto agora. Tente o link completo.");
+      expect(localStorage.getItem(CHAVE_BUILD)).toBe(rascunho);
+      expect(localStorage.getItem(CHAVE_PERSONAGEM_ABERTO)).toBe("p-sage");
+      expect(c.link()).toBe("https://short.latam-tools.com.br/Ukxuq4");
+      expect(c.ocupado()).toBeFalse();
+    });
+
+    it("se a interface não abrir a build no prazo, devolve o rascunho que estava e avisa", async () => {
+      const { c, http } = await abrir();
+      const rascunho = JSON.stringify({ class: 8, level: 110 });
+      localStorage.setItem(CHAVE_BUILD, rascunho);
+      localStorage.setItem("ro-set-compare", "{}");
+      localStorage.setItem(CHAVE_PERSONAGEM_ABERTO, "p-sage");
+      spyOn(window, "confirm").and.returnValue(true);
+      c.prazoDoQuadroMs = 0;
+      c.link.set(LINK);
+      const importacao = c.importar();
+      http.expectOne("/api/simulador/link").flush({ token: TOKEN, personalizados: false });
+      await importacao;
+      expect(c.erroDoLink()).toContain("não abriu a build do link");
+      expect(localStorage.getItem(CHAVE_BUILD)).toBe(rascunho);
+      expect(localStorage.getItem("ro-set-compare")).toBe("{}");
+      expect(localStorage.getItem(CHAVE_PERSONAGEM_ABERTO)).toBe("p-sage");
+      expect(c.nota()).toBe("");
+    });
   });
 });
