@@ -71,3 +71,12 @@ html {
   --mat-toolbar-container-background-color: var(--superficie);
   --mat-toolbar-container-text-color: var(--texto);
 }
+
+/* Abas no celular: o Material reserva 24 px de cada lado do rótulo, e três abas já não cabem em
+ * 360 px (aparecem as setas de rolagem). Aqui a folga cai para --esp-3. */
+@media (max-width: 600px) {
+  .mat-mdc-tab-header .mdc-tab {
+    min-width: 0;
+    padding-inline: var(--esp-3);
+  }
+}
