@@ -290,9 +290,13 @@ export class GestaoInstanciasComponent implements OnInit {
   nova: NovaInstancia = vazia();
   encontros: EncontroEditavel[] = [{ nome: "Chefe", multiplicador: null }];
 
-  /** A lista da browiki sem as que já estão cadastradas. */
+  /** A lista da browiki sem as que já foram configuradas (as do catálogo, ainda sem versão, seguem na lista: D56). */
   readonly referenciasLivres = computed(() => {
-    const ja = new Set(this.instancias().map((i) => i.nome.toLowerCase()));
+    const ja = new Set(
+      this.instancias()
+        .filter((i) => i.vigente !== null)
+        .map((i) => i.nome.toLowerCase()),
+    );
     return this.referencia().filter((r) => !ja.has(r.nome.toLowerCase()));
   });
 
