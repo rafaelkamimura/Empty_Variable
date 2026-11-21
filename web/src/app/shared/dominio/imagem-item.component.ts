@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal } from "@angular/core";
 import { IconeComponent } from "./icone.component";
 import { iconeDoItem, tomDe } from "./visual";
 
@@ -58,6 +58,7 @@ export function limparFundoBranco(pixels: ImageData): boolean {
  */
 @Component({
   selector: "app-imagem-item",
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconeComponent],
   template: `
     @if (url(); as u) {

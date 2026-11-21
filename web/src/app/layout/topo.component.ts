@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from "@angular/core";
 import { MatMenuModule } from "@angular/material/menu";
 import { RouterLink } from "@angular/router";
-import { IconeComponent } from "../core/icone.component";
+import { IconeComponent } from "../shared/dominio/icone.component";
 import type { UsuarioMe } from "../core/modelos";
 import { formatarPontos } from "../shared/pipes/pontos.pipe";
 import { MarcaComponent } from "../shared/ui/marca/marca.component";

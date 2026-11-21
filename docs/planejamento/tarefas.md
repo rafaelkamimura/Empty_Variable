@@ -223,7 +223,7 @@ Pedido do usuário durante o M11: aplicar o layout da imagem da loja a todo o si
 |---|---|
 | Shell | Barra superior com o logo, a busca da loja, "Seu saldo" (`GET /api/saldo/me`) e o avatar; menu lateral com ícones. Na loja, o menu abre as categorias; na Nebula, "Minhas solicitações". Em telas estreitas, o menu vira uma faixa rolável |
 | Cartões | Classes globais (`.cartao-b`, `.grade-cartoes`, `.chips`) e o componente `app-icone`. Usados na loja (com os chips Todos, Disponíveis e Consignados), na Nebula, nos personagens da party e nos drops da run, e em "Meus personagens" |
-| Cores | Acento azul-aço acinzentado `#8fb2c2` sobre preto e cinzas; tons frios e dessaturados por item e por classe (`core/visual.ts`) |
+| Cores | Paleta Empty Variable (fundo `#040017`, acento orquídea, auroras azul, violeta e magenta; ver `docs/frontend/diretrizes.md` §2); tons de identidade por item e por classe (`shared/dominio/visual.ts`, tokens `--tom-*`) |
 
 ### Épico III, M11 Solicitação de Nebula (2026-11-15, branch `feat/m11-nebula`)
 

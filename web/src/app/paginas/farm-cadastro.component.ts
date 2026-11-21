@@ -18,7 +18,7 @@ import {
   FarmStore,
 } from "../core/farm";
 import { FarmBuscaItemComponent, type ItemEscolhido } from "../core/farm-busca-item.component";
-import { ImagemItemComponent } from "../core/imagem-item.component";
+import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 import { mensagemDeErro } from "../core/modelos";
 
 /** D49, D50, D52: personagens do vínculo, instâncias pessoais com os drops e os preços em zeny. */

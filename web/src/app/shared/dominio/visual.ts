@@ -19,7 +19,7 @@ export const TONS = [
 export function tomDe(nome: string): string {
   let h = 0;
   for (const ch of nome) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return TONS[h % TONS.length]!;
+  return TONS[h % TONS.length] ?? TONS[0];
 }
 
 /** Ícone do item pelo tipo e pelo nome (a loja não tem imagens do jogo). */
@@ -41,7 +41,7 @@ export function siglaDaClasse(apelido: string): string {
   const palavras = s.split(/\s+/).filter((p) => p.length > 0);
   if (palavras.length > 1)
     return palavras
-      .map((p) => p[0]!.toUpperCase())
+      .map((p) => p.charAt(0).toUpperCase())
       .join("")
       .slice(0, 3);
   return s.slice(0, 2).toUpperCase();

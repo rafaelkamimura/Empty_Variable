@@ -1,4 +1,4 @@
-// Modelos da loja (Épico II, M8), como a API devolve, e regras de exibição.
+// Modelos da loja (Épico II, M8), como a API devolve, rótulos e regras puras de exibição.
 
 export type TipoItem = "MATERIAL" | "VISUAL" | "CARTA" | "OUTRO";
 export type StatusCompra = "PENDENTE_ENTREGA" | "ENTREGUE" | "CANCELADA";
@@ -15,6 +15,16 @@ export interface ItemVitrine {
   limitePorMembro: number | null;
   limitePeriodoDias: number | null;
   limiteRestante: number | null;
+}
+
+/** Item do catálogo público (/api/loja/catalogo): o que há no estoque e o preço, se definido. */
+export interface ItemCatalogoLoja {
+  itemId: string;
+  nome: string;
+  idJogo: number | null;
+  tipo: TipoItem | null;
+  quantidade: number;
+  preco: number | null;
 }
 
 export interface Vitrine {
@@ -60,6 +70,36 @@ export const ROTULO_STATUS_COMPRA: Record<StatusCompra, string> = {
 export function maximoComprável(i: ItemVitrine): number {
   return i.limiteRestante === null ? i.disponivel : Math.min(i.disponivel, i.limiteRestante);
 }
+
+/** Teto da quantidade numa compra: o máximo comprável, limitado a 10 mil unidades. */
+export const TETO_COMPRA = 10_000;
+
+export function maximoDaCompra(cotacao: ItemVitrine | null): number {
+  return cotacao ? Math.min(maximoComprável(cotacao), TETO_COMPRA) : 0;
+}
+
+/** A compra pode ser enviada: quantidade inteira entre 1 e o máximo, e o total cabe no saldo. */
+export function compraValida(
+  quantidade: number,
+  maximo: number,
+  total: number,
+  saldo: number | null,
+): boolean {
+  return Number.isInteger(quantidade) && quantidade >= 1 && quantidade <= maximo && total <= (saldo ?? 0);
+}
+
+/** Itens cujo nome contém a busca (sem diferenciar maiúsculas, em pt-BR). */
+export function filtrarPorNome<T extends { nome: string }>(itens: readonly T[], busca: string): T[] {
+  const termo = busca.trim().toLocaleLowerCase("pt-BR");
+  return itens.filter((i) => i.nome.toLocaleLowerCase("pt-BR").includes(termo));
+}
+
+/** Tom do selo de situação da compra. */
+export const TOM_STATUS_COMPRA: Record<StatusCompra, "neutro" | "sucesso" | "alerta"> = {
+  PENDENTE_ENTREGA: "alerta",
+  ENTREGUE: "sucesso",
+  CANCELADA: "neutro",
+};
 
 /** Selo do cartão: o motivo mais importante para o comprador. */
 export function seloDoItem(
@@ -115,6 +155,16 @@ export const ROTULO_STATUS_OFERTA: Record<StatusOferta, string> = {
   RETIRADA_SOLICITADA: "Retirada pedida",
   RETIRADA: "Retirada",
   ESGOTADA: "Vendida",
+};
+
+/** Tom do selo de situação da oferta. */
+export const TOM_STATUS_OFERTA: Record<StatusOferta, "neutro" | "acento" | "sucesso" | "alerta" | "erro"> = {
+  PENDENTE: "neutro",
+  APROVADA: "acento",
+  REJEITADA: "erro",
+  RETIRADA_SOLICITADA: "alerta",
+  RETIRADA: "neutro",
+  ESGOTADA: "sucesso",
 };
 
 /** O vendedor pode retirar enquanto nada foi vendido por completo (D25). */

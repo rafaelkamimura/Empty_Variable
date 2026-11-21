@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from "@angular/core";
 import { RouterLink, RouterLinkActive } from "@angular/router";
-import { IconeComponent, type NomeIcone } from "../core/icone.component";
+import { IconeComponent, type NomeIcone } from "../shared/dominio/icone.component";
 
 export interface ItemMenu {
   readonly rota: string;

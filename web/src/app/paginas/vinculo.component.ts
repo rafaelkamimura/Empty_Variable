@@ -7,7 +7,7 @@ import { MatCardModule } from "@angular/material/card";
 import { MatDialog, MatDialogModule, type MatDialogRef } from "@angular/material/dialog";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { detalhesDoEquipamento, refinoEGrau, resumoDosAtributos } from "../core/build";
-import { ImagemItemComponent } from "../core/imagem-item.component";
+import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 import { agruparClasses } from "../core/grupos-classes";
 import { iconeDaClasse } from "../core/icones-classes";
 import { firstValueFrom } from "rxjs";
