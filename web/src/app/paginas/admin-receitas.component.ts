@@ -11,12 +11,12 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import type { ItemCatalogo } from "../core/cadastros";
+import type { Receita } from "../features/nebula/data/nebula.modelos";
 import {
   type ComponenteEditavel,
   pendenciasComponentes,
-  type Receita,
   situacaoReceita,
-} from "../core/nebula";
+} from "../features/nebula/data/receitas.modelos";
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 

@@ -211,7 +211,7 @@ Planejamento em `docs/planejamento/epico2.md`.
 | T-41 Disponibilidade | ✅ Concluída | `calcularDisponibilidade` (função pura): trazendo a peça e com a peça do estoque, usando primeiro as peças prontas e fabricando o resto, com os Fragmentos disputados entre a Nebulosa e a Astral. Considera só o estoque do grupo, incluindo a reserva (D33), e devolve as faltas por item |
 | T-42 Tela | ✅ Concluída | `/admin/receitas` (menu Cadastros): selo ativa, "a validar" ou sem preço, fonte, componentes com o estoque do grupo, editor de componentes com peça-base e receita da peça, disponibilidade nas duas modalidades, nova versão de preço, limite e "Validei, ativar". Conferida no navegador |
 
-**Testes:** `test/disponibilidade.test.ts` (7, CT-109, CT-121 a CT-123), `test/receitas.test.ts` (CT-109 a CT-111, CT-123 e CT-125) e o seed em `test/cadastros.test.ts`, incluindo o item da fonte fora do catálogo; `core/nebula.spec.ts` no frontend.
+**Testes:** `test/disponibilidade.test.ts` (7, CT-109, CT-121 a CT-123), `test/receitas.test.ts` (CT-109 a CT-111, CT-123 e CT-125) e o seed em `test/cadastros.test.ts`, incluindo o item da fonte fora do catálogo; `features/nebula/data/receitas.modelos.spec.ts` no frontend.
 
 **Verificação:** 162 testes da API (20 novos), 34 do frontend (2 novos), 84 do motor e 8 e2e passando, além de lint, typecheck, build e Prettier. Na conferência no navegador apareceu um defeito, já corrigido: as pendências do editor de componentes não se atualizavam ao editar.
 

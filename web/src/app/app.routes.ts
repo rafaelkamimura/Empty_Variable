@@ -12,6 +12,7 @@ import { ROTAS_DEV } from "./dev/dev.routes";
 import { ROTAS_CARTEIRA } from "./features/carteira/carteira.routes";
 import { ROTAS_FARM } from "./features/farm/farm.routes";
 import { ROTAS_LOJA } from "./features/loja/loja.routes";
+import { ROTAS_NEBULA } from "./features/nebula/nebula.routes";
 
 /** paineis §4: o painel vem da URL — /me, /loja e /nebula (Cliente), /gestao (Gestão), /admin (Administração). */
 const rotasCompletas: Routes = [
@@ -44,6 +45,7 @@ const rotasCompletas: Routes = [
   ...ROTAS_LOJA,
   ...ROTAS_CARTEIRA,
   ...ROTAS_FARM,
+  ...ROTAS_NEBULA,
   {
     path: "me",
     canActivate: [vinculadoGuard],
@@ -61,19 +63,6 @@ const rotasCompletas: Routes = [
     canActivate: [autenticadoGuard],
     title: "Estimativa de dano · Empty Variable",
     loadComponent: () => import("./paginas/simulador.component").then((m) => m.SimuladorComponent),
-  },
-  {
-    path: "nebula",
-    canActivate: [vinculadoGuard],
-    title: "Nebula · Empty Variable",
-    loadComponent: () => import("./paginas/nebula.component").then((m) => m.NebulaComponent),
-  },
-  {
-    path: "nebula/solicitacoes",
-    canActivate: [vinculadoGuard],
-    title: "Minhas solicitações · Empty Variable",
-    loadComponent: () =>
-      import("./paginas/nebula-solicitacoes.component").then((m) => m.NebulaSolicitacoesComponent),
   },
 
   // ---- Gestão (gestor e admin, D37) ----
@@ -199,14 +188,6 @@ const rotasCompletas: Routes = [
     canActivate: [adminGuard],
     title: "Ofertas · Empty Variable",
     loadComponent: () => import("./paginas/admin-ofertas.component").then((m) => m.AdminOfertasComponent),
-  },
-  {
-    path: "admin/nebula",
-    canActivate: [adminGuard],
-    title: "Entregas da Nebula · Empty Variable",
-    data: { admin: true },
-    loadComponent: () =>
-      import("./paginas/nebula-solicitacoes.component").then((m) => m.NebulaSolicitacoesComponent),
   },
   {
     path: "admin/taxa",
