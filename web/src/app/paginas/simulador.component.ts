@@ -30,7 +30,7 @@ import { mensagemDeErro, type PersonagemResumo, type SituacaoVinculo } from "../
 export interface MonstroAlvo {
   idJogo: number;
   nome: string | null;
-  origem: "DIVINE_PRIDE" | "REFERENCIA";
+  origem: "DIVINE_PRIDE" | "LATAM_TOOLS" | "REFERENCIA";
   servidor: string | null;
   fonte: string | null;
   nivel: number | null;
@@ -395,6 +395,43 @@ const alvoVazio = (): AlvoFormulario => ({
               }
             }
             <div class="linha">
+              <label class="campo largo"
+                >Nome do monstro
+                <input
+                  name="buscaMonstro"
+                  maxlength="80"
+                  placeholder="Ex.: Bafomé"
+                  [(ngModel)]="buscaMonstro"
+                  (keydown.enter)="$event.preventDefault(); buscarPorNome()"
+                />
+              </label>
+              <button
+                type="button"
+                class="botao"
+                [disabled]="ocupado() || buscaMonstro.trim().length < 2"
+                (click)="buscarPorNome()"
+              >
+                Buscar pelo nome
+              </button>
+            </div>
+            @if (encontrados(); as lista) {
+              @if (lista.length) {
+                <ul class="encontrados" data-testid="monstros-encontrados">
+                  @for (m of lista; track m.idJogo) {
+                    <li>
+                      <button type="button" class="botao" (click)="escolherEncontrado(m)">
+                        {{ m.nome }} · nv. {{ m.nivel }} · ID {{ m.idJogo }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="dica" data-testid="monstros-encontrados">
+                  Nenhum monstro guardado com esse nome. Busque pelo ID do jogo.
+                </p>
+              }
+            }
+            <div class="linha">
               <label class="campo"
                 >ID do monstro no jogo
                 <input type="number" name="idMonstro" min="1" [(ngModel)]="idMonstro" />
@@ -703,6 +740,8 @@ export class SimuladorComponent implements OnInit {
   readonly chefeId = signal<number | null>(null);
   readonly notaDaBuild = signal<string | null>(null);
   readonly notaDoAlvo = signal<string | null>(null);
+  /** Resultado da última busca por nome; null antes de buscar. */
+  readonly encontrados = signal<MonstroAlvo[] | null>(null);
   readonly resultado = signal<RespostaSimulacao | null>(null);
 
   readonly instancia = computed(() => this.instancias().find((i) => i.id === this.instanciaId()) ?? null);
@@ -742,6 +781,7 @@ export class SimuladorComponent implements OnInit {
   bonusMagico: BonusMagico = { ...BONUS_MAGICO_ZERADO };
   alvo: AlvoFormulario = alvoVazio();
   idMonstro: number | null = null;
+  buscaMonstro = "";
   nomeNovoChefe = "";
 
   async ngOnInit(): Promise<void> {
@@ -850,9 +890,11 @@ export class SimuladorComponent implements OnInit {
     ];
     this.notaDoAlvo.set(
       [
-        monstro.origem === "DIVINE_PRIDE"
-          ? `Atributos da Divine Pride${monstro.servidor ? ` (servidor ${monstro.servidor})` : ""}.`
-          : "Atributos de referência (banco de dados do kRO pela Divine Pride), não conferidos no LATAM.",
+        monstro.origem === "LATAM_TOOLS"
+          ? "Atributos do simulador da latam-tools (RO LATAM)."
+          : monstro.origem === "DIVINE_PRIDE"
+            ? `Atributos da Divine Pride${monstro.servidor ? ` (servidor ${monstro.servidor})` : ""}.`
+            : "Atributos de referência (banco de dados do kRO pela Divine Pride), não conferidos no LATAM.",
         monstro.raca ? `Raça: ${ROTULOS_RACA[monstro.raca] ?? monstro.raca}.` : "",
         monstro.chefe ? "É chefe." : "",
         faltam.length ? `A fonte não trouxe: ${faltam.join(", ")}. Preencha ou deixe em zero.` : "",
@@ -861,6 +903,30 @@ export class SimuladorComponent implements OnInit {
         .filter((x) => x !== "")
         .join(" "),
     );
+  }
+
+  /** D58: procura pelo nome entre os monstros guardados (os do simulador da latam-tools e os já buscados). */
+  async buscarPorNome(): Promise<void> {
+    const busca = this.buscaMonstro.trim();
+    if (busca.length < 2 || this.ocupado()) return;
+    this.ocupado.set(true);
+    this.erro.set(null);
+    try {
+      this.encontrados.set(
+        await firstValueFrom(this.http.get<MonstroAlvo[]>("/api/simulador/monstros", { params: { busca } })),
+      );
+    } catch (e) {
+      this.erro.set(mensagemDeErro(e));
+    } finally {
+      this.ocupado.set(false);
+    }
+  }
+
+  escolherEncontrado(monstro: MonstroAlvo): void {
+    this.idMonstro = monstro.idJogo;
+    this.usarMonstro(monstro);
+    if (this.chefe()?.idMonstro !== monstro.idJogo) this.chefeId.set(null);
+    this.encontrados.set(null);
   }
 
   async buscarMonstro(): Promise<void> {

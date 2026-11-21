@@ -8,6 +8,7 @@ import {
   Module,
   Param,
   Post,
+  Query,
 } from "@nestjs/common";
 import type { Usuario } from "@prisma/client";
 import {
@@ -133,6 +134,15 @@ export class SimuladorController {
   @Get("alvos")
   alvos() {
     return this.simulador.alvos();
+  }
+
+  @Get("monstros")
+  monstros(@Query("busca") busca: unknown) {
+    const texto = typeof busca === "string" ? busca.trim().replace(/\s+/g, " ") : "";
+    if (texto.length < 2 || texto.length > 80) {
+      throw new BadRequestException("Informe de 2 a 80 letras do nome do monstro.");
+    }
+    return this.simulador.buscarMonstros(texto);
   }
 
   @Get("monstros/:idJogo")

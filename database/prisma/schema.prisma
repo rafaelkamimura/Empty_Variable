@@ -1082,7 +1082,7 @@ model Monstro {
   idJogo          Int      @id @map("id_jogo")
   nome            String?
   existe          Boolean
-  /// DIVINE_PRIDE (API) ou REFERENCIA (dados citados no código, a confirmar).
+  /// DIVINE_PRIDE (API), LATAM_TOOLS (simulador da latam-tools, D58) ou REFERENCIA (dados citados no código).
   origem          String
   servidor        String?
   fonte           String?
