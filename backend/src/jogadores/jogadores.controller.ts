@@ -36,6 +36,7 @@ const SELECAO_JOGADOR = {
       nivelBase: true,
       build: true,
       equipamentos: true,
+      atributos: true,
     },
     orderBy: { nome: "asc" as const },
   },

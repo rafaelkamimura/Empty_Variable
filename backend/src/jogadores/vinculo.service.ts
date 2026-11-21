@@ -11,13 +11,16 @@ import { grupoDaClasseLatam } from "../cadastros/classes-latam.js";
 import { ehViolacaoUnicidade } from "../comum/filtro-prisma.js";
 import { NotificacoesService } from "../notificacoes/notificacoes.service.js";
 import { PrismaService, type Tx } from "../prisma/prisma.service.js";
+import type { AtributosFicha, EquipamentoFicha } from "./ficha-build.js";
 
 export interface FichaPersonagem {
   nome: string;
   classeId: string;
   nivelBase: number;
   build: string | null;
-  equipamentos: Record<string, string | { id: number; nome: string }>;
+  equipamentos: Record<string, string | EquipamentoFicha>;
+  /** D57: atributos da build; fichas antigas pendentes não trazem o campo. */
+  atributos?: AtributosFicha;
 }
 
 export const SELECAO_FICHA = {
@@ -28,6 +31,7 @@ export const SELECAO_FICHA = {
   nivelBase: true,
   build: true,
   equipamentos: true,
+  atributos: true,
   classe: { select: { nomeOficial: true, apelidoGrupo: true } },
 } as const;
 

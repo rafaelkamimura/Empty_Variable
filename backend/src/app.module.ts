@@ -23,6 +23,7 @@ import { RunsModule } from "./runs/runs.module.js";
 import { FiltroErroDominio } from "./comum/filtro-dominio.js";
 import { PrismaModule } from "./prisma/prisma.service.js";
 import { SaudeController } from "./saude/saude.controller.js";
+import { SimuladorModule } from "./simulador/simulador.controller.js";
 
 @Global()
 @Module({
@@ -38,6 +39,7 @@ export class ConfiguracaoModule {}
     AuditoriaModule,
     AuthModule,
     JogadoresModule,
+    SimuladorModule,
     CadastrosModule,
     LedgerModule,
     RunsModule,

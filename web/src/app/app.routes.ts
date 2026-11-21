@@ -62,6 +62,12 @@ const rotasCompletas: Routes = [
     loadComponent: () => import("./paginas/farm.component").then((m) => m.FarmComponent),
   },
   {
+    path: "simulador",
+    canActivate: [autenticadoGuard],
+    title: "Simulação de dano · Empty Variable",
+    loadComponent: () => import("./paginas/simulador.component").then((m) => m.SimuladorComponent),
+  },
+  {
     path: "loja/compras",
     canActivate: [vinculadoGuard],
     title: "Minhas compras · Empty Variable",

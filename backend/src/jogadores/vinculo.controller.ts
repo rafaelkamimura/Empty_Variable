@@ -22,35 +22,23 @@ import {
   uuid,
 } from "../comum/validacao.js";
 import { BuildSimuladorService } from "./build-simulador.js";
+import { type EquipamentoFicha, lerAtributos, lerEquipamento, SLOTS_FICHA } from "./ficha-build.js";
 import { VinculoService } from "./vinculo.service.js";
 
 const STATUS: readonly StatusSolicitacao[] = ["PENDENTE", "APROVADA", "REJEITADA"];
 
-const SLOTS = [
-  "topo",
-  "meio",
-  "baixo",
-  "arma",
-  "armadura",
-  "escudo",
-  "capa",
-  "calcado",
-  "acessorio1",
-  "acessorio2",
-];
-
+/**
+ * Lê a ficha do corpo da requisição. Sem o campo `atributos` (cliente anterior à D57), os
+ * atributos já guardados ficam como estão; `null` ou `{}` os apaga.
+ */
 function lerFicha(valor: unknown) {
   const b = objeto(valor);
   const dados = b["equipamentos"] === undefined ? {} : objeto(b["equipamentos"]);
-  const equipamentos: Record<string, string | { id: number; nome: string }> = {};
-  for (const slot of SLOTS) {
+  const equipamentos: Record<string, string | EquipamentoFicha> = {};
+  for (const slot of SLOTS_FICHA) {
     const selecionado = dados[slot];
     if (selecionado && typeof selecionado === "object") {
-      const item = objeto(selecionado);
-      equipamentos[slot] = {
-        id: inteiro(item["id"], "ID do equipamento", 1, 2_147_483_647),
-        nome: texto(item["nome"], "Equipamento", 1, 160),
-      };
+      equipamentos[slot] = lerEquipamento(selecionado);
     } else {
       const nome = textoOpcional(selecionado, "Equipamento", 1, 100);
       if (nome) equipamentos[slot] = nome;
@@ -62,6 +50,7 @@ function lerFicha(valor: unknown) {
     classeId: uuid(b["classeId"], "Classe"),
     nivelBase: inteiro(b["nivelBase"], "Nível base", 1, 250),
     build: textoOpcional(b["build"], "Build", 1, 500) ?? null,
+    ...(b["atributos"] === undefined ? {} : { atributos: lerAtributos(b["atributos"]) }),
   };
 }
 
@@ -88,7 +77,7 @@ export class VinculoController {
     return this.vinculo.classes();
   }
 
-  /** D55: lê um link do simulador de dano e devolve classe, nível e equipamentos para preencher a ficha. */
+  /** D55 e D57: lê um link do simulador de dano e devolve a build para preencher a ficha. */
   @Post("build-simulador")
   @HttpCode(200)
   importarBuild(@Body() corpo: unknown) {

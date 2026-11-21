@@ -1,9 +1,10 @@
 // D55: importar para a ficha a build de um link do simulador de dano (simulador.latam-tools.com.br).
+// D57: a build vem inteira (refino, grau, cartas, encantamentos, atributos) e a ficha a guarda.
 import lzString from "lz-string";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { SeedService } from "../src/cadastros/seed.service.js";
 import { decodificarBuild, lerLinkSimulador } from "../src/jogadores/build-simulador.js";
-import { type Contexto, criarApp, ORIGEM } from "./suporte/app-de-teste.js";
+import { ADMIN_DISCORD_ID, type Contexto, criarApp, ORIGEM } from "./suporte/app-de-teste.js";
 
 /** Token de um link real do simulador: Feiticeiro, nível 105, com oito equipamentos. */
 const TOKEN_REAL =
@@ -29,6 +30,46 @@ const TOKEN_REAL =
   "oHcVI37hH0OI8cVZvEGQsjULxN1hBBTYHAthvUGoKhfEwQkfdag.A0Wwfo8MiA6IqDAb0ABtDQRSWDFNKSU8pGhpClIALoZKyVAH" +
   "Jei7SGMzEAxozRsYeJRiVeIDSl7XSwKZRgWFdw2xxhEAQsdZpSlSuEPmFhSDNEQOYYk79LGYBalJL8DtbrmMsQcaxGE7GUUcc48w" +
   "dRXFRHcX7bpwTqQ-VXEE-S9yOJEUsUZWchQChXHIJiQwKpaopxAL0.ipBZrxB0uYn4A46icQEfI9R6igA";
+
+/** Build com tudo o que a D57 guarda, nos campos que o simulador usa. */
+const BUILD_COMPLETA = {
+  class: 4252,
+  level: 250,
+  jobLevel: 55,
+  str: 130,
+  jobStr: 12,
+  agi: 90,
+  vit: 100,
+  int: 1,
+  dex: 60,
+  jobDex: 6,
+  luk: 50,
+  pow: 100,
+  sta: 10,
+  con: 50,
+  crt: 0,
+  selectedAtkSkill: "Dragonic Breath==10",
+  propertyAtk: "Fire",
+  weapon: 600020,
+  weaponRefine: 12,
+  weaponGrade: "A",
+  weaponCard1: 4608,
+  weaponCard2: 4608,
+  weaponCard3: 4625,
+  weaponEnchant1: 4700,
+  weaponEnchant3: 29594,
+  armor: 450127,
+  armorRefine: 9,
+  armorGrade: "b",
+  armorCard: 4302,
+  armorEnchant1: 4701,
+  armorEnchant2: 4702,
+  headUpper: 19241,
+  headUpperRefine: 0,
+  accLeft: 490015,
+  accLeftCard: 4040,
+  shadowWeapon: 24705,
+};
 
 const tokenDe = (build: object) =>
   lzString.compressToEncodedURIComponent(JSON.stringify(build)).replace(/\+/g, ".");
@@ -68,14 +109,20 @@ describe("Link do simulador (D55)", () => {
       classe: 8,
       nivelBase: 105,
       equipamentos: {
-        meio: 19241,
-        baixo: 420003,
-        arma: 540031,
-        armadura: 450042,
-        escudo: 28901,
-        capa: 20940,
-        calcado: 470017,
-        acessorio2: 490015,
+        meio: { id: 19241 },
+        baixo: { id: 420003 },
+        arma: { id: 540031 },
+        armadura: { id: 450042 },
+        escudo: { id: 28901 },
+        capa: { id: 20940 },
+        calcado: { id: 470017 },
+        acessorio2: { id: 490015 },
+      },
+      atributos: {
+        nivelClasse: 50,
+        base: { str: 1, agi: 1, vit: 1, int: 1, dex: 1, luk: 1 },
+        bonusClasse: { str: 3, agi: 3, vit: 5, int: 10, dex: 7, luk: 3 },
+        habilidade: { nome: "Fire Bolt", nivel: 10 },
       },
     });
   });
@@ -85,9 +132,57 @@ describe("Link do simulador (D55)", () => {
       decodificarBuild(
         tokenDe({ class: "8", level: 999, weapon: -1, armor: 1.5, boot: 2404, headUpper: 5011 }),
       ),
-    ).toEqual({ classe: null, nivelBase: null, equipamentos: { topo: 5011, calcado: 2404 } });
+    ).toEqual({
+      classe: null,
+      nivelBase: null,
+      equipamentos: { topo: { id: 5011 }, calcado: { id: 2404 } },
+      atributos: {},
+    });
     expect(decodificarBuild(tokenDe([1, 2]))).toBeNull();
     expect(decodificarBuild("isto-nao-e-um-token")).toBeNull();
+  });
+
+  it("D57: traz refino, grau, cartas, encantamentos, atributos, talentos e habilidade", () => {
+    expect(decodificarBuild(tokenDe(BUILD_COMPLETA))).toEqual({
+      classe: 4252,
+      nivelBase: 250,
+      equipamentos: {
+        arma: { id: 600020, refino: 12, grau: "A", cartas: [4608, 4608, 4625], encantamentos: [4700, 29594] },
+        armadura: { id: 450127, refino: 9, grau: "B", cartas: [4302], encantamentos: [4701, 4702] },
+        topo: { id: 19241, refino: 0 },
+        acessorio1: { id: 490015, cartas: [4040] },
+      },
+      atributos: {
+        nivelClasse: 55,
+        base: { str: 130, agi: 90, vit: 100, int: 1, dex: 60, luk: 50 },
+        bonusClasse: { str: 12, dex: 6 },
+        talentos: { pow: 100, sta: 10, con: 50, crt: 0 },
+        habilidade: { nome: "Dragonic Breath", nivel: 10 },
+        elementoAtaque: "FOGO",
+      },
+    });
+  });
+
+  it("D57: descarta refino, grau, cartas e atributos fora do esperado", () => {
+    expect(
+      decodificarBuild(
+        tokenDe({
+          weapon: 1291,
+          weaponRefine: 25,
+          weaponGrade: "S",
+          weaponCard1: -4,
+          weaponCard2: "4001",
+          weaponEnchant1: 4700.5,
+          armorRefine: 7,
+          str: 0,
+          jobStr: -1,
+          pow: 1000,
+          jobLevel: 0,
+          selectedAtkSkill: "==3",
+          propertyAtk: "Plasma",
+        }),
+      ),
+    ).toEqual({ classe: null, nivelBase: null, equipamentos: { arma: { id: 1291 } }, atributos: {} });
   });
 });
 
@@ -115,6 +210,7 @@ describe("POST /api/vinculo/build-simulador (D55)", () => {
     ctx.encurtador.destinos.clear();
     ctx.encurtador.chamadas.length = 0;
     ctx.divinePride.respostas.clear();
+    ctx.divinePride.chamadas.length = 0;
     membro = await ctx.login("2001", "ana");
   });
 
@@ -137,7 +233,36 @@ describe("POST /api/vinculo/build-simulador (D55)", () => {
     expect(Object.keys(r.body.equipamentos).sort()).toEqual(
       ["acessorio2", "arma", "armadura", "baixo", "calcado", "capa", "escudo", "meio"].sort(),
     );
+    expect(r.body.atributos).toMatchObject({ nivelClasse: 50, habilidade: { nome: "Fire Bolt", nivel: 10 } });
     expect(ctx.encurtador.chamadas).toEqual([]);
+  });
+
+  it("D57: devolve refino, grau, cartas e encantamentos, com o nome que a Divine Pride tiver", async () => {
+    ctx.divinePride.respostas.set(4608, { status: 200, corpo: { name: "Carta Cavaleiro Branco" } });
+    ctx.divinePride.respostas.set(4700, { status: 200, corpo: { name: "FOR+1" } });
+    const r = await importar(`https://simulador.latam-tools.com.br/s/${tokenDe(BUILD_COMPLETA)}/`).expect(
+      200,
+    );
+    expect(r.body.equipamentos.arma).toEqual({
+      id: 600020,
+      nome: null,
+      refino: 12,
+      grau: "A",
+      cartas: [
+        { id: 4608, nome: "Carta Cavaleiro Branco" },
+        { id: 4608, nome: "Carta Cavaleiro Branco" },
+        { id: 4625, nome: null },
+      ],
+      encantamentos: [
+        { id: 4700, nome: "FOR+1" },
+        { id: 29594, nome: null },
+      ],
+    });
+    expect(r.body.equipamentos.topo).toEqual({ id: 19241, nome: null, refino: 0 });
+    expect(r.body.atributos.talentos).toEqual({ pow: 100, sta: 10, con: 50, crt: 0 });
+    const pedidos = ctx.divinePride.chamadas.map((url) => Number(/Item\/(\d+)/.exec(url)?.[1]));
+    expect(pedidos.filter((id) => id === 4608)).toHaveLength(1);
+    expect(pedidos.slice(0, 4).sort()).toEqual([19241, 450127, 490015, 600020]);
   });
 
   it("segue o link curto pelo encurtador", async () => {
@@ -165,5 +290,142 @@ describe("POST /api/vinculo/build-simulador (D55)", () => {
   it("encurtador fora do ar vira 502", async () => {
     ctx.encurtador.destinos.set("Ukxuq4", "falha");
     await importar("https://short.latam-tools.com.br/Ukxuq4").expect(502);
+  });
+});
+
+describe("Ficha com a build completa (D57)", () => {
+  let ctx: Contexto;
+  let membro: string;
+  let classeId: string;
+
+  const enviar = (metodo: "post" | "patch", url: string, corpo: object) =>
+    ctx.http()[metodo](url).set("Cookie", membro).set("Origin", ORIGEM).send(corpo);
+
+  const ARMA = {
+    id: 600020,
+    nome: "Espada de Duas Mãos",
+    refino: 12,
+    grau: "A",
+    cartas: [
+      { id: 4608, nome: "Carta Cavaleiro Branco" },
+      { id: 4625, nome: null },
+    ],
+    encantamentos: [{ id: 4700, nome: "FOR+1" }],
+  };
+  const ATRIBUTOS = {
+    nivelClasse: 55,
+    base: { str: 130, dex: 60 },
+    bonusClasse: { str: 12 },
+    talentos: { pow: 100, con: 50 },
+    habilidade: { nome: "Dragonic Breath", nivel: 10 },
+    elementoAtaque: "FOGO",
+  };
+
+  beforeAll(async () => {
+    ctx = await criarApp();
+  });
+  afterAll(async () => {
+    await ctx.fechar();
+  });
+  beforeEach(async () => {
+    await ctx.limparBanco();
+    await ctx.app.get(SeedService).aplicar();
+    membro = await ctx.login("2001", "ana");
+    const usuario = await ctx.prisma.usuario.findUniqueOrThrow({ where: { discordId: "2001" } });
+    await ctx.prisma.jogador.create({ data: { apelido: "Ana", usuarioId: usuario.id } });
+    classeId = (await ctx.prisma.classe.findFirstOrThrow({ where: { ativa: true } })).id;
+  });
+
+  const ficha = (extra: object = {}) => ({ nome: "Ana-DK", classeId, nivelBase: 250, build: "", ...extra });
+
+  it("guarda e devolve refino, grau, cartas, encantamentos e atributos", async () => {
+    const criada = await enviar(
+      "post",
+      "/api/vinculo/personagens",
+      ficha({ equipamentos: { arma: ARMA, topo: { id: 5011, nome: "Antena" } }, atributos: ATRIBUTOS }),
+    ).expect(201);
+    expect(criada.body.equipamentos).toEqual({ arma: ARMA, topo: { id: 5011, nome: "Antena" } });
+    expect(criada.body.atributos).toEqual(ATRIBUTOS);
+    const situacao = await ctx.http().get("/api/vinculo").set("Cookie", membro).expect(200);
+    expect(situacao.body.jogador.personagens[0]).toMatchObject({
+      equipamentos: { arma: ARMA },
+      atributos: ATRIBUTOS,
+    });
+  });
+
+  it("salvar sem o campo atributos mantém os guardados; nulo os apaga", async () => {
+    const criada = await enviar("post", "/api/vinculo/personagens", ficha({ atributos: ATRIBUTOS })).expect(
+      201,
+    );
+    const url = `/api/vinculo/personagens/${criada.body.id}`;
+    const semCampo = await enviar("patch", url, ficha({ nivelBase: 249 })).expect(200);
+    expect(semCampo.body).toMatchObject({ nivelBase: 249, atributos: ATRIBUTOS });
+    const apagada = await enviar("patch", url, ficha({ atributos: null })).expect(200);
+    expect(apagada.body.atributos).toEqual({});
+  });
+
+  it("ficha antiga (só id e nome, sem atributos) continua válida e fica com atributos vazios", async () => {
+    const antiga = await ctx.prisma.personagem.create({
+      data: {
+        nome: "Ana-Antiga",
+        classe: { connect: { id: classeId } },
+        nivelBase: 200,
+        equipamentos: { arma: { id: 1291, nome: "Faca" }, capa: "Manto" },
+        jogador: { connect: { apelido: "Ana" } },
+      },
+    });
+    const situacao = await ctx.http().get("/api/vinculo").set("Cookie", membro).expect(200);
+    expect(situacao.body.jogador.personagens[0]).toMatchObject({
+      equipamentos: { arma: { id: 1291, nome: "Faca" }, capa: "Manto" },
+      atributos: {},
+    });
+    const salva = await enviar(
+      "patch",
+      `/api/vinculo/personagens/${antiga.id}`,
+      ficha({ nome: "Ana-Antiga", equipamentos: { arma: { id: 1291, nome: "Faca" }, capa: "Manto" } }),
+    ).expect(200);
+    expect(salva.body).toMatchObject({
+      equipamentos: { arma: { id: 1291, nome: "Faca" }, capa: "Manto" },
+      atributos: {},
+    });
+  });
+
+  it("recusa refino, grau, cartas e atributos inválidos", async () => {
+    const com = (arma: object, atributos?: unknown) =>
+      enviar(
+        "post",
+        "/api/vinculo/personagens",
+        ficha({ equipamentos: { arma: { id: 1291, nome: "Faca", ...arma } }, atributos }),
+      );
+    await com({ refino: 21 }).expect(400);
+    await com({ refino: 1.5 }).expect(400);
+    await com({ grau: "S" }).expect(400);
+    await com({ cartas: [1, 2, 3, 4, 5].map((id) => ({ id })) }).expect(400);
+    await com({ cartas: [{ id: 0 }] }).expect(400);
+    await com({ encantamentos: "4700" }).expect(400);
+    await com({}, { base: { str: 0 } }).expect(400);
+    await com({}, { talentos: { pow: -1 } }).expect(400);
+    await com({}, { elementoAtaque: "PLASMA" }).expect(400);
+    await com({}, { habilidade: { nome: "" } }).expect(400);
+    await com({}, "texto").expect(400);
+    expect(await ctx.prisma.personagem.count()).toBe(0);
+  });
+
+  it("ficha da solicitação pendente leva a build completa para o personagem aprovado", async () => {
+    await ctx.prisma.jogador.deleteMany();
+    const pedido = await enviar("post", "/api/vinculo/solicitacoes", {
+      fichas: [ficha({ equipamentos: { arma: ARMA }, atributos: ATRIBUTOS })],
+    }).expect(201);
+    const admin = await ctx.login(ADMIN_DISCORD_ID, "admin");
+    await ctx
+      .http()
+      .post(`/api/vinculo/solicitacoes/${pedido.body.id}/aprovar`)
+      .set("Cookie", admin)
+      .set("Origin", ORIGEM)
+      .send({})
+      .expect(200);
+    const personagem = await ctx.prisma.personagem.findUniqueOrThrow({ where: { nome: "Ana-DK" } });
+    expect(personagem.equipamentos).toEqual({ arma: ARMA });
+    expect(personagem.atributos).toEqual(ATRIBUTOS);
   });
 });

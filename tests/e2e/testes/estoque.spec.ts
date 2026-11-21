@@ -43,6 +43,7 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
     "Loja",
     "Instâncias",
     "Diário de farm",
+    "Simulação de dano",
   ]);
   await page.getByRole("button", { name: "Menu do perfil" }).click();
   await page.getByRole("menuitem", { name: "Estoque" }).click();
@@ -116,6 +117,7 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
     "Loja",
     "Instâncias",
     "Diário de farm",
+    "Simulação de dano",
   ]);
   await page.getByRole("button", { name: "Menu do perfil" }).click();
   await expect(page.getByRole("menuitem", { name: "Estoque" })).toHaveCount(0);

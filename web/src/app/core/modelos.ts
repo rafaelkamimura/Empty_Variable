@@ -13,9 +13,29 @@ export interface UsuarioMe {
   vinculoPendente: boolean;
 }
 
+/** D57: carta ou encantamento de um equipamento; o nome vem da Divine Pride quando ela responde. */
+export interface EncaixeEquipamento {
+  id: number;
+  nome: string | null;
+}
 export interface ItemEquipamento {
   id: number;
   nome: string;
+  /** D57: o que a build importada do simulador traz além do item. */
+  refino?: number;
+  grau?: "D" | "C" | "B" | "A";
+  cartas?: EncaixeEquipamento[];
+  encantamentos?: EncaixeEquipamento[];
+}
+type Pontos<Chave extends string> = Partial<Record<Chave, number>>;
+/** D57: atributos da build importada do simulador, guardados na ficha. */
+export interface AtributosBuild {
+  nivelClasse?: number;
+  base?: Pontos<"str" | "agi" | "vit" | "int" | "dex" | "luk">;
+  bonusClasse?: Pontos<"str" | "agi" | "vit" | "int" | "dex" | "luk">;
+  talentos?: Pontos<"pow" | "sta" | "wis" | "spl" | "con" | "crt">;
+  habilidade?: { nome: string; nivel?: number };
+  elementoAtaque?: string;
 }
 export type EquipamentoFicha = string | ItemEquipamento;
 
@@ -27,6 +47,7 @@ export interface PersonagemResumo {
   nivelBase?: number | null;
   build?: string | null;
   equipamentos?: Record<string, EquipamentoFicha>;
+  atributos?: AtributosBuild;
   classe?: { nomeOficial: string; apelidoGrupo: string | null } | null;
 }
 
@@ -56,6 +77,7 @@ export interface Solicitacao {
     nivelBase: number;
     build: string | null;
     equipamentos?: Record<string, EquipamentoFicha>;
+    atributos?: AtributosBuild;
   }[];
 
   criadaEm: string;

@@ -4,7 +4,8 @@
  * Caminhos de rota (como em app.routes.ts) das telas liberadas. As de runs atendem a revisão dos
  * rascunhos do nag4eyes: lista (com os rascunhos pendentes), assistente (pré-preenchido pelo
  * rascunho) e detalhe (para onde o assistente leva depois do registro). A correção de run fica
- * de fora. O Diário de farm (D48) é a tela pessoal de check-in das instâncias.
+ * de fora. O Diário de farm (D48) é a tela pessoal de check-in das instâncias, e a simulação de
+ * dano (D57) compara a build de um personagem com um chefe.
  */
 export const TELAS_LIBERADAS: ReadonlySet<string> = new Set([
   "",
@@ -19,6 +20,7 @@ export const TELAS_LIBERADAS: ReadonlySet<string> = new Set([
   "gestao/runs/:id",
   "instancias-programadas",
   "farm",
+  "simulador",
   "admin/estoque",
   "**",
 ]);

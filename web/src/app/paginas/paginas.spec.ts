@@ -101,7 +101,7 @@ describe("VinculoComponent", () => {
     const envio = c.salvarFicha(ficha);
     const req = http.expectOne("/api/vinculo/solicitacoes");
     expect(req.request.method).toBe("POST");
-    expect(req.request.body).toEqual({ fichas: [ficha] });
+    expect(req.request.body).toEqual({ fichas: [{ ...ficha, atributos: {} }] });
     req.flush(solicitacao);
     await esperar();
     http.expectOne("/api/vinculo").flush({ jogador: null, solicitacao });

@@ -35,7 +35,7 @@ services:
       # Opcional: liga /api/integracao para outros sistemas (ex.: o bot nag4eyes).
       INTEGRACAO_TOKEN: ${INTEGRACAO_TOKEN:-}
       DIVINE_PRIDE_API_KEY: ${DIVINE_PRIDE_API_KEY:-}
-      DIVINE_PRIDE_SERVER: ${DIVINE_PRIDE_SERVER:-bRO}
+      DIVINE_PRIDE_SERVER: ${DIVINE_PRIDE_SERVER:-LATAM}
       AUTH_DEV_LOGIN: ${AUTH_DEV_LOGIN:-false}
     depends_on:
       postgres: { condition: service_healthy }
