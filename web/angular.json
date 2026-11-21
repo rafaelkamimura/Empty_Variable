@@ -59,6 +59,12 @@
                 }
               ],
               "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/app/dev/dev.routes.ts",
+                  "with": "src/app/dev/dev.routes.producao.ts"
+                }
+              ],
               "optimization": {
                 "scripts": true,
                 "styles": {

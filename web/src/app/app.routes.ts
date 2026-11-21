@@ -8,6 +8,7 @@ import {
   vinculadoGuard,
 } from "./core/guardas";
 import { TELAS_LIBERADAS } from "./core/telas-liberadas";
+import { ROTAS_DEV } from "./dev/dev.routes";
 
 /** paineis §4: o painel vem da URL — /me, /loja e /nebula (Cliente), /gestao (Gestão), /admin (Administração). */
 const rotasCompletas: Routes = [
@@ -257,4 +258,9 @@ const rotasCompletas: Routes = [
 ];
 
 // Liberação incremental das telas (core/telas-liberadas.ts). As demais rotas retornam ao início nesta etapa.
-export const routes = rotasCompletas.filter(({ path }) => TELAS_LIBERADAS.has(path ?? ""));
+// O catálogo vivo (/dev/catalogo, diretrizes §8.2) só existe fora de produção e vem antes do "**".
+// Em produção, ROTAS_DEV é [] (fileReplacements em angular.json).
+export const routes: Routes = [
+  ...ROTAS_DEV,
+  ...rotasCompletas.filter(({ path }) => TELAS_LIBERADAS.has(path ?? "")),
+];
