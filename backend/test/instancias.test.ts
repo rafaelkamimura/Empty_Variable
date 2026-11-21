@@ -1,6 +1,7 @@
 // Épico IV, M15 (T-57 a T-59): instâncias com encontros e funções versionados (D43 a D46).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { SeedService } from "../src/cadastros/seed.service.js";
+import { REFERENCIA_BROWIKI } from "../src/instancias/referencia-browiki.js";
 import { ADMIN_DISCORD_ID, type Contexto, criarApp, ORIGEM } from "./suporte/app-de-teste.js";
 
 interface Instancia {
@@ -247,6 +248,45 @@ describe("Instâncias (M15)", () => {
       encontros: [{ nome: "Chefe", multiplicadorCentesimos: 100 }],
       funcoes: [],
     }).expect(422);
+  });
+
+  it("D56: o catálogo da browiki entra inativo e sem versão; repetir o seed não duplica nem desfaz", async () => {
+    const seed = ctx.app.get(SeedService);
+    const todas = await ctx.prisma.instancia.findMany({ include: { versoes: true } });
+    expect(todas).toHaveLength(REFERENCIA_BROWIKI.length);
+    const sombria = todas.find((i) => i.nome === "Glastheim Sombria");
+    expect(sombria).toMatchObject({
+      codigo: "BROWIKI_GLASTHEIM_SOMBRIA",
+      ativa: false,
+      nivelMinimo: 160,
+      retorno: "TRES_DIAS",
+      versoes: [],
+    });
+    const torre = todas.filter((i) => i.nome === "Torre da Constelação");
+    expect(torre).toHaveLength(1);
+    expect(torre[0]).toMatchObject({ codigo: "TORRE_CONSTELACAO", ativa: true });
+
+    const catalogoFarm = (
+      await ctx.http().get("/api/farm/catalogo-instancias").set("Cookie", admin).expect(200)
+    ).body as { nome: string; recargaSugerida: string | null }[];
+    expect(catalogoFarm).toHaveLength(REFERENCIA_BROWIKI.length);
+    expect(catalogoFarm.find((i) => i.nome === "Glastheim Sombria")?.recargaSugerida).toBe("TRES_DIAS");
+    expect(catalogoFarm.find((i) => i.nome === "Altar do Selo")?.recargaSugerida).toBeNull();
+
+    const adotada = await glastheim();
+    expect(adotada.id).toBe(sombria!.id);
+    expect(await ctx.prisma.instancia.count()).toBe(REFERENCIA_BROWIKI.length);
+
+    await ctx.prisma.instancia.update({
+      where: { id: sombria!.id },
+      data: { nome: "GH Sombria", nivelMinimo: 165 },
+    });
+    expect((await seed.aplicar()).instanciasBrowiki).toBe(false);
+    expect(await ctx.prisma.instancia.count()).toBe(REFERENCIA_BROWIKI.length);
+    expect(await ctx.prisma.instancia.findUnique({ where: { id: sombria!.id } })).toMatchObject({
+      nome: "GH Sombria",
+      nivelMinimo: 165,
+    });
   });
 
   it("referência da browiki: 60 instâncias, só dados de apoio", async () => {

@@ -12,6 +12,8 @@ import { PrismaService, type Tx } from "../prisma/prisma.service.js";
 
 /** A Torre da Constelação: a instância criada na migração do M15, com os dados de antes. */
 export const CODIGO_TORRE = "TORRE_CONSTELACAO";
+/** Prefixo do código das instâncias que vêm do catálogo da browiki (D56). */
+export const PREFIXO_BROWIKI = "BROWIKI_";
 
 export interface DadosInstancia {
   nome?: string;
@@ -164,12 +166,31 @@ export class InstanciasService {
     if (existentes !== ids.length) throw new BadRequestException("Classe não encontrada.");
   }
 
+  /**
+   * D56: instância do catálogo da browiki com esse nome que ainda não tem versão. Cadastrá-la é
+   * configurar a que já existe, em vez de recusar pelo nome repetido.
+   */
+  private async doCatalogoSemVersao(tx: Tx, nome: string) {
+    return tx.instancia.findFirst({
+      where: {
+        nome: { equals: nome, mode: "insensitive" },
+        codigo: { startsWith: PREFIXO_BROWIKI },
+        versoes: { none: {} },
+      },
+      select: { id: true },
+    });
+  }
+
   /** D43/D45: nasce inativa, com os encontros informados e sem funções. */
   async criar(dados: DadosInstancia & { nome: string }, encontros: NovoEncontro[], usuario: Usuario) {
     this.validarEncontros(encontros);
     try {
       const id = await this.prisma.$transaction(async (tx) => {
-        const i = await tx.instancia.create({ data: { ...dados, ativa: false } });
+        const doCatalogo = await this.doCatalogoSemVersao(tx, dados.nome);
+        const i =
+          doCatalogo === null
+            ? await tx.instancia.create({ data: { ...dados, ativa: false } })
+            : await tx.instancia.update({ where: { id: doCatalogo.id }, data: { ...dados, ativa: false } });
         await tx.versaoInstancia.create({
           data: {
             instanciaId: i.id,

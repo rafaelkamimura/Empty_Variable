@@ -140,6 +140,7 @@ describe("Cadastros (M3)", () => {
         configLoja: false,
         catalogoEpico3: false,
         receitas: false,
+        instanciasBrowiki: false,
       });
       expect((await porApelido("GX")).funcoes[0]!.rank).toBe(4);
       expect(await ctx.prisma.classe.count()).toBe(CLASSES_LATAM.length + 1);

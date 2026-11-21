@@ -12,7 +12,8 @@ import {
   RENOMEAR_POS,
 } from "./dados-iniciais.js";
 import { MULTIPLICADORES_TORRE_V1 } from "@betel/scoring";
-import { CODIGO_TORRE } from "../instancias/instancias.service.js";
+import { CODIGO_TORRE, PREFIXO_BROWIKI } from "../instancias/instancias.service.js";
+import { REFERENCIA_BROWIKI } from "../instancias/referencia-browiki.js";
 
 /** D22: a taxa da loja existe como parâmetro e começa em 0%. */
 export const TAXA_CONSIGNACAO_V1_BP = 0;
@@ -27,6 +28,18 @@ export interface ResultadoSeed {
   /** Épico III: pós renomeados e itens novos garantidos no catálogo. */
   catalogoEpico3: boolean;
   receitas: boolean;
+  instanciasBrowiki: boolean;
+}
+
+/** Código estável de uma instância do catálogo da browiki (ex.: "BROWIKI_GLASTHEIM_SOMBRIA"). */
+export function codigoBrowiki(nome: string): string {
+  const slug = nome
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+  return `${PREFIXO_BROWIKI}${slug}`;
 }
 
 /**
@@ -170,6 +183,36 @@ export class SeedService implements OnApplicationBootstrap {
     return true;
   }
 
+  /**
+   * D56: o catálogo da browiki entra no cadastro de instâncias ao subir a API, como o nag4eyes faz
+   * com o catálogo dele. Cada instância nasce inativa e sem versão (o gestor define encontros e
+   * funções antes de ativar) e ganha um código estável, para não voltar se o gestor a renomear.
+   * Só cria o que falta: nunca altera uma instância já cadastrada.
+   */
+  private async garantirInstanciasBrowiki(tx: Tx): Promise<boolean> {
+    const existentes = await tx.instancia.findMany({ select: { nome: true, codigo: true } });
+    const nomes = new Set(existentes.map((i) => i.nome.toLowerCase()));
+    const codigos = new Set(existentes.flatMap((i) => (i.codigo === null ? [] : [i.codigo])));
+    const novas = REFERENCIA_BROWIKI.map((r) => ({ ...r, codigo: codigoBrowiki(r.nome) })).filter(
+      (r) => !nomes.has(r.nome.toLowerCase()) && !codigos.has(r.codigo),
+    );
+    if (novas.length === 0) return false;
+    await tx.instancia.createMany({
+      data: novas.map((r) => ({
+        nome: r.nome,
+        codigo: r.codigo,
+        ativa: false,
+        nivelMinimo: r.nivelMinimo,
+        retorno: r.retorno,
+        modo: r.modo,
+        dificuldade: r.dificuldade,
+        requisito: r.requisito,
+        premiacao: r.premiacao,
+      })),
+    });
+    return true;
+  }
+
   async aplicar(): Promise<ResultadoSeed> {
     return this.prisma.$transaction(async (tx) => {
       // Trava para duas instâncias subindo juntas não semearem em dobro.
@@ -182,6 +225,7 @@ export class SeedService implements OnApplicationBootstrap {
         configLoja: false,
         catalogoEpico3: false,
         receitas: false,
+        instanciasBrowiki: false,
       };
 
       if ((await tx.configPontuacao.count()) === 0) {
@@ -189,6 +233,7 @@ export class SeedService implements OnApplicationBootstrap {
         r.config = true;
       }
       r.torre = await this.garantirTorre(tx);
+      r.instanciasBrowiki = await this.garantirInstanciasBrowiki(tx);
       if ((await tx.classe.count()) === 0) {
         // D45: as funções e ranks iniciais são da versão vigente da Torre.
         const torre = await tx.instancia.findUniqueOrThrow({ where: { codigo: CODIGO_TORRE } });
