@@ -18,7 +18,7 @@ html {
   --mat-sys-primary-fixed-dim: var(--acento-suave);
   --mat-sys-on-primary-fixed: var(--sobre-acento);
   --mat-sys-on-primary-fixed-variant: var(--sobre-acento);
-  --mat-sys-inverse-primary: var(--acento-suave);
+  --mat-sys-inverse-primary: var(--elevado); /* ação do snackbar sobre --texto: 11,3:1 */
   --mat-sys-surface-tint: var(--acento);
   --mat-sys-secondary: var(--texto-suave);
   --mat-sys-on-secondary: var(--fundo);
