@@ -24,8 +24,9 @@ import {
   TAMANHOS,
 } from "@betel/simulador";
 import { Papeis, UsuarioAtual } from "../auth/decoradores.js";
-import { booleano, inteiro, objeto, textoOpcional, uuid } from "../comum/validacao.js";
+import { booleano, inteiro, objeto, texto, textoOpcional, uuid } from "../comum/validacao.js";
 import { FarmModule } from "../farm/farm.controller.js";
+import { JogadoresModule } from "../jogadores/jogadores.module.js";
 import { LootService } from "./loot.service.js";
 import { MonstrosService } from "./monstros.service.js";
 import { MotorService } from "./motor.service.js";
@@ -273,6 +274,16 @@ export class SimuladorController {
     return this.simulador.salvarBuild(usuario, uuid(id, "Personagem"), objeto(corpo)["build"]);
   }
 
+  /**
+   * D62: confere um link do simulador público (completo ou curto) e devolve o token da build, para
+   * a tela abri-la na interface do simulador.
+   */
+  @Post("link")
+  @HttpCode(200)
+  importarLink(@Body() corpo: unknown) {
+    return this.simulador.importarLink(texto(objeto(corpo)["link"], "Link do simulador", 1, 65_536));
+  }
+
   /** D60: loot da instância, pelos drops dos chefes cadastrados nela. */
   @Get("instancias/:id/loot")
   lootDaInstancia(@Param("id") id: string) {
@@ -305,7 +316,7 @@ export class SimuladorController {
 }
 
 @Module({
-  imports: [FarmModule],
+  imports: [FarmModule, JogadoresModule],
   controllers: [SimuladorController],
   providers: [SimuladorService, MonstrosService, MotorService, LootService],
 })

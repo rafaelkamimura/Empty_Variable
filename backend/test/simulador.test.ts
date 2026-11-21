@@ -8,6 +8,7 @@ import {
   simularFisico,
   simularMagico,
 } from "@betel/simulador";
+import lzString from "lz-string";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { SeedService } from "../src/cadastros/seed.service.js";
 import { lerDropsDivinePride } from "../src/simulador/loot.service.js";
@@ -993,6 +994,82 @@ describe("Simulação da build com os efeitos dos equipamentos (D59)", () => {
       expect(chefes.every((chefe: { noSimulador: unknown }) => typeof chefe.noSimulador === "boolean")).toBe(
         true,
       );
+    });
+  });
+
+  describe("link do simulador público aberto na interface (D62)", () => {
+    const LINK = `https://simulador.latam-tools.com.br/s/${TOKEN_FEITICEIRO}/`;
+    const tokenDe = (build: unknown) =>
+      lzString.compressToEncodedURIComponent(JSON.stringify(build)).replace(/\+/g, ".");
+    const importar = (link: unknown, cookie = membro) =>
+      enviar("post", "/api/simulador/link", { link: link as string }, cookie);
+
+    beforeEach(() => {
+      ctx.encurtador.destinos.clear();
+      ctx.encurtador.chamadas.length = 0;
+    });
+
+    it("link completo: devolve o token da build, nas três formas do endereço, sem chamar o encurtador", async () => {
+      const esperado = { token: TOKEN_FEITICEIRO, personalizados: false };
+      expect((await importar(LINK).expect(200)).body).toEqual(esperado);
+      expect(
+        (await importar(`https://simulador.latam-tools.com.br/?b=${TOKEN_FEITICEIRO}`).expect(200)).body,
+      ).toEqual(esperado);
+      expect(
+        (await importar(`simulador.latam-tools.com.br/#/?b=${TOKEN_FEITICEIRO}`).expect(200)).body,
+      ).toEqual(esperado);
+      expect(ctx.encurtador.chamadas).toEqual([]);
+    });
+
+    it("link curto: o encurtador é consultado pela API e o token do destino volta", async () => {
+      ctx.encurtador.destinos.set("Ukxuq4", LINK);
+      const r = await importar("https://short.latam-tools.com.br/Ukxuq4").expect(200);
+      expect(r.body).toEqual({ token: TOKEN_FEITICEIRO, personalizados: false });
+      expect(ctx.encurtador.chamadas).toEqual(["https://short.latam-tools.com.br/api/links/Ukxuq4"]);
+    });
+
+    it("diz quando a build do link traz itens personalizados do simulador", async () => {
+      const personalizado = { id: 900_000_001, custom: true, schemaVersion: 1, name: "Item do membro" };
+      const token = tokenDe({ class: 8, level: 105, __customItems: [personalizado] });
+      const r = await importar(`https://simulador.latam-tools.com.br/s/${token}/`).expect(200);
+      expect(r.body).toEqual({ token, personalizados: true });
+    });
+
+    it("qualquer usuário com sessão pode importar, mesmo sem vínculo; sem sessão, não", async () => {
+      const semVinculo = await ctx.login("5909", "sem-vinculo");
+      await importar(LINK, semVinculo).expect(200);
+      await ctx.http().post("/api/simulador/link").set("Origin", ORIGEM).send({ link: LINK }).expect(401);
+    });
+
+    it("recusa endereço de outro site, com a mensagem que diz o que colar", async () => {
+      const r = await importar(`https://exemplo.com/s/${TOKEN_FEITICEIRO}/`).expect(400);
+      expect(r.body.message).toBe("Cole um link do simulador (simulador.latam-tools.com.br).");
+      await importar(`https://simulador.latam-tools.com.br.exemplo.com/s/${TOKEN_FEITICEIRO}/`).expect(400);
+      await importar("https://short.latam-tools.com.br.exemplo.com/Ukxuq4").expect(400);
+      await importar("").expect(400);
+      await importar(42).expect(400);
+      await importar(`https://simulador.latam-tools.com.br/s/${"A".repeat(70_000)}/`).expect(400);
+      expect(ctx.encurtador.chamadas).toEqual([]);
+    });
+
+    it("encurtador fora do ar vira 502; link curto desconhecido ou que leva a outro lugar, 400", async () => {
+      ctx.encurtador.destinos.set("Ukxuq4", "falha");
+      const r = await importar("https://short.latam-tools.com.br/Ukxuq4").expect(502);
+      expect(r.body.message).toBe("Não foi possível abrir o link curto agora. Tente o link completo.");
+      await importar("https://short.latam-tools.com.br/nao-existe").expect(400);
+      ctx.encurtador.destinos.set("fora", "https://exemplo.com/qualquer");
+      await importar("https://short.latam-tools.com.br/fora").expect(400);
+    });
+
+    it("recusa o que não é uma build: token ilegível, lista, objeto sem classe e build grande demais", async () => {
+      const recusar = async (token: string) => {
+        const r = await importar(`https://simulador.latam-tools.com.br/s/${token}/`).expect(400);
+        expect(r.body.message).toBe("Esse link não traz uma build do simulador.");
+      };
+      await recusar("isto-nao-e-um-token");
+      await recusar(tokenDe([1, 2, 3]));
+      await recusar(tokenDe({ level: 99, weapon: 1201 }));
+      await recusar(tokenDe({ class: 8, sobra: "x".repeat(600_000) }));
     });
   });
 });

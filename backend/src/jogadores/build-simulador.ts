@@ -321,7 +321,14 @@ export class BuildSimuladorService {
     @Inject(BUSCADOR_LINK_CURTO) private readonly buscar: BuscadorLinkCurto,
   ) {}
 
-  async importar(texto: string): Promise<BuildImportada> {
+  /**
+   * Abre um link do simulador, completo ou curto; o curto é resolvido pelo encurtador.
+   * @param texto Link colado pelo membro
+   * @returns O token da build e o que a ficha guarda dela
+   * @throws BadRequestException se o endereço não for do simulador ou não trouxer uma build
+   * @throws BadGatewayException se o encurtador não responder
+   */
+  async abrirLink(texto: string): Promise<{ token: string; build: BuildSimulador }> {
     const link = lerLinkSimulador(texto);
     if (link === null) {
       throw new BadRequestException("Cole um link do simulador (simulador.latam-tools.com.br).");
@@ -329,7 +336,11 @@ export class BuildSimuladorService {
     const token = link.tipo === "token" ? link.token : await this.tokenDoLinkCurto(link.slug);
     const build = decodificarBuild(token);
     if (build === null) throw new BadRequestException("Esse link não traz uma build do simulador.");
+    return { token, build };
+  }
 
+  async importar(texto: string): Promise<BuildImportada> {
+    const { build } = await this.abrirLink(texto);
     const classeNome = build.classe === null ? null : (CLASSES_SIMULADOR[build.classe] ?? null);
     const itens = Object.values(build.equipamentos);
     const [classeId, nomes] = await Promise.all([

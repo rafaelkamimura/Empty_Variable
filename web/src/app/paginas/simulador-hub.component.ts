@@ -13,6 +13,7 @@ import {
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { firstValueFrom } from "rxjs";
+import { lerLinkColado } from "../core/link-simulador";
 import { mensagemDeErro, type PersonagemResumo, type SituacaoVinculo } from "../core/modelos";
 import type { AlvosSimulacao, ChefeAlvo, InstanciaAlvo } from "./simulador.component";
 
@@ -25,6 +26,26 @@ export const CHAVE_COMPARACAO = "ro-set-compare";
 export const CHAVE_MONSTRO = "monster";
 /** Personagem cuja build foi aberta por último no simulador, para conferir antes de gravar. */
 export const CHAVE_PERSONAGEM_ABERTO = "ev-simulador-personagem";
+
+/** Tempo que a interface do simulador tem para abrir a build de um link antes de a tela desistir. */
+export const PRAZO_DO_QUADRO_MS = 20_000;
+const INTERVALO_DO_QUADRO_MS = 100;
+/** Letras que o token de um link de compartilhamento usa; todas cabem num endereço sem conversão. */
+const TOKEN_DE_BUILD = /^[A-Za-z0-9.\-$]+$/;
+
+/**
+ * Endereço da interface do simulador dentro do sistema. Com um token, a interface abre essa build
+ * no lugar do rascunho, como faz com um link de compartilhamento no site de origem. O token vai
+ * depois do "#": assim não é enviado ao servidor, que recusaria um endereço tão comprido, e a
+ * interface o lê como está, sem conversão.
+ * @param base Endereço base do sistema (`document.baseURI`)
+ * @param recarga Número da carga, que faz o quadro carregar de novo
+ * @param token Token já conferido pela API (só letras, números e ".-$")
+ */
+export function enderecoDoSimulador(base: string, recarga: number, token?: string): string {
+  const build = token === undefined ? "" : `#/?b=${token}`;
+  return new URL(`${PASTA_DO_SIMULADOR}index.html?v=${recarga}${build}`, base).href;
+}
 
 /** Chefe de instância com a marca de que o simulador o tem na lista de alvos. */
 export type ChefeDoHub = ChefeAlvo & { noSimulador: boolean };
@@ -45,16 +66,27 @@ export interface BuildSalva {
   avisos: string[];
 }
 
+/** Resposta de POST /api/simulador/link. */
+export interface LinkImportado {
+  token: string;
+  personalizados: boolean;
+}
+
 /**
  * D61: simulador de dano completo dentro do sistema. A interface é a do simulador da latam-tools
  * (adsonpleal/latam-ro-calc, licença MIT), servida pelo próprio sistema num iframe de mesma
  * origem. Esta tela é a ponte com os dados do grupo: abre no simulador a build guardada na ficha
  * de um personagem do membro, aponta um chefe de instância como alvo e grava de volta na ficha a
  * build mudada. A troca é pelo armazenamento do navegador, que o simulador já usa para o rascunho.
+ *
+ * D62: a tela também abre no simulador a build de um link de compartilhamento do simulador público.
+ * A API confere o link e devolve o token, e a interface o lê do próprio endereço, como faz no site
+ * de origem.
  */
 @Component({
   selector: "app-simulador-hub",
   imports: [FormsModule, RouterLink],
+  host: { "(window:storage)": "aoMudarArmazenamento($event)" },
   template: `
     <div class="hub">
       <header>
@@ -147,6 +179,41 @@ export interface BuildSalva {
               </button>
             </div>
           }
+          <form class="grupo importar" (ngSubmit)="importar()">
+            <label class="campo" for="simulador-link">Link do simulador</label>
+            <input
+              id="simulador-link"
+              name="link"
+              type="text"
+              inputmode="url"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="https://simulador.latam-tools.com.br/s/…"
+              data-testid="simulador-link"
+              aria-describedby="simulador-link-dica simulador-link-erro"
+              [attr.aria-invalid]="erroDoLink() ? 'true' : null"
+              [ngModel]="link()"
+              (ngModelChange)="link.set($event)"
+            />
+            <button
+              type="submit"
+              class="botao"
+              data-testid="simulador-importar-link"
+              [disabled]="ocupado()"
+              [attr.aria-busy]="importando() ? 'true' : null"
+            >
+              {{ importando() ? "Abrindo o link…" : "Abrir o link no simulador" }}
+            </button>
+            <p class="dica" id="simulador-link-dica">
+              Aceita o link completo ou o curto de simulador.latam-tools.com.br. A build do link entra no
+              lugar da que está no simulador: grave antes numa ficha o que quiser guardar.
+            </p>
+            @if (erroDoLink(); as mensagem) {
+              <p class="erro" id="simulador-link-erro" role="alert" data-testid="simulador-link-erro">
+                {{ mensagem }}
+              </p>
+            }
+          </form>
         </section>
         @if (nota(); as texto) {
           <p class="nota" role="status" data-testid="hub-nota">{{ texto }}</p>
@@ -214,7 +281,8 @@ export interface BuildSalva {
       min-width: 0;
       font-size: 13px;
     }
-    .campo select {
+    .campo select,
+    .importar input {
       box-sizing: border-box;
       max-width: 100%;
       min-width: 160px;
@@ -224,6 +292,30 @@ export interface BuildSalva {
       background: var(--fundo);
       color: var(--texto);
       font: inherit;
+    }
+    .importar {
+      flex: 1 1 100%;
+    }
+    .importar .campo {
+      flex: 1 1 100%;
+    }
+    .importar input {
+      flex: 1 1 280px;
+      min-width: 0;
+      min-height: 40px;
+    }
+    .importar .botao {
+      min-height: 40px;
+    }
+    .importar input:focus-visible,
+    .importar .botao:focus-visible {
+      outline: 2px solid var(--acento);
+      outline-offset: 2px;
+    }
+    .importar .dica,
+    .importar .erro {
+      flex: 1 1 100%;
+      margin: 0;
     }
     .botao {
       padding: 8px 14px;
@@ -279,12 +371,20 @@ export class SimuladorHubComponent implements OnInit, AfterViewInit {
   private readonly documento = inject(DOCUMENT);
   private readonly quadro = viewChild.required<ElementRef<HTMLIFrameElement>>("quadro");
   private recargas = 0;
+  /** Rascunho do simulador que não guarda trabalho do membro: o inicial da interface ou o já gravado. */
+  private rascunhoSemPerda: string | null = null;
+  /** Prazo para a interface abrir a build de um link; os testes o encurtam. */
+  prazoDoQuadroMs = PRAZO_DO_QUADRO_MS;
 
   readonly carregando = signal(true);
   readonly ocupado = signal(false);
   readonly erro = signal("");
   readonly nota = signal("");
   readonly avisos = signal<string[]>([]);
+  /** Texto do campo "Link do simulador" e o erro mostrado junto dele. */
+  readonly link = signal("");
+  readonly erroDoLink = signal("");
+  readonly importando = signal(false);
   readonly personagens = signal<PersonagemResumo[]>([]);
   readonly personagemId = signal("");
   readonly instancias = signal<InstanciaDoHub[]>([]);
@@ -389,12 +489,86 @@ export class SimuladorHubComponent implements OnInit, AfterViewInit {
         this.http.post<BuildSalva>(`/api/simulador/personagens/${personagem.id}/build`, { build }),
       );
       this.gravar(CHAVE_PERSONAGEM_ABERTO, personagem.id);
+      this.rascunhoSemPerda = rascunho;
       this.avisos.set(salva.avisos);
       const classe = salva.personagem.classe ? `${salva.personagem.classe}, ` : "";
       this.nota.set(
         `Ficha de ${salva.personagem.nome} atualizada: ${classe}nível ${salva.personagem.nivelBase ?? "?"}, ${salva.equipamentos} equipamento(s).`,
       );
     });
+  }
+
+  /**
+   * D62: abre no simulador a build de um link do simulador público. A API confere o link (e resolve
+   * o curto) e devolve o token; a interface o lê do próprio endereço e passa a guardá-lo como
+   * rascunho. A build não fica ligada a nenhuma ficha: gravar pede a confirmação de sempre. Se o
+   * simulador tem trabalho que não foi gravado, pergunta antes de trocar.
+   */
+  async importar(): Promise<void> {
+    const colado = lerLinkColado(this.link());
+    this.erro.set("");
+    this.erroDoLink.set("erro" in colado ? colado.erro : "");
+    if ("erro" in colado || this.ocupado()) return;
+    const anterior = this.ler(CHAVE_BUILD);
+    if (anterior !== null && anterior !== this.rascunhoSemPerda) {
+      const pergunta =
+        "A build do link entra no lugar da que está no simulador, e o que não foi gravado numa ficha se perde. Abrir o link mesmo assim?";
+      if (!this.documento.defaultView?.confirm(pergunta)) return;
+    }
+    this.ocupado.set(true);
+    this.importando.set(true);
+    this.nota.set("");
+    this.avisos.set([]);
+    try {
+      const importado = await firstValueFrom(
+        this.http.post<LinkImportado>("/api/simulador/link", { link: colado.link }),
+      );
+      if (!TOKEN_DE_BUILD.test(importado.token)) {
+        throw new Error("A resposta do sistema não trouxe uma build. Tente de novo.");
+      }
+      const comparacao = this.ler(CHAVE_COMPARACAO);
+      this.remover(CHAVE_BUILD);
+      this.remover(CHAVE_COMPARACAO);
+      this.recarregar(importado.token);
+      const aberto = await this.aguardarRascunho();
+      if (aberto === null) {
+        if (anterior !== null) this.gravar(CHAVE_BUILD, anterior);
+        if (comparacao !== null) this.gravar(CHAVE_COMPARACAO, comparacao);
+        this.recarregar();
+        throw new Error(
+          "O simulador não abriu a build do link, e a que estava nele foi mantida. Tente de novo.",
+        );
+      }
+      this.rascunhoSemPerda = aberto;
+      this.remover(CHAVE_PERSONAGEM_ABERTO);
+      this.link.set("");
+      this.avisos.set(
+        importado.personalizados
+          ? ["O link traz itens personalizados do simulador, que não entram na conta do sistema."]
+          : [],
+      );
+      this.nota.set(
+        this.personagens().length
+          ? "Build do link aberta no simulador. Ela ainda não está em nenhuma ficha: para guardar, use Salvar na ficha."
+          : "Build do link aberta no simulador.",
+      );
+    } catch (erro) {
+      this.erroDoLink.set(erro instanceof Error ? erro.message : mensagemDeErro(erro));
+    } finally {
+      this.importando.set(false);
+      this.ocupado.set(false);
+    }
+  }
+
+  /**
+   * Anota o primeiro rascunho que a interface grava num navegador sem rascunho: é o inicial dela,
+   * sem trabalho do membro, e trocá-lo por um link não precisa de confirmação.
+   * @param evento Mudança no armazenamento do navegador feita pela interface do simulador
+   */
+  aoMudarArmazenamento(evento: StorageEvent): void {
+    if (evento.key === CHAVE_BUILD && evento.oldValue === null && evento.newValue !== null) {
+      this.rascunhoSemPerda = evento.newValue;
+    }
   }
 
   /** Aponta o chefe escolhido como alvo do simulador e o recarrega; a build aberta continua. */
@@ -440,10 +614,27 @@ export class SimuladorHubComponent implements OnInit, AfterViewInit {
     }
   }
 
-  /** Carrega (ou recarrega) a interface do simulador no quadro, sem criar entrada no histórico. */
-  private recarregar(): void {
+  /**
+   * Espera a interface do simulador gravar o rascunho da build que acabou de abrir.
+   * @returns O rascunho gravado, ou null se ele não apareceu dentro do prazo
+   */
+  private async aguardarRascunho(): Promise<string | null> {
+    const limite = Date.now() + this.prazoDoQuadroMs;
+    let rascunho = this.ler(CHAVE_BUILD);
+    while (rascunho === null && Date.now() < limite) {
+      await new Promise((resolver) => setTimeout(resolver, INTERVALO_DO_QUADRO_MS));
+      rascunho = this.ler(CHAVE_BUILD);
+    }
+    return rascunho;
+  }
+
+  /**
+   * Carrega (ou recarrega) a interface do simulador no quadro, sem criar entrada no histórico.
+   * @param token Token de um link de compartilhamento, para a interface abrir essa build
+   */
+  private recarregar(token?: string): void {
     this.recargas += 1;
-    const url = new URL(`${PASTA_DO_SIMULADOR}index.html?v=${this.recargas}`, this.documento.baseURI).href;
+    const url = enderecoDoSimulador(this.documento.baseURI, this.recargas, token);
     const quadro = this.quadro().nativeElement;
     if (quadro.contentWindow && quadro.getAttribute("src")) quadro.contentWindow.location.replace(url);
     else quadro.setAttribute("src", url);
