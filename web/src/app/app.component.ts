@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from "@angular/rou
 import { AuthService } from "./core/auth.service";
 import { SaldoService } from "./core/saldo.service";
 import { IconeComponent } from "./core/icone.component";
+import { telaLiberada } from "./core/telas-liberadas";
 
 export type Painel = "cliente" | "gestao" | "admin";
 
@@ -50,6 +51,9 @@ export function painelDaUrl(url: string): Painel {
           <a mat-menu-item routerLink="/vinculo"><app-icone nome="usuarios" /> Vínculo de jogador</a>
           @if (auth.ehGestor()) {
             <a mat-menu-item routerLink="/gestao/grupos"><app-icone nome="usuarios" /> Grupos agendados</a>
+            @if (runsLiberadas) {
+              <a mat-menu-item routerLink="/gestao/runs"><app-icone nome="espadas" /> Runs</a>
+            }
           }
           @if (auth.ehAdmin()) {
             <a mat-menu-item routerLink="/vinculo/aprovacoes">Aprovar v&#237;nculos</a>
@@ -255,6 +259,8 @@ export class AppComponent {
   readonly saldo = inject(SaldoService);
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  /** O item Runs só aparece com a tela liberada. */
+  readonly runsLiberadas = telaLiberada("/gestao/runs");
 
   readonly nomeUsuario = computed(() => {
     const u = this.auth.usuario();

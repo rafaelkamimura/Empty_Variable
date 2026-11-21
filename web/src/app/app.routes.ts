@@ -7,6 +7,7 @@ import {
   inicioGuard,
   vinculadoGuard,
 } from "./core/guardas";
+import { TELAS_LIBERADAS } from "./core/telas-liberadas";
 
 /** paineis §4: o painel vem da URL — /me, /loja e /nebula (Cliente), /gestao (Gestão), /admin (Administração). */
 const rotasCompletas: Routes = [
@@ -237,17 +238,5 @@ const rotasCompletas: Routes = [
   { path: "**", redirectTo: "" },
 ];
 
-// Liberação incremental das telas. As demais rotas retornam ao início nesta etapa.
-const telasLiberadas = new Set([
-  "",
-  "login",
-  "loja",
-  "carteira",
-  "vinculo",
-  "vinculo/aprovacoes",
-  "gestao/grupos",
-  "instancias-programadas",
-  "admin/estoque",
-  "**",
-]);
-export const routes = rotasCompletas.filter(({ path }) => telasLiberadas.has(path ?? ""));
+// Liberação incremental das telas (core/telas-liberadas.ts). As demais rotas retornam ao início nesta etapa.
+export const routes = rotasCompletas.filter(({ path }) => TELAS_LIBERADAS.has(path ?? ""));

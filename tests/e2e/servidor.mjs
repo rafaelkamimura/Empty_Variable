@@ -133,6 +133,9 @@ const api = spawn(process.execPath, [API], {
     COOKIE_SECURE: "false",
     AUTH_DEV_LOGIN: "true",
     ADMIN_DISCORD_IDS: "900000000000000001",
+    // Integração com o nag4eyes (rascunhos de run): token de serviço e servidor do Discord atendido.
+    INTEGRACAO_TOKEN: "token-de-integracao-dos-testes-e2e-com-32-caracteres",
+    DISCORD_GUILD_ID: "910000000000000001",
   },
   stdio: ["ignore", "inherit", "inherit"],
 });

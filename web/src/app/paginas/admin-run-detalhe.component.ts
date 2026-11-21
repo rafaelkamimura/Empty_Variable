@@ -12,6 +12,7 @@ import { mensagemDeErro } from "../core/modelos";
 import { type DetalheRun, ROTULO_CATEGORIA, ROTULO_FRACAO, ROTULO_STATUS } from "../core/runs";
 import { iconeDoItem, siglaDaClasse, tomDe } from "../core/visual";
 import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { telaLiberada } from "../core/telas-liberadas";
 import { AuthService } from "../core/auth.service";
 import { ImagemItemComponent } from "../core/imagem-item.component";
 
@@ -37,7 +38,7 @@ type Participante = DetalheRun["participacoes"][number];
       @if (run(); as r) {
         <div class="linha-acoes">
           <h1 class="titulo">Run de {{ r.data | date: "dd/MM/yyyy" : "UTC" }}</h1>
-          @if (r.status !== "ESTORNADA") {
+          @if (r.status !== "ESTORNADA" && correcaoLiberada) {
             <a mat-flat-button [routerLink]="['/gestao/runs', r.id, 'corrigir']">Corrigir</a>
           }
           <a mat-button routerLink="/gestao/runs">Voltar à lista</a>
@@ -193,6 +194,8 @@ type Participante = DetalheRun["participacoes"][number];
 })
 export class AdminRunDetalheComponent {
   readonly ehAdmin = inject(AuthService).ehAdmin;
+  /** A tela de correção ainda não foi liberada: sem ela, o botão só levaria ao início. */
+  readonly correcaoLiberada = telaLiberada("/gestao/runs/:id/corrigir");
   private readonly http = inject(HttpClient);
   private readonly acao = inject(Acao);
   readonly lancando = signal(false);
