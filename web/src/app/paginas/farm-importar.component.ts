@@ -1,6 +1,7 @@
 import { Component, computed, inject, output, signal } from "@angular/core";
 import { type BackupDiario, ErroBackup, lerBackup } from "@betel/farm";
-import { type ResultadoImportacao, FarmStore } from "../core/farm";
+import { type ResultadoImportacao } from "../features/farm/data/farm.modelos";
+import { FarmStore } from "../features/farm/data/farm.store";
 import { mensagemDeErro } from "../core/modelos";
 
 /** Check-ins por requisição: cada pedaço cabe com folga no limite do corpo da API. */
