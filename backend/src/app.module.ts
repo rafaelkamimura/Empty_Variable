@@ -10,6 +10,7 @@ import { ImagensModule } from "./imagens/imagens.controller.js";
 import { GruposInstanciaModule } from "./instancias/grupos-instancia.controller.js";
 import { InstanciasModule } from "./instancias/instancias.controller.js";
 import { GruposProgramadosIntegracaoModule } from "./integracao/grupos-programados.controller.js";
+import { ConsultasIntegracaoModule } from "./integracao/consultas.controller.js";
 import { IntegracaoModule } from "./integracao/integracao.controller.js";
 import { NotificacoesModule } from "./notificacoes/notificacoes.controller.js";
 import { PainelModule } from "./painel/painel.controller.js";
@@ -49,6 +50,7 @@ export class ConfiguracaoModule {}
     IntegracaoModule,
     NotificacoesModule,
     GruposProgramadosIntegracaoModule,
+    ConsultasIntegracaoModule,
   ],
   controllers: [SaudeController],
   providers: [
