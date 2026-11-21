@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from "@angular/core";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  input,
+  output,
+  signal,
+  viewChild,
+} from "@angular/core";
 import { PontosPipe } from "../../../shared/pipes/pontos.pipe";
 import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
@@ -47,6 +57,7 @@ interface Revisao {
       <p>Saldo após o envio: {{ saldo() - r.pontos | pontos }}.</p>
       <div class="acoes">
         <button
+          #confirmarBotao
           uiBotao
           variante="principal"
           [carregando]="enviando()"
@@ -54,7 +65,7 @@ interface Revisao {
         >
           Confirmar transferência
         </button>
-        <button uiBotao [disabled]="enviando()" (click)="revisao.set(null)">Voltar</button>
+        <button uiBotao [disabled]="enviando()" (click)="voltar()">Voltar</button>
       </div>
     } @else if (carregando()) {
       <ui-skeleton [quantidade]="2" />
@@ -67,12 +78,16 @@ interface Revisao {
           <select uiCampo [value]="destinatarioId()" (change)="destinatarioId.set(texto($event))">
             <option value="">Selecione um jogador</option>
             @for (jogador of destinatarios(); track jogador.id) {
-              <option [value]="jogador.id">{{ jogador.apelido }}</option>
+              <!-- [selected] em cada opção: na volta da revisão, o [value] do select chega antes das opções. -->
+              <option [value]="jogador.id" [selected]="jogador.id === destinatarioId()">
+                {{ jogador.apelido }}
+              </option>
             }
           </select>
         </ui-campo>
         <ui-campo rotulo="Pontos" [dica]="'Até ' + (saldo() | pontos)">
           <input
+            #pontosCampo
             uiCampo
             type="number"
             inputmode="numeric"
@@ -130,10 +145,28 @@ export class FormularioTransferenciaComponent {
   readonly enviando = input(false);
   readonly erro = input<string | null>(null);
   readonly confirmar = output<PedidoTransferencia>();
+  /** Revisou ou voltou: o erro do envio anterior não vale mais (a página o limpa). */
+  readonly alterou = output();
 
   protected readonly destinatarioId = signal("");
   protected readonly pontos = signal<number | null>(null);
   protected readonly revisao = signal<Revisao | null>(null);
+  private readonly confirmarBotao = viewChild("confirmarBotao", { read: ElementRef<HTMLButtonElement> });
+  private readonly pontosCampo = viewChild("pontosCampo", { read: ElementRef<HTMLInputElement> });
+  /** Só move o foco quando a pessoa troca de passo (não ao abrir o painel). */
+  private focarAoTrocar = false;
+
+  constructor() {
+    // Teclado (§7): na revisão, o foco vai ao "Confirmar"; na volta, ao campo de pontos.
+    effect(() => {
+      const alvo = this.revisao() ? this.confirmarBotao() : this.pontosCampo();
+      if (alvo && this.focarAoTrocar) {
+        this.focarAoTrocar = false;
+        setTimeout(() => alvo.nativeElement.focus());
+      }
+    });
+  }
+
   protected readonly valido = computed(
     () => this.destinatarioId() !== "" && pontosValidos(this.pontos(), this.saldo()),
   );
@@ -151,6 +184,14 @@ export class FormularioTransferenciaComponent {
     const destinatario = this.destinatarios().find((j) => j.id === this.destinatarioId());
     const pontos = this.pontos();
     if (!destinatario || pontos === null || !this.valido()) return;
+    this.alterou.emit();
+    this.focarAoTrocar = true;
     this.revisao.set({ id: idTransferencia(), destinatario, pontos });
+  }
+
+  protected voltar(): void {
+    this.alterou.emit();
+    this.focarAoTrocar = true;
+    this.revisao.set(null);
   }
 }

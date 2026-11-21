@@ -126,6 +126,7 @@ interface DadosCarteira {
             [enviando]="enviando()"
             [erro]="erroTransferencia()"
             (confirmar)="transferir($event)"
+            (alterou)="erroTransferencia.set(null)"
           />
         }
       </ui-painel-lateral>

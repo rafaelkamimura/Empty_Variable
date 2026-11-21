@@ -137,4 +137,55 @@ describe("CarteiraPage", () => {
     await esperar();
     expect(el.querySelector("[data-testid=saldo-carteira]")?.textContent?.trim()).toBe("425 pts");
   });
+
+  it("Voltar mantém o destinatário escolhido na tela, limpa o erro e move o foco", async () => {
+    const { http, el } = montar();
+    http.expectOne("/api/extrato/me").flush(extrato(525, [{ valor: 525 }]));
+    http.expectOne("/api/loja/compras").flush([]);
+    await esperar();
+    botao(el, "Transferir pontos").click();
+    http.expectOne("/api/carteira/transferencias/destinatarios").flush([
+      { id: "j2", apelido: "Recebedor" },
+      { id: "j3", apelido: "Outra" },
+    ]);
+    await esperar();
+    const painel = el.querySelector("[role=dialog]")!;
+    const escolher = (id: string, pts: string) => {
+      const select = painel.querySelector("select")!;
+      select.value = id;
+      select.dispatchEvent(new Event("change"));
+      const pontos = painel.querySelector<HTMLInputElement>("input[type=number]")!;
+      pontos.value = pts;
+      pontos.dispatchEvent(new Event("input"));
+    };
+    escolher("j3", "100");
+    await esperar();
+    botao(painel, "Revisar transferência").click();
+    await esperar();
+    expect(document.activeElement?.textContent?.trim()).toBe("Confirmar transferência");
+    botao(painel, "Confirmar transferência").click();
+    http
+      .expectOne((r) => r.method === "POST" && r.url === "/api/carteira/transferencias")
+      .flush({ message: "Saldo insuficiente." }, { status: 400, statusText: "Erro" });
+    await esperar();
+    expect(painel.textContent).toContain("Saldo insuficiente.");
+
+    botao(painel, "Voltar").click();
+    await esperar();
+    expect(painel.textContent).not.toContain("Saldo insuficiente.");
+    // A tela mostra o destinatário que o formulário guarda.
+    expect(painel.querySelector("select")!.value).toBe("j3");
+    expect(document.activeElement).toBe(painel.querySelector("input[type=number]"));
+    const pontos = painel.querySelector<HTMLInputElement>("input[type=number]")!;
+    pontos.value = "50";
+    pontos.dispatchEvent(new Event("input"));
+    await esperar();
+    botao(painel, "Revisar transferência").click();
+    await esperar();
+    expect(painel.textContent).toContain("Enviar 50 pts para Outra?");
+    expect(painel.textContent).not.toContain("Saldo insuficiente.");
+    botao(painel, "Confirmar transferência").click();
+    const req = http.expectOne((r) => r.method === "POST" && r.url === "/api/carteira/transferencias");
+    expect((req.request.body as { destinatarioId: string }).destinatarioId).toBe("j3");
+  });
 });
