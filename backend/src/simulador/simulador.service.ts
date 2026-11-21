@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import type { Usuario } from "@prisma/client";
 import {
+  abrirToken,
   type AlvoMotor,
   type BonusExtrasMotor,
   type EquipamentoMotor,
@@ -23,7 +24,7 @@ import {
   simularMagico,
 } from "@betel/simulador";
 import { AuditoriaService } from "../auditoria/auditoria.service.js";
-import { CLASSES_SIMULADOR, decodificarBuild } from "../jogadores/build-simulador.js";
+import { BuildSimuladorService, CLASSES_SIMULADOR, decodificarBuild } from "../jogadores/build-simulador.js";
 import type { AtributosFicha, EncaixeFicha, EquipamentoFicha } from "../jogadores/ficha-build.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { MonstrosService } from "./monstros.service.js";
@@ -142,6 +143,7 @@ export class SimuladorService {
     private readonly auditoria: AuditoriaService,
     private readonly monstros: MonstrosService,
     private readonly motor: MotorService,
+    private readonly links: BuildSimuladorService,
   ) {}
 
   /** Instâncias do catálogo, cada uma com os chefes cadastrados e os atributos já guardados deles. */
@@ -330,6 +332,23 @@ export class SimuladorService {
       if (erro instanceof ErroDoMotor) throw new BadRequestException(erro.message);
       throw erro;
     }
+  }
+
+  /**
+   * D62: confere um link do simulador público e devolve o token da build, que a tela entrega à
+   * interface do simulador. O link curto é resolvido aqui porque a interface não fala com outro
+   * servidor. Nada é gravado: a build só vai para uma ficha quando o membro salvar.
+   * @param link Link completo ou curto colado pelo membro
+   * @returns O token e se a build traz itens personalizados do simulador
+   * @throws BadRequestException se o link não for do simulador ou não trouxer uma build com classe
+   */
+  async importarLink(link: string): Promise<{ token: string; personalizados: boolean }> {
+    const { token } = await this.links.abrirLink(link);
+    const aberto = abrirToken(token);
+    if (aberto === null || typeof aberto.build["class"] !== "number") {
+      throw new BadRequestException("Esse link não traz uma build do simulador.");
+    }
+    return { token, personalizados: aberto.personalizados };
   }
 
   /**
