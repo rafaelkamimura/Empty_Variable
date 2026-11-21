@@ -198,7 +198,7 @@ web/src/
 | Camada                      | Pode importar                                       | Não pode importar                        |
 | --------------------------- | --------------------------------------------------- | ---------------------------------------- |
 | `shared/ui`                 | Angular, CDK e Material, `shared/pipes`, `shared/utils` | `core`, `features`, `HttpClient`, modelos de domínio |
-| `features/x/componentes`    | `shared/*` e os modelos de `features/x/data`        | `HttpClient` e outras features           |
+| `features/x/componentes`    | `shared/*` e os modelos de `features/x/data`        | `HttpClient`, `core`, `layout` e outras features |
 | `features/x/paginas`        | tudo de `features/x`, `shared/*` e `core/*`         | páginas e componentes de **outra** feature |
 | `features/x/data`           | `HttpClient`, `core/http`, `shared/utils`, pacotes `@betel/*` | componentes                       |
 | `core`                      | Angular, `shared/utils`                             | `features`                               |
@@ -430,7 +430,7 @@ Os componentes de `shared/ui` são desenvolvidos e revisados **fora das telas**,
 
 O catálogo é a rota **`/dev/catalogo`**, que só existe fora de produção (decidido na validação, no lugar do Storybook, para não acrescentar dependências nem um build separado no CI).
 
-- **Rodar:** `pnpm --filter @betel/web start` e abrir `/dev/catalogo`. No build de produção a rota não é registrada (`isDevMode()` em `app.routes.ts`) e o código da página fica fora do bundle.
+- **Rodar:** `pnpm --filter @betel/web start` e abrir `/dev/catalogo`. No build de produção, `dev/dev.routes.ts` é trocado por `dev.routes.producao.ts` (lista vazia, via `fileReplacements` no `angular.json`): a rota não existe e nenhum arquivo do catálogo é publicado.
 - **Cada componente de `shared/ui`** tem ao lado um `<nome>.catalogo.ts`, que exporta um componente standalone (`<Nome>CatalogoComponent`) com o componente real em cada variante e estado: padrão, desabilitado, carregando, erro e texto longo.
 - **Registro:** uma entrada em `web/src/app/dev/catalogo/entradas.ts`, com `id` (kebab-case, vira a URL), `nome` (o seletor), `nivel` (§3.3), `descricao` (uma frase) e `carregar` (import dinâmico do `*.catalogo.ts`). O spec do catálogo confere que todo exemplo registrado carrega.
 - **Revisão de PR:** componentes visuais novos ou alterados são conferidos no catálogo antes da tela.

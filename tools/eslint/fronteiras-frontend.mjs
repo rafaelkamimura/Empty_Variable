@@ -4,13 +4,24 @@
 // (no-restricted-imports em eslint.config.mjs).
 import path from "node:path";
 
-const RAIZ_APP = path.join("web", "src", "app");
+const RAIZ_APP = ["web", "src", "app"];
 
-/** Classifica um caminho dentro de web/src/app: { camada, feature?, parte? } ou null. */
-export function classificar(caminhoAbsoluto, raizRepo) {
-  const rel = path.relative(path.join(raizRepo, RAIZ_APP), caminhoAbsoluto);
-  if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
-  const [topo, a, b] = rel.split(path.sep);
+/**
+ * Classifica um caminho absoluto dentro de web/src/app: { camada, feature?, parte? } ou null.
+ * Acha web/src/app no próprio caminho (a última ocorrência), sem depender da pasta de onde o
+ * ESLint foi chamado: rodar de dentro de web/, como alguns editores fazem, dá o mesmo resultado.
+ */
+export function classificar(caminhoAbsoluto) {
+  const partes = path.resolve(caminhoAbsoluto).split(path.sep);
+  let i = -1;
+  for (let k = partes.length - RAIZ_APP.length; k >= 0; k--) {
+    if (RAIZ_APP.every((p, j) => partes[k + j] === p)) {
+      i = k + RAIZ_APP.length;
+      break;
+    }
+  }
+  if (i < 0) return null;
+  const [topo, a, b] = partes.slice(i);
   if (topo === "shared") return { camada: "shared", parte: a };
   if (topo === "features") return { camada: "features", feature: a, parte: b };
   if (topo === "core" || topo === "layout") return { camada: topo };
@@ -32,6 +43,9 @@ export function violacao(origem, alvo) {
   if (origem.camada === "features") {
     if (origem.parte === "componentes" && outraFeature) {
       return `Componente de ${origem.feature} não pode importar a feature ${alvo.feature} (§3.1).`;
+    }
+    if (origem.parte === "componentes" && ["core", "layout"].includes(alvo.camada)) {
+      return `Componente de domínio não pode importar ${alvo.camada}/: recebe tudo por input() (§3.1, §4.2).`;
     }
     if (origem.parte === "paginas" && outraFeature && ["paginas", "componentes"].includes(alvo.parte)) {
       return `Página de ${origem.feature} não pode importar ${alvo.parte}/ de ${alvo.feature} (§3.1).`;
@@ -57,13 +71,12 @@ export default {
         schema: [],
       },
       create(contexto) {
-        const raiz = contexto.cwd;
         const arquivo = contexto.filename;
-        const origem = classificar(arquivo, raiz);
+        const origem = classificar(arquivo);
         if (!origem) return {};
         const conferir = (no, fonte) => {
           if (typeof fonte !== "string" || !fonte.startsWith(".")) return;
-          const alvo = classificar(path.resolve(path.dirname(arquivo), fonte), raiz);
+          const alvo = classificar(path.resolve(path.dirname(arquivo), fonte));
           const msg = violacao(origem, alvo);
           if (msg) contexto.report({ node: no, message: msg });
         };

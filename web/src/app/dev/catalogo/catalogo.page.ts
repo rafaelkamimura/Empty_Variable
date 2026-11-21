@@ -19,7 +19,7 @@ type Exemplos =
 
 /**
  * Catálogo vivo de shared/ui (docs/frontend/diretrizes.md §8.2). Só existe fora de produção
- * (rota registrada com isDevMode() em app.routes.ts).
+ * (dev.routes.ts vira uma lista vazia no build de produção, por fileReplacements).
  */
 @Component({
   selector: "app-catalogo-page",
@@ -189,8 +189,11 @@ export class CatalogoPage {
         (componente) => {
           if (this.atual() === e) this.exemplos.set({ estado: "pronto", componente });
         },
-        (erro: unknown) =>
-          this.exemplos.set({ estado: "erro", mensagem: erro instanceof Error ? erro.message : "" }),
+        (erro: unknown) => {
+          // Mesma guarda do sucesso: a falha atrasada de uma entrada antiga não sobrescreve a atual.
+          if (this.atual() === e)
+            this.exemplos.set({ estado: "erro", mensagem: erro instanceof Error ? erro.message : "" });
+        },
       );
     });
   }

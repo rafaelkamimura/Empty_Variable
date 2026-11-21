@@ -1,4 +1,5 @@
-// Rotas de desenvolvimento: só são registradas fora de produção (app.routes.ts usa isDevMode()).
+// Rotas de desenvolvimento. No build de produção este arquivo é trocado por dev.routes.producao.ts
+// (fileReplacements em angular.json), então nada daqui chega ao bundle publicado.
 import type { Routes } from "@angular/router";
 
 export const ROTAS_DEV: Routes = [

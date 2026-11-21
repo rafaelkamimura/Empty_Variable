@@ -1,4 +1,3 @@
-import { isDevMode } from "@angular/core";
 import type { Routes } from "@angular/router";
 import {
   adminGuard,
@@ -260,7 +259,8 @@ const rotasCompletas: Routes = [
 
 // Liberação incremental das telas (core/telas-liberadas.ts). As demais rotas retornam ao início nesta etapa.
 // O catálogo vivo (/dev/catalogo, diretrizes §8.2) só existe fora de produção e vem antes do "**".
+// Em produção, ROTAS_DEV é [] (fileReplacements em angular.json).
 export const routes: Routes = [
-  ...(isDevMode() ? ROTAS_DEV : []),
+  ...ROTAS_DEV,
   ...rotasCompletas.filter(({ path }) => TELAS_LIBERADAS.has(path ?? "")),
 ];
