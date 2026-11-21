@@ -1,0 +1,73 @@
+// Mapeamento do Angular Material para os tokens (docs/frontend/diretrizes.md §2.5).
+// O Material entra pelo comportamento; o visual vem dos tokens. Este é o ÚNICO lugar com --mat-sys-*.
+// O tema azure-blue.css ainda fica no angular.json (dá forma, elevação e estados) até a etapa 5.
+
+// Tipografia: o tema pré-compilado escreve "Roboto" direto nos atalhos (ex.: --mat-sys-body-medium),
+// então os atalhos são refeitos com --fonte. O peso 500 do Material vira 600, o peso de rótulo
+// das diretrizes (só 400, 600 e 700 são carregados).
+$papeis: display, headline, title, body, label;
+$tamanhos: large, medium, small;
+
+html {
+  /* Cores */
+  --mat-sys-primary: var(--acento);
+  --mat-sys-on-primary: var(--sobre-acento);
+  --mat-sys-primary-container: var(--acento-fundo);
+  --mat-sys-on-primary-container: var(--texto-forte);
+  --mat-sys-primary-fixed: var(--acento);
+  --mat-sys-primary-fixed-dim: var(--acento-suave);
+  --mat-sys-on-primary-fixed: var(--sobre-acento);
+  --mat-sys-on-primary-fixed-variant: var(--sobre-acento);
+  --mat-sys-inverse-primary: var(--elevado); /* ação do snackbar sobre --texto: 11,3:1 */
+  --mat-sys-surface-tint: var(--acento);
+  --mat-sys-secondary: var(--texto-suave);
+  --mat-sys-on-secondary: var(--fundo);
+  --mat-sys-secondary-container: var(--borda);
+  --mat-sys-on-secondary-container: var(--texto);
+  --mat-sys-tertiary: var(--texto-suave);
+  --mat-sys-on-tertiary: var(--fundo);
+  --mat-sys-tertiary-container: var(--borda);
+  --mat-sys-on-tertiary-container: var(--texto);
+  --mat-sys-background: var(--fundo);
+  --mat-sys-on-background: var(--texto);
+  --mat-sys-surface: var(--fundo);
+  --mat-sys-surface-bright: var(--elevado);
+  --mat-sys-surface-dim: var(--fundo);
+  --mat-sys-surface-variant: var(--elevado);
+  --mat-sys-surface-container-lowest: var(--fundo);
+  --mat-sys-surface-container-low: var(--cartao);
+  --mat-sys-surface-container: var(--cartao);
+  --mat-sys-surface-container-high: var(--elevado);
+  --mat-sys-surface-container-highest: var(--elevado);
+  --mat-sys-on-surface: var(--texto);
+  --mat-sys-on-surface-variant: var(--texto-suave);
+  --mat-sys-outline: var(--borda-campo);
+  --mat-sys-outline-variant: var(--borda);
+  --mat-sys-inverse-surface: var(--texto);
+  --mat-sys-inverse-on-surface: var(--superficie);
+  --mat-sys-error: var(--erro);
+  --mat-sys-on-error: var(--fundo);
+  --mat-sys-error-container: var(--erro-fundo);
+  --mat-sys-on-error-container: var(--erro);
+  --mat-sys-scrim: var(--sombra-cor);
+  --mat-sys-shadow: var(--sombra-cor);
+
+  /* Tipografia */
+  --mat-sys-label-large-weight: 600;
+  --mat-sys-label-medium-weight: 600;
+  --mat-sys-label-small-weight: 600;
+  --mat-sys-title-medium-weight: 600;
+  --mat-sys-title-small-weight: 600;
+
+  @each $papel in $papeis {
+    @each $tamanho in $tamanhos {
+      $p: "--mat-sys-#{$papel}-#{$tamanho}";
+      #{$p}-font: var(--fonte);
+      #{$p}: var(#{$p}-weight) var(#{$p}-size) / var(#{$p}-line-height) var(--fonte);
+    }
+  }
+
+  /* Componentes */
+  --mat-toolbar-container-background-color: var(--superficie);
+  --mat-toolbar-container-text-color: var(--texto);
+}

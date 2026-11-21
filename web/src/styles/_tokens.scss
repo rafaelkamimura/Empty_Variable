@@ -1,0 +1,113 @@
+// Tokens da identidade visual (docs/frontend/diretrizes.md §2).
+// ÚNICO arquivo do frontend com valores de cor em hex. Componentes usam só os tokens semânticos;
+// os primitivos (--ev-*) aparecem apenas aqui dentro.
+
+html {
+  color-scheme: dark;
+
+  /* ---------- 2.1 Primitivos da marca ---------- */
+  --ev-espaco: #040017;
+  --ev-aurora-azul: #2720b9;
+  --ev-aurora-violeta: #991fdb;
+  --ev-aurora-magenta: #ca24ed;
+  --ev-chave-inicio: #9155f6;
+  --ev-chave-fim: #c65bfb;
+  --ev-cursor: #9d52fb;
+  --ev-lavanda: #e0c9f8;
+  --ev-estrela: #eed7ff;
+
+  /* ---------- 2.2 Superfícies ---------- */
+  --fundo: var(--ev-espaco);
+  --superficie: #0c0628;
+  --cartao: #140b36;
+  --elevado: #1d1247;
+  --borda: #2a1d5c;
+  --borda-forte: #3a2a78;
+  --borda-campo: #6e5db5; /* 3,8:1: contorno de controle */
+
+  /* ---------- Texto (contraste sobre --fundo) ---------- */
+  --texto-forte: var(--ev-estrela); /* 15,5:1 */
+  --texto: var(--ev-lavanda); /* 13,6:1 */
+  --texto-suave: #a99bc4; /* 8,0:1 */
+  --texto-apagado: #8e80ad; /* 5,7:1, no máximo até --elevado */
+
+  /* ---------- Acento e interação ---------- */
+  --acento: var(--ev-chave-fim); /* 6,2:1 */
+  --acento-suave: var(--ev-cursor);
+  --acento-degrade: linear-gradient(135deg, var(--ev-chave-inicio), var(--ev-chave-fim));
+  --sobre-acento: var(--ev-espaco); /* 4,75:1 no pior ponto do degradê */
+  --acento-fundo: color-mix(in srgb, var(--ev-cursor) 16%, transparent);
+  --foco: var(--ev-chave-fim);
+  --destaque: var(--ev-aurora-magenta);
+
+  /* ---------- Aurora (só decoração: nunca texto ou ícone com significado) ---------- */
+  --aurora: linear-gradient(
+    120deg,
+    var(--ev-aurora-azul) 0%,
+    var(--ev-aurora-violeta) 55%,
+    var(--ev-aurora-magenta) 100%
+  );
+  --aurora-brilho:
+    radial-gradient(60% 40% at 20% 0%, rgb(39 32 185 / 35%), transparent),
+    radial-gradient(50% 35% at 85% 10%, rgb(202 36 237 / 25%), transparent);
+  --brilho-acento: 0 0 0 1px rgb(198 91 251 / 40%), 0 8px 24px rgb(153 31 219 / 25%);
+
+  /* ---------- Estados (todos acima de 7:1) ---------- */
+  --sucesso: #7ee0c3;
+  --sucesso-fundo: rgb(126 224 195 / 12%);
+  --alerta: #f2c97d;
+  --alerta-fundo: rgb(242 201 125 / 12%);
+  --erro: #ff8fab;
+  --erro-fundo: rgb(255 143 171 / 12%);
+  --info: #8fb8ff;
+  --info-fundo: rgb(143 184 255 / 12%);
+
+  /* ---------- Tons de identidade (ícone de item e emblema de classe; core/visual.ts) ----------
+   * Contraste sobre --superficie (fundo da arte do cartão): todos ≥ 4,5:1. */
+  --tom-orquidea: var(--ev-chave-fim); /* 5,9:1 */
+  --tom-violeta: var(--ev-chave-inicio); /* 4,5:1 */
+  --tom-lavanda: var(--ev-lavanda); /* 12,9:1 */
+  --tom-azul: var(--info); /* 9,8:1 */
+  --tom-menta: var(--sucesso); /* 12,4:1 */
+  --tom-nevoa: var(--texto-suave); /* 7,6:1 */
+
+  /* ---------- 2.3 Escalas ---------- */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 24px;
+  --esp-6: 32px;
+  --esp-7: 48px;
+
+  --raio-p: 6px;
+  --raio-m: 10px;
+  --raio-g: 14px;
+  --raio-total: 999px;
+
+  --fonte: "Inter", Roboto, system-ui, sans-serif;
+  --fonte-mono: "JetBrains Mono", ui-monospace, monospace;
+  --fs-xs: 12px;
+  --fs-s: 13px;
+  --fs-m: 14px;
+  --fs-l: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 28px;
+
+  --sombra-cor: #000000;
+  --sombra-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --sombra-2: 0 8px 24px rgb(0 0 0 / 45%);
+
+  --duracao: 160ms;
+  --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --z-topo: 10;
+  --z-painel: 100;
+  --z-dialogo: 200;
+  --z-aviso: 300;
+
+  /* ---------- Apelidos dos tokens antigos (§10 etapa 1) ----------
+   * Existem só para as telas atuais não quebrarem. Código novo não usa; saem na etapa 5. */
+  --arte: var(--superficie);
+  --acento-forte: var(--ev-lavanda);
+}

@@ -2,7 +2,7 @@ import { DatePipe } from "@angular/common";
 import { Component, computed, input } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { descreverLancamento, type Extrato, type LancamentoExtrato } from "../core/runs";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 const ROTULO_TIPO: Record<LancamentoExtrato["tipo"], string> = {
   PARTICIPACAO: "Participação",
@@ -20,7 +20,7 @@ const ROTULO_TIPO: Record<LancamentoExtrato["tipo"], string> = {
 /** US-06: saldo e histórico com a origem detalhada. Usado na área do membro e pelos admins. */
 @Component({
   selector: "app-extrato",
-  imports: [TabelaResponsivaDirective, DatePipe, MatCardModule],
+  imports: [TabelaDirective, DatePipe, MatCardModule],
   template: `
     @if (extrato(); as x) {
       @if (mostrarSaldo()) {
@@ -38,7 +38,7 @@ const ROTULO_TIPO: Record<LancamentoExtrato["tipo"], string> = {
           @if (x.lancamentos.length === 0) {
             <p class="texto-secundario">Nenhum lançamento ainda.</p>
           } @else {
-            <table appResponsiva class="tabela" data-testid="historico">
+            <table uiTabela class="tabela" data-testid="historico">
               <thead>
                 <tr>
                   <th scope="col">Data</th>

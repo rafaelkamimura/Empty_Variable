@@ -1,0 +1,77 @@
+// Estilo de table[uiTabela] (shared/ui/tabela/tabela.directive.ts). Diretiva não tem estilo
+// próprio, então este arquivo é carregado por styles.scss; tudo fica escopado em table.ui-tabela
+// (diretrizes §5). Só tokens.
+
+table.ui-tabela {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    overflow-wrap: break-word;
+  }
+}
+
+@container conteudo (max-width: 760px) {
+  table.ui-tabela {
+    thead {
+      display: none;
+    }
+
+    &,
+    tbody,
+    tr,
+    td {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    tr {
+      height: auto;
+      margin-bottom: var(--esp-3);
+      padding: var(--esp-2) var(--esp-3);
+      border: 1px solid var(--borda);
+      border-radius: var(--raio-g);
+      background: var(--cartao);
+    }
+
+    // Rótulo à esquerda (34%) e o conteúdo da célula à direita, em qualquer quantidade.
+    // Os !important vencem o estilo de célula do mat-table.
+    td {
+      position: relative;
+      display: block;
+      min-height: 0;
+      padding: var(--esp-1) 0 var(--esp-1) calc(34% + var(--esp-2)) !important;
+      border: 0 !important;
+      white-space: normal !important;
+      text-align: left !important;
+    }
+
+    td::before {
+      content: attr(data-label);
+      position: absolute;
+      top: calc(var(--esp-1) * 1.5); // alinha com a primeira linha do valor
+      left: 0;
+      width: 34%;
+      font-size: var(--fs-xs);
+      color: var(--texto-suave);
+    }
+
+    // Colunas sem título (ações) ocupam a linha toda.
+    td[data-label=""],
+    td:not([data-label]) {
+      padding-left: 0 !important;
+    }
+
+    td[data-label=""]::before,
+    td:not([data-label])::before {
+      display: none;
+    }
+
+    td:empty {
+      display: none;
+    }
+  }
+}

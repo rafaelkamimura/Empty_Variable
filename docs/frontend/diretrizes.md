@@ -114,6 +114,17 @@ Estes são os tokens que os componentes usam. Os contrastes foram medidos contra
 
 Um estado nunca é indicado só pela cor. Sempre há ícone e texto junto.
 
+**Tons de identidade.** Dão a cor estável do ícone de item e do emblema de classe (`tomDe()` em `core/visual.ts`). São decorativos: o nome do item ou da classe sempre aparece junto. Contraste medido contra `--superficie`, o fundo da arte do cartão.
+
+| Token            | Valor                         | Contraste |
+| ---------------- | ----------------------------- | --------- |
+| `--tom-orquidea` | `--ev-chave-fim` (#C65BFB)    | 5,9:1     |
+| `--tom-violeta`  | `--ev-chave-inicio` (#9155F6) | 4,5:1     |
+| `--tom-lavanda`  | `--ev-lavanda` (#E0C9F8)      | 12,9:1    |
+| `--tom-azul`     | `--info` (#8FB8FF)            | 9,8:1     |
+| `--tom-menta`    | `--sucesso` (#7EE0C3)         | 12,4:1    |
+| `--tom-nevoa`    | `--texto-suave` (#A99BC4)     | 7,6:1     |
+
 ### 2.3 Demais escalas
 
 | Escala     | Tokens                                                                                     |
@@ -148,6 +159,7 @@ Números (pontos, zeny, quantidades) usam `font-variant-numeric: tabular-nums` p
 - As variáveis `--mat-sys-*` são mapeadas para os tokens semânticos **num único lugar**, `styles/_material.scss`, da mesma forma que hoje ficam em `styles.scss`.
 - O tema `azure-blue.css` pré-compilado deve sair do `angular.json` quando o mapeamento estiver completo.
 - `::ng-deep` é proibido em código novo. Se um componente do Material precisa de outro visual, o ajuste é feito por token `--mat-*` no componente `shared/ui` que o envolve.
+- Quando um componente de `shared/ui` precisa estilizar conteúdo projetado (ex.: os parágrafos do `ui-como-funciona`), ele usa `ViewEncapsulation.None` com **todas** as regras escopadas na classe do próprio host (`.ui-como-funciona …`), em vez de `::ng-deep`.
 
 ---
 
@@ -159,7 +171,8 @@ web/src/
 │   ├── _tokens.scss        # primitivos + tokens semânticos (§2) — ÚNICO lugar com hex
 │   ├── _material.scss      # mapeamento --mat-sys-* → tokens
 │   ├── _base.scss          # reset, html/body, tipografia, foco global, reduced-motion
-│   └── _utilitarios.scss   # poucas classes utilitárias (ex.: .sr-only, .tabular)
+│   ├── _utilitarios.scss   # poucas classes utilitárias (ex.: .sr-only, .tabular)
+│   └── _legado*.scss       # classes globais antigas, só até a migração (§10); nada novo aqui
 ├── styles.scss             # só @use dos arquivos acima
 └── app/
     ├── core/               # singletons da aplicação, sem UI
@@ -186,7 +199,7 @@ web/src/
 | Camada                      | Pode importar                                       | Não pode importar                        |
 | --------------------------- | --------------------------------------------------- | ---------------------------------------- |
 | `shared/ui`                 | Angular, CDK e Material, `shared/pipes`, `shared/utils` | `core`, `features`, `HttpClient`, modelos de domínio |
-| `features/x/componentes`    | `shared/*` e os modelos de `features/x/data`        | `HttpClient` e outras features           |
+| `features/x/componentes`    | `shared/*` e os modelos de `features/x/data`        | `HttpClient`, `core`, `layout` e outras features |
 | `features/x/paginas`        | tudo de `features/x`, `shared/*` e `core/*`         | páginas e componentes de **outra** feature |
 | `features/x/data`           | `HttpClient`, `core/http`, `shared/utils`, pacotes `@betel/*` | componentes                       |
 | `core`                      | Angular, `shared/utils`                             | `features`                               |
@@ -230,7 +243,7 @@ O projeto usa o vocabulário do Atomic Design para decidir **o que um componente
   - O `caminhoBaseInterceptor` aplica o `APP_BASE_PATH`.
   - O que muda por ambiente entra por `environment.ts` ou por configuração servida pela API, e nunca por `if (location.host…)`.
 - **`public/`** guarda só arquivos estáticos, agrupados por tipo (`icones-classes/`, `imagens/`, `fontes/`). Imagens são otimizadas antes de entrar (PNG/WebP comprimido, no tamanho em que aparecem), e ícones de interface são SVG em `app-icone`.
-- **As fontes** (Inter e JetBrains Mono) são servidas pelo próprio projeto, com `font-display: swap` e só os pesos usados (400, 600 e 700). Elas não são carregadas de CDN.
+- **As fontes** (Inter e JetBrains Mono) são servidas pelo próprio projeto, com `font-display: swap` e só os pesos usados (400, 600 e 700). Elas vêm dos pacotes `@fontsource/*` (subconjunto `latin`), declarados em `styles` no `angular.json`, e não são carregadas de CDN.
 
 ---
 
@@ -284,6 +297,8 @@ O projeto usa o vocabulário do Atomic Design para decidir **o que um componente
 
 O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no código atual.
 
+**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
+
 | Componente                | Nível | Responsabilidade                                                                  | Substitui hoje                                       |
 | ------------------------- | --------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `ui-pagina`               | Template | Esqueleto de página: título, subtítulo, slot de ação principal, slot de abas e conteúdo | `.pagina`, `.cabecalho`, `.cabecalho-acoes`     |
@@ -297,10 +312,10 @@ O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no c
 | `ui-skeleton`             | Átomo | Placeholder animado de linha, cartão ou tabela                                    | "Carregando…"                                        |
 | `ui-aviso`                | Molécula | Mensagem inline com tom `info`, `sucesso`, `alerta` ou `erro`, ícone e `role` correto | `.dica` e `<p role="alert">`                     |
 | `ui-campo`                | Molécula | Rótulo, controle projetado, dica e erro, ligados por `aria-describedby`           | `.campo`, `.campo-largo`                             |
-| `ui-painel-lateral`       | Organismo | Formulário de criar e editar à direita (mover de `core/layout.ts`)                | `app-painel-lateral`                                 |
-| `ui-como-funciona`        | Molécula | Explicação recolhida (mover de `core/layout.ts`)                                  | `app-como-funciona`                                  |
+| `ui-painel-lateral`       | Organismo | Formulário de criar e editar à direita, com o foco preso e devolvido ao fechar     | `app-painel-lateral` (de `core/layout.ts`)           |
+| `ui-como-funciona`        | Molécula | Explicação recolhida                                                              | `app-como-funciona` (de `core/layout.ts`)            |
 | `ui-confirmacao`          | Organismo | Diálogo de confirmação para ações destrutivas, com descrição do efeito            | `confirm()` e confirmações ad hoc                    |
-| `table[uiTabela]`         | Organismo | Tabela responsiva (evolução da diretiva `appResponsiva`), com cabeçalho fixo e linha vazia | `.tabela`, `.tabela-responsiva`             |
+| `table[uiTabela]`         | Organismo | Tabela responsiva. É **diretiva**, porque também vai em `<table mat-table>`; o estilo fica em `tabela/tabela.scss`, escopado em `table.ui-tabela` e carregado por `styles.scss` | `appResponsiva`, `.tabela-responsiva` |
 | `ui-badge`                | Átomo | Rótulo de status com tom semântico                                                | chips de status de compra e run                      |
 | `ui-marca`                | Átomo | Logotipo `{∅_}` com o cursor animado                                              | (novo)                                               |
 | Pipes `pontos` e `zeny`   | — | Formatação pt-BR com sufixo e `tabular-nums`                                      | `number` + " pts" repetido                           |
@@ -312,7 +327,8 @@ Os componentes de RO, usados por mais de uma feature, vão para `shared/dominio/
 1. confirme que nenhum componente existente resolve com uma variante;
 2. crie em `shared/ui/<nome>/` o componente e o `.spec.ts`;
 3. documente os inputs com JSDoc;
-4. acrescente uma linha na tabela acima, no mesmo PR.
+4. crie o `<nome>.catalogo.ts` e registre a entrada no catálogo (§8.2);
+5. acrescente uma linha na tabela acima, no mesmo PR.
 
 ---
 
@@ -415,11 +431,14 @@ As ferramentas de teste continuam as que o projeto já usa: Karma/Jasmine para s
 
 Os componentes de `shared/ui` são desenvolvidos e revisados **fora das telas**, para que cada um funcione sozinho.
 
-- **Storybook** (com suporte a Angular) é proposto como o catálogo vivo:
-  - cada componente de `shared/ui` tem um `*.stories.ts` ao lado, com uma história por variante e por estado (padrão, desabilitado, carregando, erro, texto longo);
-  - o catálogo serve de documentação: a tabela da §5 aponta para ele, e o JSDoc dos inputs aparece como descrição;
-  - na revisão de PR, componentes visuais novos ou alterados são conferidos no Storybook antes da tela.
-- **A decidir na validação:** se o Storybook parecer pesado para o tamanho do projeto, a alternativa é uma rota `/dev/catalogo`, disponível só fora de produção, que mostra todos os componentes de `shared/ui` com as suas variantes. A regra é a mesma nos dois casos: componente sem exemplo no catálogo não é aprovado.
+O catálogo é a rota **`/dev/catalogo`**, que só existe fora de produção (decidido na validação, no lugar do Storybook, para não acrescentar dependências nem um build separado no CI).
+
+- **Rodar:** `pnpm --filter @betel/web start` e abrir `/dev/catalogo`. No build de produção, `dev/dev.routes.ts` é trocado por `dev.routes.producao.ts` (lista vazia, via `fileReplacements` no `angular.json`): a rota não existe e nenhum arquivo do catálogo é publicado.
+- **Cada componente de `shared/ui`** tem ao lado um `<nome>.catalogo.ts`, que exporta um componente standalone (`<Nome>CatalogoComponent`) com o componente real em cada variante e estado: padrão, desabilitado, carregando, erro e texto longo.
+- **Registro:** uma entrada em `web/src/app/dev/catalogo/entradas.ts`, com `id` (kebab-case, vira a URL), `nome` (o seletor), `nivel` (§3.3), `descricao` (uma frase) e `carregar` (import dinâmico do `*.catalogo.ts`). O spec do catálogo confere que todo exemplo registrado carrega.
+- **Revisão de PR:** componentes visuais novos ou alterados são conferidos no catálogo antes da tela.
+
+Componente sem exemplo no catálogo não é aprovado.
 
 ### 8.3 Regras verificadas pelo linter
 
@@ -428,14 +447,17 @@ O que pode ser checado por máquina não depende de revisão humana. As regras a
 | Regra                                          | Como                                                                 |
 | ---------------------------------------------- | -------------------------------------------------------------------- |
 | Prefixo de seletor (`ui-` em `shared/ui`, `app-` no resto) | `@angular-eslint/component-selector` e `directive-selector`, por pasta |
+| Sufixo de classe (`Page` em páginas, `Component` no resto) | `@angular-eslint/component-class-suffix` |
 | `OnPush` em componentes                        | `@angular-eslint/prefer-on-push-component-change-detection`          |
 | Signals em vez de decoradores                  | `@angular-eslint/prefer-signals` e `no-input-rename`/`no-output-rename` |
 | Sem `HttpClient` fora de `data/` e `core/`     | `no-restricted-imports` em `shared/**`, `features/*/componentes/**` e `features/*/paginas/**` |
-| Fronteiras entre camadas (§3.1)                | `no-restricted-imports` com padrões (`features/*` não importa outra feature) |
-| Sem hex e sem `::ng-deep` em componentes       | Stylelint (`color-no-hex` fora de `styles/_tokens.scss` e `selector-pseudo-element-disallowed-list`) |
-| Acessibilidade de template                     | `@angular-eslint/template/accessibility` (alt, label, foco, papéis)  |
+| Fronteiras entre camadas (§3.1)                | Regra local `betel/fronteiras` (`tools/eslint/fronteiras-frontend.mjs`), que resolve os imports relativos e aplica a tabela da §3.1 |
+| Sem hex e sem `::ng-deep` em componentes       | Stylelint nos `.scss` (`color-no-hex` fora de `styles/_tokens.scss` e `selector-pseudo-element-disallowed-list`); nos estilos inline (`styles:` do `.ts`), `no-restricted-syntax` do ESLint |
+| Acessibilidade de template                     | `angular.configs.templateAccessibility` (alt, label, foco, papéis)   |
 
-Enquanto o código antigo não migrar, essas regras rodam como **erro** para arquivos novos e para `shared/` e `features/`, e como **aviso** para `paginas/` e `core/` antigos.
+Enquanto o código antigo não migrar, essas regras rodam como **erro** em `shared/`, `features/`, `layout/` e `dev/`, e como **aviso** em `paginas/`, `core/` e nos arquivos da raiz de `app/` (inclusive as regras gerais de TypeScript, que o `web/` não tinha). Por isso código novo nasce nas pastas novas, e não em `paginas/` ou `core/`.
+
+`pnpm lint` roda o ESLint e o Stylelint (`stylelint.config.mjs`). Os avisos do código antigo aparecem na saída, mas não falham o CI.
 
 ---
 
@@ -461,9 +483,9 @@ Enquanto o código antigo não migrar, essas regras rodam como **erro** para arq
 
 A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**: quem mexer numa tela migra essa tela.
 
-1. **Fundação.** Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `core/visual.ts` é refeito com tons da paleta.
-2. **Ferramentas.** Ligar as regras de lint da §8.3 (aviso no código antigo) e montar o catálogo da §8.2, para que cada peça base já nasça com exemplo.
-3. **Peças base.** Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
+1. **Fundação.** *(feita)* Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `core/visual.ts` é refeito com tons da paleta.
+2. **Ferramentas.** *(feita)* Ligar as regras de lint da §8.3 (aviso no código antigo) e montar o catálogo da §8.2, para que cada peça base já nasça com exemplo.
+3. **Peças base.** *(feita)* Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
 3. **Casca.** Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
 4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
    - loja e carteira;

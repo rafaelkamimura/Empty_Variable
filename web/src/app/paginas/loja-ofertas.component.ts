@@ -12,8 +12,9 @@ import { RouterLink } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import { type ItemOfertavel, type Oferta, podeRetirar, ROTULO_STATUS_OFERTA } from "../core/loja";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
-import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
+import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 
 /** US-14 (T-36): o membro oferece itens em consignação e acompanha/retira as ofertas (D22, D25, C12, C13). */
 @Component({
@@ -21,7 +22,7 @@ import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
   imports: [
     ComoFuncionaComponent,
     PainelLateralComponent,
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     DatePipe,
     RouterLink,
@@ -44,19 +45,19 @@ import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
           <a mat-stroked-button routerLink="/loja">Voltar à loja</a>
         </div>
       </div>
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>
           Ofereça itens seus (obtidos fora das runs do grupo). Entregue o item ao guardião no jogo; quando ele
           aprovar, o item entra à venda pelo preço do catálogo. Você recebe os pontos quando o comprador
           receber o item, e pode retirar enquanto não for vendido.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
 
       @if (ofertas().length === 0) {
         <p class="texto-secundario">Você ainda não ofereceu nenhum item.</p>
       } @else {
         <div class="rolagem-horizontal">
-          <table appResponsiva class="tabela" data-testid="minhas-ofertas">
+          <table uiTabela class="tabela" data-testid="minhas-ofertas">
             <thead>
               <tr>
                 <th scope="col">Quando</th>
@@ -90,7 +91,7 @@ import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
         </div>
       }
 
-      <app-painel-lateral titulo="Nova oferta" [aberto]="ofertando()" (fechar)="ofertando.set(false)">
+      <ui-painel-lateral titulo="Nova oferta" [aberto]="ofertando()" (fechar)="ofertando.set(false)">
         @if (itens().length === 0) {
           <p class="texto-secundario">Nenhum item pode ser oferecido no momento.</p>
         } @else {
@@ -122,7 +123,7 @@ import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
             </button>
           </form>
         }
-      </app-painel-lateral>
+      </ui-painel-lateral>
     </div>
   `,
   styles: `

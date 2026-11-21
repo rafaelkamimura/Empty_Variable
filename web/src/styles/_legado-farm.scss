@@ -1,14 +1,15 @@
-// Peças comuns às telas do Diário de farm (D48–D54). Usa o tema do sistema (styles.scss); o verde
-// do "feito" e o dourado do zeny são as duas únicas cores próprias, e só aparecem aqui.
+// Peças comuns às telas do Diário de farm (D48–D54). Classes antigas, anteriores às diretrizes
+// (docs/frontend/diretrizes.md §10): migram para shared/ui com a feature farm. As cores próprias do
+// farm (feito, zeny, perigo) agora são apelidos dos tokens de estado.
 // Global (importado em styles.scss) e escopado em app-farm: vale para a página e para as abas
 // (totais, cadastro, importar), que são componentes filhos.
 app-farm {
   & {
-    --feito: #7cc89a;
-    --feito-fundo: #14251b;
-    --feito-borda: #2c5a3f;
-    --zeny: #e2c27a;
-    --perigo: #ff9b93;
+    --feito: var(--sucesso);
+    --feito-fundo: var(--sucesso-fundo);
+    --feito-borda: color-mix(in srgb, var(--sucesso) 40%, transparent);
+    --zeny: var(--alerta);
+    --perigo: var(--erro);
     display: block;
   }
 
@@ -91,7 +92,7 @@ app-farm {
   .botao.ok {
     border-color: var(--feito);
     background: var(--feito);
-    color: #08130c;
+    color: var(--sobre-acento);
   }
   .botao.pequeno {
     min-height: 28px;
@@ -104,7 +105,7 @@ app-farm {
   .botao.perigo.armado {
     border-color: var(--perigo);
     background: var(--perigo);
-    color: #1a0806;
+    color: var(--sobre-acento);
   }
   .botao.fantasma {
     background: transparent;

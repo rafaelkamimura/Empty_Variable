@@ -21,7 +21,7 @@
 		X-Frame-Options "DENY"
 		# Angular Material injeta estilos em tempo de execução ('unsafe-inline' só em style-src).
 		# Fontes do Google e avatares do Discord são as únicas origens externas.
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://cdn.discordapp.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://discord.com"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://cdn.discordapp.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://discord.com"
 	}
 	header @simulador {
 		X-Frame-Options "SAMEORIGIN"

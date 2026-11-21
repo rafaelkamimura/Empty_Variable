@@ -22,8 +22,9 @@ import {
   type ResumoItemEstoque,
   type TipoMovimento,
 } from "../core/estoque";
-import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
+import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 import { ImagemItemComponent } from "../core/imagem-item.component";
 
 /**
@@ -34,7 +35,7 @@ import { ImagemItemComponent } from "../core/imagem-item.component";
   selector: "app-admin-estoque",
   imports: [
     ImagemItemComponent,
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     DatePipe,
     MatTabsModule,
@@ -60,17 +61,17 @@ import { ImagemItemComponent } from "../core/imagem-item.component";
         </div>
       </div>
 
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>Disponível na loja = grupo − reserva para a Nebula + consignado.</p>
         <p>
           Cada entrada cria um lote, e as vendas saem dos lotes por ordem de chegada. Os movimentos nunca são
           editados nem apagados: um erro se corrige com um ajuste, que exige motivo.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
 
       <mat-tab-group animationDuration="0ms">
         <mat-tab label="Resumo">
-          <table appResponsiva mat-table [dataSource]="resumo()" data-testid="resumo-estoque">
+          <table uiTabela mat-table [dataSource]="resumo()" data-testid="resumo-estoque">
             <ng-container matColumnDef="nome">
               <th mat-header-cell *matHeaderCellDef>Item</th>
               <td mat-cell *matCellDef="let r">
@@ -141,7 +142,7 @@ import { ImagemItemComponent } from "../core/imagem-item.component";
               </mat-select>
             </mat-form-field>
           </div>
-          <table appResponsiva class="tabela" data-testid="movimentos">
+          <table uiTabela class="tabela" data-testid="movimentos">
             <thead>
               <tr>
                 <th scope="col">Quando</th>
@@ -177,7 +178,7 @@ import { ImagemItemComponent } from "../core/imagem-item.component";
         </mat-tab>
       </mat-tab-group>
 
-      <app-painel-lateral titulo="Nova entrada" [aberto]="painel() === 'entrada'" (fechar)="painel.set(null)">
+      <ui-painel-lateral titulo="Nova entrada" [aberto]="painel() === 'entrada'" (fechar)="painel.set(null)">
         @if (entrada.origem && itensDaOrigem().length === 0) {
           <p class="texto-secundario">
             Nenhum item novo disponível para esta origem. Para aumentar um lote existente, use Ajuste.
@@ -265,9 +266,9 @@ import { ImagemItemComponent } from "../core/imagem-item.component";
             Registrar entrada
           </button>
         </form>
-      </app-painel-lateral>
+      </ui-painel-lateral>
 
-      <app-painel-lateral titulo="Preço de venda" [aberto]="painel() === 'preco'" (fechar)="painel.set(null)">
+      <ui-painel-lateral titulo="Preço de venda" [aberto]="painel() === 'preco'" (fechar)="painel.set(null)">
         @if (itemPreco(); as item) {
           <form class="formulario" (ngSubmit)="salvarPreco(item.itemId)">
             <p>{{ item.nome }}</p>
@@ -291,13 +292,9 @@ import { ImagemItemComponent } from "../core/imagem-item.component";
             </button>
           </form>
         }
-      </app-painel-lateral>
+      </ui-painel-lateral>
 
-      <app-painel-lateral
-        titulo="Ajuste de lote"
-        [aberto]="painel() === 'ajuste'"
-        (fechar)="painel.set(null)"
-      >
+      <ui-painel-lateral titulo="Ajuste de lote" [aberto]="painel() === 'ajuste'" (fechar)="painel.set(null)">
         <p class="texto-secundario">Adicione ou retire unidades de um lote. O motivo fica no histórico.</p>
         <form class="formulario" (ngSubmit)="ajustar()">
           <mat-form-field>
@@ -346,7 +343,7 @@ import { ImagemItemComponent } from "../core/imagem-item.component";
             Registrar ajuste
           </button>
         </form>
-      </app-painel-lateral>
+      </ui-painel-lateral>
     </div>
   `,
   styles: `

@@ -2,10 +2,18 @@
 import type { NomeIcone } from "./icone.component";
 
 /**
- * Tons frios e dessaturados que convivem com o fundo preto e cinza: azul-aço, gelo, lavanda,
- * ardósia e verde-gelo. Todos passam 7:1 sobre o fundo da arte do cartão.
+ * Tons de identidade da paleta Empty Variable (orquídea, violeta, lavanda, azul, menta e névoa).
+ * São referências a tokens de styles/_tokens.scss (lá estão os valores e os contrastes, todos
+ * ≥ 4,5:1 sobre o fundo da arte do cartão); use o resultado em [style.color].
  */
-export const TONS = ["#8fb2c2", "#a7b6d8", "#9fc3bd", "#b4aed6", "#b9c4cf", "#94b8d6"] as const;
+export const TONS = [
+  "var(--tom-orquidea)",
+  "var(--tom-lavanda)",
+  "var(--tom-menta)",
+  "var(--tom-violeta)",
+  "var(--tom-nevoa)",
+  "var(--tom-azul)",
+] as const;
 
 /** Tom estável por nome: o mesmo item ou classe tem sempre a mesma cor. */
 export function tomDe(nome: string): string {

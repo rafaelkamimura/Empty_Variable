@@ -1,16 +1,21 @@
 import { type AfterViewInit, Directive, ElementRef, inject, type OnDestroy } from "@angular/core";
 
 /**
- * Tabela sem barra de rolagem: em espaço largo as células quebram linha; em espaço estreito
- * (ver `.tabela-responsiva` em styles.scss) cada linha vira um cartão "rótulo: valor".
- * Os rótulos saem do cabeçalho: a diretiva copia o texto de cada `th` para o `data-label`
- * das células da mesma coluna, inclusive nas linhas que aparecem depois.
+ * Tabela sem barra de rolagem (diretrizes §5 e §6.6). Em espaço largo, as células quebram linha;
+ * quando a área de conteúdo fica estreita (container query `conteudo`, 760 px), cada linha vira um
+ * cartão "rótulo: valor". Os rótulos saem do cabeçalho: a diretiva copia o texto de cada `th`
+ * para o `data-label` das células da coluna, inclusive nas linhas que aparecem depois.
+ *
+ * É diretiva, e não componente, porque também vai em `<table mat-table>` (o MatTable já é o
+ * componente do elemento). O estilo fica em `tabela.scss`, escopado em `table.ui-tabela`.
+ *
+ * @nivel organismo
  */
 @Directive({
-  selector: "table[appResponsiva]",
-  host: { class: "tabela-responsiva" },
+  selector: "table[uiTabela]",
+  host: { class: "ui-tabela" },
 })
-export class TabelaResponsivaDirective implements AfterViewInit, OnDestroy {
+export class TabelaDirective implements AfterViewInit, OnDestroy {
   private readonly tabela = inject<ElementRef<HTMLTableElement>>(ElementRef).nativeElement;
   private observador: MutationObserver | null = null;
 

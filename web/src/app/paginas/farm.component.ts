@@ -29,7 +29,7 @@ type Aba = "hoje" | "totais" | "cadastro" | "importar";
 /**
  * D48–D54: Diário de farm. Check-in das instâncias do dia por personagem do vínculo, com a
  * recarga de cada uma (reset às 04:00 de Brasília), totais por dia, semana e mês, cadastro e a
- * importação do artefato antigo. Estilos em src/farm.scss (globais, escopados em app-farm).
+ * importação do artefato antigo. Estilos em src/styles/_legado-farm.scss (globais, escopados em app-farm).
  */
 @Component({
   selector: "app-farm",

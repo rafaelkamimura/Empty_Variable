@@ -38,7 +38,7 @@ import {
   ROTULO_FRACAO,
   ROTULO_STATUS,
 } from "../core/runs";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 interface RespostaRegistro {
   runId: string;
@@ -54,7 +54,7 @@ interface RespostaRegistro {
 @Component({
   selector: "app-admin-run-assistente",
   imports: [
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     NgTemplateOutlet,
     RouterLink,
@@ -413,7 +413,7 @@ interface RespostaRegistro {
               parâmetros v{{ config()?.versao }}
             </p>
             @if (previa(); as pv) {
-              <table appResponsiva class="previa" data-testid="previa">
+              <table uiTabela class="previa" data-testid="previa">
                 <thead>
                   <tr>
                     <th scope="col">Personagem</th>

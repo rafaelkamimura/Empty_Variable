@@ -17,8 +17,8 @@ import {
   type Receita,
   situacaoReceita,
 } from "../core/nebula";
-import { ComoFuncionaComponent } from "../core/layout";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 /**
  * US-16 (T-42): receitas da Nebula. As da fonte entram "a validar": o admin confere com o jogo,
@@ -28,7 +28,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
   selector: "app-admin-receitas",
   imports: [
     ComoFuncionaComponent,
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     MatCardModule,
     MatButtonModule,
@@ -47,7 +47,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
         </div>
       </div>
 
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>
           As receitas vieram da browiki e entram "a validar". Confira cada uma no jogo, ajuste se preciso,
           defina os dois preços (com a peça Astral do estoque e trazendo a própria) e ative.
@@ -56,7 +56,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
           Só as Nebulosas ativas e com preço aparecem para os membros. A disponibilidade considera só o
           estoque do grupo, incluindo a reserva.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
 
       <div class="chips" role="group" aria-label="Tipo de receita">
         <button
@@ -159,7 +159,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
                 </div>
               </div>
             } @else {
-              <table appResponsiva class="tabela">
+              <table uiTabela class="tabela">
                 <thead>
                   <tr>
                     <th scope="col">Componente</th>

@@ -2,7 +2,7 @@ import { HttpClient } from "@angular/common/http";
 import { Component, inject, type OnInit, signal } from "@angular/core";
 import { CONFIG_V1, pesoDoRank } from "@betel/scoring";
 import { firstValueFrom } from "rxjs";
-import { ComoFuncionaComponent } from "../core/layout";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { mensagemDeErro, type SituacaoVinculo } from "../core/modelos";
 import type { Extrato } from "../core/runs";
 import { siglaDaClasse, tomDe } from "../core/visual";
@@ -45,7 +45,7 @@ import { ExtratoComponent } from "./extrato.component";
           </div>
         </section>
       }
-      <app-como-funciona titulo="Quantos pontos vale cada rank">
+      <ui-como-funciona titulo="Quantos pontos vale cada rank">
         <p>Pontos base de uma participação completa num encontro ×1 (como o Naght), com a run concluída:</p>
         <table class="tabela-ranks">
           <thead>
@@ -67,7 +67,7 @@ import { ExtratoComponent } from "./extrato.component";
           Cada instância tem os próprios encontros (o Betelgeuse vale mais) e as próprias funções e ranks;
           falha ou abandono valem menos. Empréstimos dividem os pontos com quem emprestou.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
     </div>
   `,
   styles: `

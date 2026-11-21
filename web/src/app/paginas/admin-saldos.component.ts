@@ -7,7 +7,7 @@ import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import type { Extrato } from "../core/runs";
 import { ExtratoComponent } from "./extrato.component";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 interface SaldoJogador {
   jogadorId: string;
@@ -18,7 +18,7 @@ interface SaldoJogador {
 /** Admins veem o saldo e o histórico de todos (D14). */
 @Component({
   selector: "app-admin-saldos",
-  imports: [TabelaResponsivaDirective, MatTableModule, MatButtonModule, MatSnackBarModule, ExtratoComponent],
+  imports: [TabelaDirective, MatTableModule, MatButtonModule, MatSnackBarModule, ExtratoComponent],
   template: `
     <div class="pagina">
       <div class="cabecalho">
@@ -27,7 +27,7 @@ interface SaldoJogador {
           <p>Pontos de cada jogador, do maior para o menor.</p>
         </div>
       </div>
-      <table appResponsiva mat-table [dataSource]="saldos()" data-testid="saldos">
+      <table uiTabela mat-table [dataSource]="saldos()" data-testid="saldos">
         <ng-container matColumnDef="apelido">
           <th mat-header-cell *matHeaderCellDef>Jogador</th>
           <td mat-cell *matCellDef="let s">{{ s.apelido }}</td>

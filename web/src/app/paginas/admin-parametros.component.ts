@@ -17,8 +17,9 @@ import {
   paraConfigMotor,
   type VersaoParametros,
 } from "../core/cadastros";
-import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
+import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 interface Campo {
   chave: keyof ParametrosFormulario;
@@ -60,7 +61,7 @@ const GRUPOS: { titulo: string; campos: Campo[] }[] = [
 @Component({
   selector: "app-admin-parametros",
   imports: [
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     DatePipe,
     DecimalPipe,
@@ -90,13 +91,13 @@ const GRUPOS: { titulo: string; campos: Campo[] }[] = [
         </div>
       </div>
 
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>
           Os pontos de cada participação são B × peso do rank × encontro × status × fração. O multiplicador do
           encontro (chefe ou modo) e os ranks das funções ficam em cada instância. Os parâmetros daqui valem
           para todas e são versionados: uma nova versão vale só para as runs registradas depois dela.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
 
       <mat-tab-group animationDuration="0ms">
         <mat-tab label="Vigente">
@@ -117,7 +118,7 @@ const GRUPOS: { titulo: string; campos: Campo[] }[] = [
           }
         </mat-tab>
         <mat-tab label="Histórico">
-          <table appResponsiva class="historico" data-testid="historico">
+          <table uiTabela class="historico" data-testid="historico">
             <thead>
               <tr>
                 <th scope="col">Versão</th>
@@ -153,7 +154,7 @@ const GRUPOS: { titulo: string; campos: Campo[] }[] = [
         </mat-tab>
       </mat-tab-group>
 
-      <app-painel-lateral
+      <ui-painel-lateral
         [titulo]="'Nova versão v' + proxima()"
         [aberto]="editando()"
         (fechar)="editando.set(false)"
@@ -184,7 +185,7 @@ const GRUPOS: { titulo: string; campos: Campo[] }[] = [
 
           <h3>Prévia (encontro ×1, concluída, participação completa)</h3>
           @if (previa(); as linhas) {
-            <table appResponsiva class="previa">
+            <table uiTabela class="previa">
               <thead>
                 <tr>
                   <th scope="col">Rank</th>
@@ -214,7 +215,7 @@ const GRUPOS: { titulo: string; campos: Campo[] }[] = [
             <button mat-button type="button" (click)="restaurar()">Desfazer alterações</button>
           </div>
         </form>
-      </app-painel-lateral>
+      </ui-painel-lateral>
     </div>
   `,
   styles: `
