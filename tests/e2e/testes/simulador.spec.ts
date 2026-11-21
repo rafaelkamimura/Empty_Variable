@@ -5,6 +5,8 @@
 // D61: /simulador abre o simulador completo (a interface da latam-tools servida pelo próprio
 // sistema) com a build da ficha, aponta um chefe como alvo e grava a build mudada de volta na ficha.
 // A estimativa à mão fica em /simulador/estimativa.
+// D62: o membro cola um link de compartilhamento do simulador público e a build abre no simulador
+// completo, sem vir de nenhuma ficha; gravar numa ficha pede confirmação.
 import { type APIResponse, type Page, expect, test } from "@playwright/test";
 import { ORIGEM } from "../playwright.config";
 
@@ -14,6 +16,7 @@ const MEMBRO = { discordId: "900000000000000571", username: "membro-simulador" }
 const N = String(Date.now()).slice(-6);
 const SAGE = { discordId: `9000000059${N}`, username: `sage-simulador-${N}` };
 const HUB = { discordId: `9000000061${N}`, username: `hub-simulador-${N}` };
+const LINK = { discordId: `9000000062${N}`, username: `link-simulador-${N}` };
 const headers = { Origin: ORIGEM };
 
 /** Token do link https://short.latam-tools.com.br/Ukxuq4: Feiticeiro 105/50 com Lanças de Fogo nv. 10. */
@@ -116,6 +119,14 @@ async function membroComBuild(
     200,
   );
   return ficha.id;
+}
+
+/**
+ * Leva o quadro do simulador ao topo da janela. A lista de uma caixa de seleção dele abre para
+ * baixo, e o navegador não rola a página de fora para alcançar o que está dentro do quadro.
+ */
+async function mostrarQuadro(page: Page): Promise<void> {
+  await page.getByTestId("quadro").evaluate((quadro) => quadro.scrollIntoView({ block: "start" }));
 }
 
 interface FichaE2e {
@@ -263,6 +274,7 @@ test("membro abre a build no simulador completo, troca o alvo, muda o nível e g
   await expect(simulador.locator("body")).toContainText("1.300");
   await page.screenshot({ path: info.outputPath("simulador-hub-desktop.png"), fullPage: true });
 
+  await mostrarQuadro(page);
   await simulador.locator("#level").click();
   await simulador.getByRole("option", { name: "110", exact: true }).click();
   await expect(simulador.locator("#level")).toHaveText("110");
@@ -282,6 +294,103 @@ test("membro abre a build no simulador completo, troca o alvo, muda o nível e g
   await expect(simulador.locator("#level")).toHaveText("110");
   await page.getByRole("link", { name: "estimativa à mão" }).click();
   await expect(page.getByTestId("aviso-estimativa")).toBeVisible();
+
+  expect(pedidosParaFora).toEqual([]);
+  expect(erros).toEqual([]);
+});
+
+test("membro abre no simulador completo o link do simulador público, muda o nível e grava na ficha", async ({
+  page,
+}, info) => {
+  const erros: string[] = [];
+  page.on("pageerror", (erro) => erros.push(erro.message));
+  // Como no teste acima, nada sai para outro servidor: o link é o completo, e a API o confere sem
+  // consultar o encurtador. O link curto é coberto nos testes da API, com o encurtador de mentira.
+  const pedidosParaFora: string[] = [];
+  await page.route(
+    (url) => url.origin !== ORIGEM,
+    (rota) => {
+      if (rota.request().frame().url().includes("/simulador-latam/"))
+        pedidosParaFora.push(rota.request().url());
+      return rota.abort();
+    },
+  );
+  const perguntas: string[] = [];
+  let resposta = true;
+  page.on("dialog", (dialogo) => {
+    perguntas.push(dialogo.message());
+    void (resposta ? dialogo.accept() : dialogo.dismiss());
+  });
+  const personagem = `Link${N}`;
+  const fichaId = await membroComBuild(page, LINK, personagem);
+  expect((await fichas(page)).find((p) => p.id === fichaId)?.nivelBase).toBe(105);
+
+  await page.goto("/simulador");
+  const simulador = page.frameLocator('[data-testid="quadro"]');
+  await expect(simulador.locator("#ro-splash")).toHaveCount(0, { timeout: 30_000 });
+  await expect(simulador.locator("#level")).toHaveText("99");
+  const campo = page.getByRole("textbox", { name: "Link do simulador" });
+  const importar = page.getByTestId("simulador-importar-link");
+
+  await campo.fill("https://exemplo.com/s/qualquer/");
+  await importar.click();
+  await expect(page.getByTestId("simulador-link-erro")).toContainText("não é do simulador");
+  await campo.fill("https://simulador.latam-tools.com.br/s/isto-nao-e-uma-build/");
+  await campo.press("Enter");
+  await expect(page.getByTestId("simulador-link-erro")).toHaveText(
+    "Esse link não traz uma build do simulador.",
+  );
+  await expect(simulador.locator("#level")).toHaveText("99");
+
+  // Navegador sem trabalho no simulador: o link abre direto, sem pergunta.
+  await campo.fill(`https://simulador.latam-tools.com.br/s/${TOKEN_FEITICEIRO}/`);
+  await importar.click();
+  await expect(page.getByTestId("hub-nota")).toContainText("Build do link aberta no simulador.", {
+    timeout: 30_000,
+  });
+  expect(perguntas).toEqual([]);
+  await expect(page.getByTestId("simulador-link-erro")).toHaveCount(0);
+  await expect(campo).toHaveValue("");
+  await expect(simulador.locator("#ro-splash")).toHaveCount(0, { timeout: 30_000 });
+  await expect(simulador.getByRole("combobox", { name: "Classe" })).toContainText("Feiticeiro");
+  await expect(simulador.locator("#level")).toHaveText("105");
+  await expect(simulador.locator("body")).toContainText("Livro Feiticeiro do Éden");
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("ro-set") ?? "{}").weapon)).toBe(540031);
+  expect(await page.evaluate(() => localStorage.getItem("ev-simulador-personagem"))).toBeNull();
+  await page.screenshot({ path: info.outputPath("simulador-link-desktop.png"), fullPage: true });
+
+  await mostrarQuadro(page);
+  await simulador.locator("#level").click();
+  await simulador.getByRole("option", { name: "110", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("ro-set") ?? "{}").level))
+    .toBe(110);
+
+  // Com trabalho não gravado, abrir outro link pergunta antes; recusando, nada muda.
+  resposta = false;
+  await campo.fill(`https://simulador.latam-tools.com.br/?b=${TOKEN_FEITICEIRO}`);
+  await importar.click();
+  await expect.poll(() => perguntas.length).toBe(1);
+  expect(perguntas[0]).toContain("o que não foi gravado numa ficha se perde");
+  await expect(simulador.locator("#level")).toHaveText("110");
+
+  // A build do link não veio de nenhuma ficha: gravar pede a confirmação.
+  resposta = true;
+  await page.getByTestId("salvar-build").click();
+  await expect(page.getByTestId("hub-nota")).toContainText(`Ficha de ${personagem} atualizada`);
+  await expect(page.getByTestId("hub-nota")).toContainText("nível 110");
+  expect(perguntas).toHaveLength(2);
+  expect(perguntas[1]).toContain(`não foi aberta da ficha de ${personagem}`);
+  const salva = (await fichas(page)).find((p) => p.id === fichaId);
+  expect(salva?.nivelBase).toBe(110);
+  expect(salva?.equipamentos["arma"]?.id).toBe(540031);
+  expect(salva?.atributos.token).toBeTruthy();
+
+  await page.setViewportSize({ width: 360, height: 780 });
+  await expect(campo).toBeVisible();
+  const largura = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(largura).toBeLessThanOrEqual(360);
+  await page.screenshot({ path: info.outputPath("simulador-link-celular.png"), fullPage: true });
 
   expect(pedidosParaFora).toEqual([]);
   expect(erros).toEqual([]);

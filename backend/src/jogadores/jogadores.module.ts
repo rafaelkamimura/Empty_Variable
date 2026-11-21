@@ -16,5 +16,6 @@ import { VinculoService } from "./vinculo.service.js";
       useValue: ((url, init) => fetch(url, init)) satisfies BuscadorLinkCurto,
     },
   ],
+  exports: [BuildSimuladorService],
 })
 export class JogadoresModule {}
