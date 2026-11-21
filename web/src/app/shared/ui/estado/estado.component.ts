@@ -21,9 +21,8 @@ export interface ContextoEstado<T> {
 }
 
 /**
- * Marca o template dos dados prontos e tipa o `let-`:
+ * Marca o template dos dados prontos e tipa o `let-` (obrigatória no `ui-estado`):
  * `<ng-template uiEstadoPronto [tipo]="estoque()" let-dados>…</ng-template>`.
- * Sem a diretiva, um `<ng-template let-dados>` comum também funciona (sem tipagem).
  */
 @Directive({ selector: "ng-template[uiEstadoPronto]" })
 export class EstadoProntoDirective<T> {
@@ -93,7 +92,11 @@ export class EstadoComponent<T> {
   /** Clique em "Tentar novamente" no erro. */
   readonly tentarNovamente = output();
 
-  protected readonly conteudo = contentChild(TemplateRef<ContextoEstado<T>>);
+  /**
+   * O template dos dados é o `<ng-template uiEstadoPronto>` (obrigatório). Buscar pela diretiva, e
+   * não por qualquer TemplateRef, evita pegar um bloco @if/@for projetado antes dele.
+   */
+  protected readonly conteudo = contentChild(EstadoProntoDirective, { read: TemplateRef<ContextoEstado<T>> });
 
   protected readonly mensagemErro = computed(() => {
     const v = this.valor();

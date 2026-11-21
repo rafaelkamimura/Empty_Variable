@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, input } from "@angular/core";
+import {
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  input,
+} from "@angular/core";
 
 /**
  * Superfície de conteúdo (diretrizes §2.4 e §5): `--cartao`, borda `--borda`, raio grande e
@@ -74,9 +81,9 @@ import { ChangeDetectionStrategy, Component, ElementRef, inject, input } from "@
 })
 export class CartaoComponent {
   /** Realce de seleção (borda no acento). */
-  readonly destaque = input(false);
+  readonly destaque = input(false, { transform: booleanAttribute });
   /** Item indisponível: o cartão fica esmaecido (o motivo deve estar escrito no conteúdo). */
-  readonly apagado = input(false);
+  readonly apagado = input(false, { transform: booleanAttribute });
 
   private readonly tag = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.tagName;
   protected readonly ehBotao = this.tag === "BUTTON";

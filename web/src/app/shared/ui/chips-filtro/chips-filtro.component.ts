@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, model } from "@angular/core";
+import { booleanAttribute, ChangeDetectionStrategy, Component, input, model } from "@angular/core";
 
 export interface OpcaoChip {
   readonly valor: string;
@@ -77,7 +77,7 @@ export class ChipsFiltroComponent {
   readonly rotulo = input.required<string>();
   readonly opcoes = input.required<readonly OpcaoChip[]>();
   /** Seleção múltipla: usa `selecionados` em vez de `selecionado`. */
-  readonly multipla = input(false);
+  readonly multipla = input(false, { transform: booleanAttribute });
   /** Valor escolhido na seleção única. */
   readonly selecionado = model<string>("");
   /** Valores escolhidos na seleção múltipla. */

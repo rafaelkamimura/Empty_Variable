@@ -1,6 +1,7 @@
 import { CdkTrapFocus } from "@angular/cdk/a11y";
 import { DOCUMENT } from "@angular/common";
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   type ElementRef,
@@ -12,13 +13,23 @@ import {
 } from "@angular/core";
 import { BotaoComponent } from "../botao/botao.component";
 
-const CAMPOS = "input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled])";
+/**
+ * Campos que recebem o foco ao abrir, na ordem do documento: nativos e os do Material
+ * (`mat-select`, que não é um input). `[cdkFocusInitial]`, quando existe, vem antes de todos.
+ */
+const CAMPOS = [
+  "input:not([type=hidden]):not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  'mat-select:not([aria-disabled="true"])',
+].join(", ");
 
 /**
  * Formulário de criar e editar fora da página (diretrizes §5, §6.1 e §6.4): abre à direita sobre
  * um fundo escurecido e, no celular, ocupa a tela toda. Fecha no X, no fundo ou com Esc.
- * Ao abrir, o foco vai ao primeiro campo (ou ao painel) e fica preso nele (`cdkTrapFocus`);
- * ao fechar, volta ao elemento que o abriu.
+ * Ao abrir, o foco vai ao campo marcado com `cdkFocusInitial`, ou ao primeiro campo (nativo ou
+ * `mat-select`), ou ao painel, e fica preso nele (`cdkTrapFocus`); ao fechar, volta ao elemento
+ * que o abriu.
  *
  * @nivel organismo
  */
@@ -105,7 +116,7 @@ export class PainelLateralComponent {
   /** Título do painel (vira o h2 e o nome acessível do diálogo). */
   readonly titulo = input.required<string>();
   /** Painel aberto. A página controla; o painel só avisa `fechar`. */
-  readonly aberto = input(false);
+  readonly aberto = input(false, { transform: booleanAttribute });
   /** Pedido de fechar (X, fundo ou Esc). */
   readonly fechar = output();
 
@@ -121,7 +132,13 @@ export class PainelLateralComponent {
         const ativo = this.documento.activeElement;
         this.origem = ativo instanceof HTMLElement && !el.contains(ativo) ? ativo : this.origem;
         // Depois de o conteúdo projetado renderizar: primeiro campo, ou o próprio painel.
-        setTimeout(() => (el.querySelector<HTMLElement>(CAMPOS) ?? el).focus());
+        setTimeout(() =>
+          (
+            el.querySelector<HTMLElement>("[cdkFocusInitial]") ??
+            el.querySelector<HTMLElement>(CAMPOS) ??
+            el
+          ).focus(),
+        );
       } else if (!aberto && this.origem) {
         const origem = this.origem;
         this.origem = null;

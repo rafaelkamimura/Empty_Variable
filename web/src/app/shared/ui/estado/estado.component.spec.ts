@@ -8,7 +8,9 @@ import { EstadoComponent, EstadoProntoDirective } from "./estado.component";
   imports: [EstadoComponent, EstadoProntoDirective],
   template: `
     <ui-estado [valor]="valor()" mensagemVazio="Vazio." (tentarNovamente)="tentativas = tentativas + 1">
-      <a slot="vazio-acao" href="#novo">Nova entrada</a>
+      @if (podeCriar()) {
+        <a slot="vazio-acao" href="#novo">Nova entrada</a>
+      }
       <ng-template uiEstadoPronto [tipo]="valor()" let-lista>
         <span class="item">{{ lista.length }} itens</span>
       </ng-template>
@@ -17,6 +19,8 @@ import { EstadoComponent, EstadoProntoDirective } from "./estado.component";
 })
 class HospedeiroComponent {
   readonly valor = signal<Carregavel<string[]>>(carregando());
+  // Um @if antes do template de dados também é um TemplateRef: o ui-estado não pode confundi-los.
+  readonly podeCriar = signal(true);
   tentativas = 0;
 }
 
