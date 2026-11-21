@@ -10,6 +10,7 @@ import {
 } from "@betel/simulador";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { SeedService } from "../src/cadastros/seed.service.js";
+import { lerDropsDivinePride } from "../src/simulador/loot.service.js";
 import { BUSCAS_POR_HORA, lerMonstroDivinePride } from "../src/simulador/monstros.service.js";
 import { ADMIN_DISCORD_ID, type Contexto, criarApp, ORIGEM } from "./suporte/app-de-teste.js";
 
@@ -72,6 +73,48 @@ const BETELGEUSE_REAL = {
   int: 152,
   region: "LATAM",
 };
+
+/** Drops no formato real da API (Naght Sieger e Osíris, x-server LATAM, 2026-11-21), só os campos lidos. */
+const DROPS_NAGHT = {
+  drops: [],
+  mvpDrops: [],
+  mapSpecificDrops: [
+    { mapName: "2@ch_t", itemId: 1000396, itemName: "Alma de Naght Sieger", probability: 0.01 },
+    { mapName: "2@ch_t", itemId: 1000396, itemName: "Alma de Naght Sieger", probability: 0.05 },
+    { mapName: "2@ch_t", itemId: 25729, itemName: "Sombridecon", probability: 0.2 },
+  ],
+};
+const DROPS_OSIRIS = {
+  drops: [
+    {
+      itemId: 25729,
+      itemName: "Sombridecon",
+      displayName: "Sombridecon",
+      probability: 0.005,
+      dropType: "common",
+    },
+    { itemId: 1232, itemName: "Adaga do Algoz", displayName: "Adaga do Algoz", probability: 0.0075 },
+    { itemId: 0, itemName: "inválido", probability: 1 },
+  ],
+  mvpDrops: [{ itemId: 608, itemName: "Semente de Yggdrasil", probability: 0.3, dropType: "mvp" }],
+  mapSpecificDrops: [],
+};
+
+describe("leitura dos drops da Divine Pride (D60)", () => {
+  it("junta drops comuns, de MVP e de mapa; item repetido fica com a maior chance", () => {
+    expect(lerDropsDivinePride(DROPS_NAGHT)).toEqual([
+      { idItem: 1000396, nome: "Alma de Naght Sieger", tipo: "MAPA", chance: 0.05 },
+      { idItem: 25729, nome: "Sombridecon", tipo: "MAPA", chance: 0.2 },
+    ]);
+    expect(lerDropsDivinePride(DROPS_OSIRIS)).toEqual([
+      { idItem: 25729, nome: "Sombridecon", tipo: "COMUM", chance: 0.005 },
+      { idItem: 1232, nome: "Adaga do Algoz", tipo: "COMUM", chance: 0.0075 },
+      { idItem: 608, nome: "Semente de Yggdrasil", tipo: "MVP", chance: 0.3 },
+    ]);
+    expect(lerDropsDivinePride({ erro: "formato novo" })).toEqual([]);
+    expect(lerDropsDivinePride(null)).toEqual([]);
+  });
+});
 
 describe("leitura do monstro da Divine Pride", () => {
   it("resposta real da API: propriedade com o nível no texto e dano recebido nos atributos", () => {
@@ -283,6 +326,12 @@ describe("Simulação de dano (D57)", () => {
       expect(betelgeuse.body).toMatchObject({ nome: "Demi Freya", danoRecebidoPct: 1 });
     });
 
+    it("loot sem a chave: nada sai para a internet e os chefes ficam pendentes (D60)", async () => {
+      const t = await torre();
+      const r = await ler(`/api/simulador/instancias/${t.id}/loot`).expect(200);
+      expect(r.body).toMatchObject({ chefes: 27, pendentes: 27, divinePride: false, itens: [] });
+    });
+
     it("chefe removido não volta com o seed, e pode ser cadastrado de novo", async () => {
       const t = await torre();
       const url = `/api/simulador/instancias/${t.id}/chefes`;
@@ -482,6 +531,72 @@ describe("Simulação de dano (D57)", () => {
         nome: "Betelgeuse",
         monstro: { origem: "DIVINE_PRIDE", hp: 1_100_000_000, raca: "DRAGAO", danoRecebidoPct: 1 },
       });
+    });
+
+    it("loot da instância: junta os drops dos chefes, guarda e não busca de novo (D60)", async () => {
+      ctx.divinePride.monstros.set(20996, { status: 200, corpo: { ...BETELGEUSE_REAL, ...DROPS_NAGHT } });
+      ctx.divinePride.monstros.set(1038, { status: 200, corpo: { ...PORING, id: 1038, ...DROPS_OSIRIS } });
+      ctx.divinePride.monstros.set(1039, { status: 404 });
+      const instancia = await ctx.prisma.instancia.create({ data: { nome: "Instância do loot" } });
+      const url = `/api/simulador/instancias/${instancia.id}`;
+      for (const [idMonstro, nome] of [
+        [20996, "Naght Sieger"],
+        [1038, "Osíris"],
+        [1039, "Bafomé"],
+      ] as const) {
+        await enviar("post", `${url}/chefes`, admin, { idMonstro, nome }).expect(201);
+      }
+      await ctx.http().get(`${url}/loot`).expect(401);
+      await ler(`/api/simulador/instancias/${crypto.randomUUID()}/loot`).expect(404);
+
+      const antes = ctx.divinePride.chamadas.length;
+      const r = await ler(`${url}/loot`).expect(200);
+      expect(ctx.divinePride.chamadas.length - antes).toBe(3);
+      expect(r.body).toMatchObject({
+        instancia: { id: instancia.id, nome: "Instância do loot" },
+        chefes: 3,
+        pendentes: 0,
+        divinePride: true,
+      });
+      expect(r.body.itens).toEqual([
+        {
+          idJogo: 1232,
+          nome: "Adaga do Algoz",
+          chance: 0.0075,
+          origens: [{ idMonstro: 1038, monstro: "Osíris", tipo: "COMUM", chance: 0.0075 }],
+        },
+        {
+          idJogo: 1000396,
+          nome: "Alma de Naght Sieger",
+          chance: 0.05,
+          origens: [{ idMonstro: 20996, monstro: "Naght Sieger", tipo: "MAPA", chance: 0.05 }],
+        },
+        {
+          idJogo: 608,
+          nome: "Semente de Yggdrasil",
+          chance: 0.3,
+          origens: [{ idMonstro: 1038, monstro: "Osíris", tipo: "MVP", chance: 0.3 }],
+        },
+        {
+          idJogo: 25729,
+          nome: "Sombridecon",
+          chance: 0.2,
+          origens: [
+            { idMonstro: 20996, monstro: "Naght Sieger", tipo: "MAPA", chance: 0.2 },
+            { idMonstro: 1038, monstro: "Osíris", tipo: "COMUM", chance: 0.005 },
+          ],
+        },
+      ]);
+
+      const depois = await ler(`${url}/loot`).expect(200);
+      expect(depois.body.itens).toEqual(r.body.itens);
+      expect(ctx.divinePride.chamadas.length - antes).toBe(3);
+
+      ctx.divinePride.monstros.set(1046, "falha");
+      await enviar("post", `${url}/chefes`, admin, { idMonstro: 1046, nome: "Doppelganger" }).expect(201);
+      const comFalha = await ler(`${url}/loot`).expect(200);
+      expect(comFalha.body).toMatchObject({ chefes: 4, pendentes: 1 });
+      expect(comFalha.body.itens).toHaveLength(4);
     });
 
     // Esgota as buscas da hora deste app: precisa ser o último teste do grupo.

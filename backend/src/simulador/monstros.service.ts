@@ -43,6 +43,12 @@ export interface MonstroAlvo {
   buscadoEm: Date;
 }
 
+/** Resposta de uma consulta à API de monstros: o JSON, ID desconhecido ou consulta que não saiu. */
+export type RespostaApiMonstro =
+  | { estado: "OK"; corpo: unknown; servidor: string }
+  | { estado: "AUSENTE"; servidor: string }
+  | { estado: "INDISPONIVEL" };
+
 export type DadosMonstro = Omit<MonstroAlvo, "idJogo" | "origem" | "servidor" | "fonte" | "buscadoEm">;
 
 const NOMES_RACA: Readonly<Record<string, Raca>> = {
@@ -267,6 +273,51 @@ export class MonstrosService {
     return busca;
   }
 
+  /**
+   * D60: consulta a API de monstros para quem precisa de outro pedaço da resposta (os drops). Entra
+   * na mesma fila e no mesmo teto por hora das buscas de atributos; sem chave ou com o teto
+   * atingido, a consulta não sai.
+   * @param idJogo ID do monstro no jogo
+   */
+  consultarApi(idJogo: number): Promise<RespostaApiMonstro> {
+    const acesso = this.config.divinePride;
+    if (acesso === null || !this.contarBusca()) return Promise.resolve({ estado: "INDISPONIVEL" });
+    const naVez = this.fila.then(() => this.pedir(idJogo, acesso));
+    this.fila = naVez.catch(() => undefined);
+    return naVez;
+  }
+
+  /** Um pedido à API. A URL leva a chave, então os avisos no log dizem só o ID. */
+  private async pedir(
+    idJogo: number,
+    { chave: chaveApi, servidor }: { chave: string; servidor: string },
+  ): Promise<RespostaApiMonstro> {
+    let resposta: Awaited<ReturnType<BuscadorDivinePride>>;
+    try {
+      resposta = await this.buscar(`${API}/${idJogo}?apiKey=${encodeURIComponent(chaveApi)}`, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "EmptyVariable/1.0 (simulacao de dano)",
+          "x-server": servidor,
+        },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+    } catch {
+      this.log.warn(`Divine Pride indisponível ao buscar o monstro ${idJogo}.`);
+      return { estado: "INDISPONIVEL" };
+    }
+    if (resposta.status === 404) return { estado: "AUSENTE", servidor };
+    if (resposta.status !== 200) {
+      this.log.warn(`Divine Pride respondeu ${resposta.status} ao buscar o monstro ${idJogo}.`);
+      return { estado: "INDISPONIVEL" };
+    }
+    try {
+      return { estado: "OK", corpo: await resposta.json(), servidor };
+    } catch {
+      return { estado: "INDISPONIVEL" };
+    }
+  }
+
   /** Registra uma busca nova; false quando o teto da última hora já foi atingido. */
   private contarBusca(): boolean {
     const agora = Date.now();
@@ -283,38 +334,17 @@ export class MonstrosService {
    */
   private async buscarEGuardar(
     idJogo: number,
-    { chave: chaveApi, servidor }: { chave: string; servidor: string },
+    acesso: { chave: string; servidor: string },
     guardado: MonstroAlvo | null,
   ): Promise<MonstroAlvo | null> {
-    let resposta: Awaited<ReturnType<BuscadorDivinePride>>;
-    try {
-      resposta = await this.buscar(`${API}/${idJogo}?apiKey=${encodeURIComponent(chaveApi)}`, {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "EmptyVariable/1.0 (simulacao de dano)",
-          "x-server": servidor,
-        },
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
-    } catch {
-      this.log.warn(`Divine Pride indisponível ao buscar o monstro ${idJogo}.`);
-      return guardado;
-    }
-    if (resposta.status === 404) {
+    const { servidor } = acesso;
+    const resposta = await this.pedir(idJogo, acesso);
+    if (resposta.estado === "AUSENTE") {
       if (guardado === null) await this.guardarAusente(idJogo, servidor);
       return guardado;
     }
-    if (resposta.status !== 200) {
-      this.log.warn(`Divine Pride respondeu ${resposta.status} ao buscar o monstro ${idJogo}.`);
-      return guardado;
-    }
-    let corpo: unknown;
-    try {
-      corpo = await resposta.json();
-    } catch {
-      return guardado;
-    }
-    const dados = lerMonstroDivinePride(corpo);
+    if (resposta.estado === "INDISPONIVEL") return guardado;
+    const dados = lerMonstroDivinePride(resposta.corpo);
     if (dados === null) {
       this.log.warn(`Resposta da Divine Pride para o monstro ${idJogo} fora do formato esperado.`);
       return guardado;
