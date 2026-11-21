@@ -192,6 +192,8 @@ O script instala `/etc/nginx/snippets/emptyvariable.conf`, acrescenta um `includ
 
 O snippet não envia HSTS: essa política vale para o domínio inteiro e cabe ao sistema dono dele.
 
+O snippet também responde 404 para `/api/integracao` vindo de fora. Essa API (seção do `INTEGRACAO_TOKEN`) é usada só por outros sistemas da mesma VPS, pela rede interna do Docker, e não precisa ficar exposta na internet.
+
 ### 8.3 Deploy
 
 Na VPS, de dentro do clone (que guarda o `.env` e os backups):
