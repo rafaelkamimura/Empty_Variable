@@ -187,7 +187,7 @@ describe("Simulação de dano (D57)", () => {
     });
 
     it("chefes: só o gestor cadastra; sem chave o nome é obrigatório", async () => {
-      const instancia = await ctx.prisma.instancia.create({ data: { nome: "Covil de Vermes" } });
+      const instancia = await ctx.prisma.instancia.create({ data: { nome: "Instância de Teste" } });
       const url = `/api/simulador/instancias/${instancia.id}/chefes`;
       await enviar("post", url, membro, { idMonstro: 2529, nome: "Rainha Verme" }).expect(403);
       await enviar("post", url, admin, { idMonstro: 2529 }).expect(400);
