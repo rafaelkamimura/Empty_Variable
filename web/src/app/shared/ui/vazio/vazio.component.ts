@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from "@angular/core";
+import { MarcaComponent } from "../marca/marca.component";
 
 /**
  * Estado vazio (diretrizes §5 e §6.2): a marca {∅_}, uma frase que explica e, se houver,
@@ -9,11 +10,9 @@ import { ChangeDetectionStrategy, Component, input } from "@angular/core";
 @Component({
   selector: "ui-vazio",
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [MarcaComponent],
   template: `
-    <span class="marca" aria-hidden="true"
-      ><span class="chaves">{{ "{" }}</span
-      ><span class="nulo">∅</span><span class="cursor">_</span><span class="chaves">{{ "}" }}</span></span
-    >
+    <ui-marca class="marca" />
     <p class="frase">{{ mensagem() }}</p>
     <div class="acao"><ng-content select="[slot=acao]" /></div>
   `,
@@ -29,22 +28,7 @@ import { ChangeDetectionStrategy, Component, input } from "@angular/core";
       background: var(--aurora-brilho), var(--superficie);
     }
     .marca {
-      font-family: var(--fonte-mono);
       font-size: var(--fs-2xl);
-      font-weight: 700;
-    }
-    .chaves {
-      background: var(--acento-degrade);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    .nulo {
-      color: var(--texto);
-    }
-    .cursor {
-      color: var(--acento-suave);
-      animation: piscar 1s steps(1) infinite;
     }
     .frase {
       margin: 0;
@@ -53,11 +37,6 @@ import { ChangeDetectionStrategy, Component, input } from "@angular/core";
     }
     .acao:empty {
       display: none;
-    }
-    @keyframes piscar {
-      50% {
-        opacity: 0;
-      }
     }
   `,
 })

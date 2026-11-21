@@ -1,4 +1,4 @@
-import { painelDaUrl } from "../app.component";
+import { painelDaUrl } from "../layout/painel";
 import { taxaParaBp } from "../paginas/admin-taxa.component";
 import { itemAConferir } from "../paginas/admin-itens.component";
 import type { ItemCatalogo } from "./cadastros";

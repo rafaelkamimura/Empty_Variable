@@ -107,4 +107,11 @@ export const ENTRADAS_CATALOGO: readonly EntradaCatalogo[] = [
     descricao: "Tabela sem rolagem; vira cartões em espaço estreito.",
     carregar: () => import("../../shared/ui/tabela/tabela.catalogo").then((m) => m.TabelaCatalogoComponent),
   },
+  {
+    id: "marca",
+    nome: "ui-marca",
+    nivel: "atomo",
+    descricao: "A marca {∅_}: chaves no degradê, ∅ lavanda e o cursor piscando.",
+    carregar: () => import("../../shared/ui/marca/marca.catalogo").then((m) => m.MarcaCatalogoComponent),
+  },
 ];
