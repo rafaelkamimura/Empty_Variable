@@ -6,3 +6,4 @@ docs
 .angular
 web/public/equipamentos-latam.json
 packages/motor-latam/vendor
+web/public/simulador-latam
