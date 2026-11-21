@@ -12,7 +12,8 @@ import {
   totalizar,
 } from "@betel/farm";
 import { Acao } from "../core/acao";
-import { type CheckinFarm, FarmStore } from "../core/farm";
+import { type CheckinFarm } from "../features/farm/data/farm.modelos";
+import { FarmStore } from "../features/farm/data/farm.store";
 import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 import { mensagemDeErro } from "../core/modelos";
 

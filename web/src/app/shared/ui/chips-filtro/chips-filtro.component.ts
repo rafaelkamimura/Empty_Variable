@@ -3,8 +3,8 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input, model } fr
 export interface OpcaoChip {
   readonly valor: string;
   readonly rotulo: string;
-  /** Contagem mostrada ao lado do rótulo (ex.: itens naquele filtro). */
-  readonly contagem?: number;
+  /** Contagem mostrada ao lado do rótulo (ex.: itens naquele filtro, ou "1/4" feitas). */
+  readonly contagem?: number | string;
 }
 
 /**

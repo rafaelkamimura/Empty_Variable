@@ -1,6 +1,12 @@
-import { Component, inject, input, output, signal } from "@angular/core";
-import { type ResultadoBuscaItem, FarmStore } from "./farm";
-import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
+import { ChangeDetectionStrategy, Component, input, output, signal } from "@angular/core";
+import { ImagemItemComponent } from "../../../shared/dominio/imagem-item.component";
+import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
+import type { ResultadoBuscaItem } from "../data/farm.modelos";
+
+/** Busca de itens (nome ou ID), fornecida por quem usa o campo: o componente não fala com a API. */
+export type BuscarItens = (
+  termo: string,
+) => Promise<{ resultados: ResultadoBuscaItem[]; divinePride: boolean }>;
 
 export interface ItemEscolhido {
   nome: string;
@@ -16,11 +22,13 @@ const ROTULO_ORIGEM: Record<ResultadoBuscaItem["origem"], string> = {
 /**
  * D53: campo para achar um item pelo nome ou pelo ID do jogo. Mostra os itens do membro, os do
  * catálogo do grupo e, pelo ID, o nome que a Divine Pride devolve (com o ícone do jogo). Se nada
- * servir, o texto digitado vira um item novo.
+ * servir, o texto digitado vira um item novo. Combobox com a lista de resultados (Enter confirma,
+ * Esc fecha a lista).
  */
 @Component({
   selector: "app-farm-busca-item",
-  imports: [ImagemItemComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ImagemItemComponent, BotaoComponent],
   template: `
     <div class="busca">
       <div class="linha">
@@ -28,7 +36,7 @@ const ROTULO_ORIGEM: Record<ResultadoBuscaItem["origem"], string> = {
           type="text"
           [id]="idCampo()"
           [value]="texto()"
-          (input)="digitar($any($event.target).value)"
+          (input)="digitar(valor($event))"
           (keydown.enter)="$event.preventDefault(); confirmar()"
           (keydown.escape)="resultados.set([])"
           [placeholder]="dica()"
@@ -38,7 +46,7 @@ const ROTULO_ORIGEM: Record<ResultadoBuscaItem["origem"], string> = {
           [attr.aria-expanded]="resultados().length > 0"
           [attr.aria-controls]="idCampo() + '-lista'"
         />
-        <button type="button" class="botao" (click)="confirmar()" [disabled]="texto().trim().length === 0">
+        <button uiBotao (click)="confirmar()" [disabled]="texto().trim().length === 0">
           {{ rotuloBotao() }}
         </button>
       </div>
@@ -67,63 +75,45 @@ const ROTULO_ORIGEM: Record<ResultadoBuscaItem["origem"], string> = {
       box-sizing: border-box;
       width: 100%;
       min-width: 0;
-      min-height: 34px;
-      padding: 6px 10px;
-      border: 1px solid var(--borda-forte);
-      border-radius: 8px;
-      background: var(--superficie);
+      min-height: 40px;
+      padding: var(--esp-2) var(--esp-3);
+      border: 1px solid var(--borda-campo);
+      border-radius: var(--raio-p);
+      background: var(--fundo);
       color: var(--texto);
       font: inherit;
     }
-    input:focus-visible {
-      outline: 2px solid var(--acento);
-      outline-offset: 1px;
-    }
-    .botao {
-      min-height: 34px;
-      padding: 0 14px;
-      border: 1px solid var(--borda-forte);
-      border-radius: 10px;
-      background: var(--cartao);
-      color: var(--texto);
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .botao:hover:not(:disabled) {
-      border-color: var(--acento);
-    }
-    .botao:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    input::placeholder {
+      color: var(--texto-apagado);
     }
     .linha {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 8px;
+      gap: var(--esp-2);
     }
     .lista {
       position: absolute;
-      z-index: 5;
+      z-index: var(--z-topo);
       left: 0;
       right: 0;
-      margin: 4px 0 0;
-      padding: 4px;
+      margin: var(--esp-1) 0 0;
+      padding: var(--esp-1);
       list-style: none;
       border: 1px solid var(--borda-forte);
-      border-radius: 10px;
+      border-radius: var(--raio-m);
       background: var(--elevado);
-      box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+      box-shadow: var(--sombra-2);
     }
     .lista button {
       display: grid;
       grid-template-columns: 24px minmax(0, 1fr) auto;
       align-items: center;
-      gap: 10px;
+      gap: var(--esp-2);
       width: 100%;
-      padding: 6px 8px;
+      min-height: 40px;
+      padding: var(--esp-1) var(--esp-2);
       border: 0;
-      border-radius: 8px;
+      border-radius: var(--raio-p);
       background: transparent;
       color: var(--texto);
       font: inherit;
@@ -139,17 +129,17 @@ const ROTULO_ORIGEM: Record<ResultadoBuscaItem["origem"], string> = {
     }
     .origem,
     .aviso {
-      font-size: 12px;
+      font-size: var(--fs-xs);
       color: var(--texto-suave);
     }
     .aviso {
-      margin: 4px 0 0;
+      margin: var(--esp-1) 0 0;
     }
   `,
 })
 export class FarmBuscaItemComponent {
-  private readonly farm = inject(FarmStore);
-
+  /** Como buscar os itens (a página passa a busca do store). */
+  readonly buscar = input.required<BuscarItens>();
   readonly idCampo = input.required<string>();
   readonly rotulo = input("Item");
   readonly rotuloBotao = input("Adicionar");
@@ -161,6 +151,10 @@ export class FarmBuscaItemComponent {
   readonly aviso = signal<string | null>(null);
   private espera: ReturnType<typeof setTimeout> | undefined;
   private versao = 0;
+
+  protected valor(evento: Event): string {
+    return (evento.target as HTMLInputElement).value;
+  }
 
   origem(r: ResultadoBuscaItem): string {
     return ROTULO_ORIGEM[r.origem];
@@ -177,13 +171,13 @@ export class FarmBuscaItemComponent {
       return;
     }
     // Pelo ID, espera mais: a Divine Pride pede para não varrer IDs ("501" não busca 5 e 50).
-    this.espera = setTimeout(() => void this.buscar(termo, ehId), ehId ? 600 : 250);
+    this.espera = setTimeout(() => void this.consultar(termo, ehId), ehId ? 600 : 250);
   }
 
-  private async buscar(termo: string, ehId: boolean): Promise<void> {
+  private async consultar(termo: string, ehId: boolean): Promise<void> {
     const minha = ++this.versao;
     try {
-      const r = await this.farm.buscarItens(termo);
+      const r = await this.buscar()(termo);
       if (minha !== this.versao) return;
       this.resultados.set(r.resultados);
       if (r.resultados.length === 0) {

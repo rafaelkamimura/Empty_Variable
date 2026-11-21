@@ -489,7 +489,7 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 3. **Casca.** *(feita: `layout/casca`, `layout/topo`, `layout/menu-lateral` e `features/acesso/paginas/login.page.ts`)* Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
 4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
    - loja *(feita: `features/loja`)* e carteira *(feita: `features/carteira`)*;
-   - farm;
+   - farm *(em andamento: `features/farm` com a camada de dados, a página e a aba Hoje; Totais, Cadastro e Importar ainda são as antigas, em `paginas/farm-*.component.ts`)*;
    - Nebula;
    - instâncias e gestão;
    - admin;

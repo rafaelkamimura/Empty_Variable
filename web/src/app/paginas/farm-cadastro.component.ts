@@ -15,9 +15,12 @@ import {
   type ItemFarm,
   type ItemLoot,
   type LootInstancia,
-  FarmStore,
-} from "../core/farm";
-import { FarmBuscaItemComponent, type ItemEscolhido } from "../core/farm-busca-item.component";
+} from "../features/farm/data/farm.modelos";
+import { FarmStore } from "../features/farm/data/farm.store";
+import {
+  FarmBuscaItemComponent,
+  type ItemEscolhido,
+} from "../features/farm/componentes/busca-item.component";
 import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 import { mensagemDeErro } from "../core/modelos";
 
@@ -137,6 +140,7 @@ function chaveDoNome(nome: string): string {
                 }
               }
               <app-farm-busca-item
+                [buscar]="farm.buscarItens"
                 [idCampo]="'drop-' + i.id"
                 rotulo="Adicionar item aos drops"
                 (escolher)="adicionarDrop(i, $event)"
