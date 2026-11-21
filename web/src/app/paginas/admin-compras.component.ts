@@ -9,8 +9,8 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import { type Compra, origemCompra, ROTULO_STATUS_COMPRA, type StatusCompra } from "../core/loja";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
-import { ComoFuncionaComponent } from "../core/layout";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 
 const DIA_MS = 86_400_000;
 
@@ -19,7 +19,7 @@ const DIA_MS = 86_400_000;
   selector: "app-admin-compras",
   imports: [
     ComoFuncionaComponent,
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     DatePipe,
     MatButtonModule,
@@ -35,12 +35,12 @@ const DIA_MS = 86_400_000;
           <p>Entregas pendentes primeiro, das mais antigas para as mais novas.</p>
         </div>
       </div>
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>
           Entregue o item no jogo e depois marque "Entregue". Só então os vendedores consignados recebem os
           pontos. Cancelar uma compra pendente devolve os pontos ao comprador e as unidades ao estoque.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
       <div class="chips" role="group" aria-label="Situação das compras">
         <button
           type="button"
@@ -75,7 +75,7 @@ const DIA_MS = 86_400_000;
         <p class="texto-secundario">Nenhuma compra nesta situação.</p>
       } @else {
         <div class="rolagem-horizontal">
-          <table appResponsiva class="tabela" data-testid="fila-compras">
+          <table uiTabela class="tabela" data-testid="fila-compras">
             <thead>
               <tr>
                 <th scope="col">Quando</th>

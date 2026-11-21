@@ -9,8 +9,9 @@ import { RouterLink } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import type { Classe } from "../core/cadastros";
-import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
+import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 /**
  * US-01: classes do jogo (globais). Desde o Épico IV (D45), as funções e os ranks de cada classe são
@@ -21,7 +22,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
   imports: [
     ComoFuncionaComponent,
     PainelLateralComponent,
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     RouterLink,
     MatButtonModule,
@@ -41,15 +42,15 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
         </div>
       </div>
 
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>
           A mesma classe pode ter funções e ranks diferentes em cada instância (D45): um MTK pode ser rank 5
           na Torre e rank 3 em outra. Para mudar funções e ranks, abra a instância em
           <a routerLink="/gestao/instancias">Instâncias</a> e crie uma versão nova.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
 
-      <table appResponsiva class="tabela" data-testid="classes">
+      <table uiTabela class="tabela" data-testid="classes">
         <thead>
           <tr>
             <th scope="col">Classe</th>
@@ -75,7 +76,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
         </tbody>
       </table>
 
-      <app-painel-lateral titulo="Nova classe" [aberto]="cadastrando()" (fechar)="cadastrando.set(false)">
+      <ui-painel-lateral titulo="Nova classe" [aberto]="cadastrando()" (fechar)="cadastrando.set(false)">
         <form class="formulario" (ngSubmit)="criarClasse()">
           <mat-form-field>
             <mat-label>Nome oficial</mat-label>
@@ -89,7 +90,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
             Cadastrar
           </button>
         </form>
-      </app-painel-lateral>
+      </ui-painel-lateral>
     </div>
   `,
   styles: `

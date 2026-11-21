@@ -7,12 +7,12 @@ import { RouterLink } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import { type Compra, ROTULO_STATUS_COMPRA } from "../core/loja";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 /** US-13: compras do próprio membro, com cancelamento antes da entrega (D25). */
 @Component({
   selector: "app-loja-compras",
-  imports: [TabelaResponsivaDirective, DatePipe, RouterLink, MatButtonModule, MatSnackBarModule],
+  imports: [TabelaDirective, DatePipe, RouterLink, MatButtonModule, MatSnackBarModule],
   template: `
     <div class="pagina">
       <div class="cabecalho">
@@ -28,7 +28,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
         <p class="texto-secundario">Você ainda não comprou nada.</p>
       } @else {
         <div class="rolagem-horizontal">
-          <table appResponsiva class="tabela" data-testid="minhas-compras">
+          <table uiTabela class="tabela" data-testid="minhas-compras">
             <thead>
               <tr>
                 <th scope="col">Quando</th>

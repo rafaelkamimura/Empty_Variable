@@ -10,8 +10,9 @@ import { MatTableModule } from "@angular/material/table";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import { type ItemCatalogo, TIPOS_ITEM, type TipoItem } from "../core/cadastros";
-import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
+import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 import { ImagemItemComponent } from "../core/imagem-item.component";
 
 /** Item ativo cuja negociabilidade ou vínculo à conta ainda não foi verificado no jogo. */
@@ -30,7 +31,7 @@ const ROTULO_TIPO: Record<TipoItem, string> = {
   selector: "app-admin-itens",
   imports: [
     ImagemItemComponent,
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     ComoFuncionaComponent,
     PainelLateralComponent,
@@ -53,13 +54,13 @@ const ROTULO_TIPO: Record<TipoItem, string> = {
         </div>
       </div>
 
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>Os itens das runs vêm deste catálogo e não alteram a pontuação.</p>
         <p>
           Só vai para a loja o item negociável e não vinculado à conta (D20); "Desconhecido" bloqueia até
           alguém verificar no jogo. O preço é único por item (D21) e a reserva fica sempre fora da loja (D26).
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
 
       <div class="chips" role="group" aria-label="Visão da tabela">
         <button
@@ -89,7 +90,7 @@ const ROTULO_TIPO: Record<TipoItem, string> = {
       </div>
 
       <div>
-        <table appResponsiva mat-table [dataSource]="visiveis()" data-testid="itens">
+        <table uiTabela mat-table [dataSource]="visiveis()" data-testid="itens">
           <ng-container matColumnDef="nome">
             <th mat-header-cell *matHeaderCellDef>Nome</th>
             <td mat-cell *matCellDef="let i" [class.inativo]="!i.ativo">
@@ -200,7 +201,7 @@ const ROTULO_TIPO: Record<TipoItem, string> = {
         </table>
       </div>
 
-      <app-painel-lateral titulo="Novo item" [aberto]="cadastrando()" (fechar)="cadastrando.set(false)">
+      <ui-painel-lateral titulo="Novo item" [aberto]="cadastrando()" (fechar)="cadastrando.set(false)">
         <form class="formulario" (ngSubmit)="criar()">
           <mat-form-field>
             <mat-label>Nome</mat-label>
@@ -240,7 +241,7 @@ const ROTULO_TIPO: Record<TipoItem, string> = {
           }
           <button mat-flat-button type="submit" [disabled]="novo.nome.trim().length < 2">Cadastrar</button>
         </form>
-      </app-painel-lateral>
+      </ui-painel-lateral>
     </div>
   `,
   styles: `

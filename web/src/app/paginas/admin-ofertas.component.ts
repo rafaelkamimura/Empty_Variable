@@ -9,15 +9,15 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import { type Oferta, ROTULO_STATUS_OFERTA, type StatusOferta } from "../core/loja";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
-import { ComoFuncionaComponent } from "../core/layout";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 
 /** T-36: fila de ofertas — aprovar ao receber o item, rejeitar com motivo e concluir retiradas. */
 @Component({
   selector: "app-admin-ofertas",
   imports: [
     ComoFuncionaComponent,
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     DatePipe,
     MatButtonModule,
@@ -33,12 +33,12 @@ import { ComoFuncionaComponent } from "../core/layout";
           <p>Itens que os jogadores querem vender pela loja.</p>
         </div>
       </div>
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>
           Aprove só depois de receber o item no jogo: ele entra à venda pelo preço do catálogo, como lote do
           vendedor. Em "Retirada pedida", devolva no jogo o que sobrou e conclua a retirada.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
       <div class="chips" role="group" aria-label="Situação das ofertas">
         <button
           type="button"
@@ -81,7 +81,7 @@ import { ComoFuncionaComponent } from "../core/layout";
         <p class="texto-secundario">Nenhuma oferta nesta situação.</p>
       } @else {
         <div class="rolagem-horizontal">
-          <table appResponsiva class="tabela" data-testid="fila-ofertas">
+          <table uiTabela class="tabela" data-testid="fila-ofertas">
             <thead>
               <tr>
                 <th scope="col">Quando</th>

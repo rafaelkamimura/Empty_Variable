@@ -1,0 +1,90 @@
+// Botão do sistema (diretrizes §2.4 e §5). Só tokens.
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  min-height: 40px;
+  min-width: 40px;
+  max-width: 100%;
+  padding: var(--esp-2) var(--esp-4);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: var(--raio-m);
+  font: inherit;
+  font-size: var(--fs-m);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--duracao) var(--curva),
+    border-color var(--duracao) var(--curva),
+    box-shadow var(--duracao) var(--curva);
+}
+
+:host(.tamanho-p) {
+  padding: var(--esp-1) var(--esp-3);
+  font-size: var(--fs-s);
+}
+
+:host(.variante-principal) {
+  background: var(--acento-degrade);
+  color: var(--sobre-acento);
+}
+:host(.variante-principal:hover:not([disabled], [aria-disabled="true"])),
+:host(.variante-principal:focus-visible) {
+  box-shadow: var(--brilho-acento);
+}
+
+:host(.variante-secundario) {
+  background: transparent;
+  border-color: var(--borda-campo);
+  color: var(--texto);
+}
+:host(.variante-secundario:hover:not([disabled], [aria-disabled="true"])) {
+  background: var(--elevado);
+}
+
+:host(.variante-fantasma) {
+  background: transparent;
+  color: var(--texto);
+}
+:host(.variante-fantasma:hover:not([disabled], [aria-disabled="true"])) {
+  background: var(--elevado);
+}
+
+:host(.variante-perigo) {
+  background: transparent;
+  border-color: var(--erro);
+  color: var(--erro);
+}
+:host(.variante-perigo:hover:not([disabled], [aria-disabled="true"])) {
+  background: var(--erro-fundo);
+}
+
+:host([disabled]),
+:host([aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+:host(.carregando) {
+  cursor: progress;
+}
+
+.indicador {
+  width: 1em;
+  height: 1em;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--raio-total);
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}

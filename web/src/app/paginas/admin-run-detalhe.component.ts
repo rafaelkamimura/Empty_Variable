@@ -11,7 +11,7 @@ import type { ResultadoDropsRun } from "../core/estoque";
 import { mensagemDeErro } from "../core/modelos";
 import { type DetalheRun, ROTULO_CATEGORIA, ROTULO_FRACAO, ROTULO_STATUS } from "../core/runs";
 import { iconeDoItem, siglaDaClasse, tomDe } from "../core/visual";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 import { telaLiberada } from "../core/telas-liberadas";
 import { AuthService } from "../core/auth.service";
 import { ImagemItemComponent } from "../core/imagem-item.component";
@@ -23,7 +23,7 @@ type Participante = DetalheRun["participacoes"][number];
   selector: "app-admin-run-detalhe",
   imports: [
     ImagemItemComponent,
-    TabelaResponsivaDirective,
+    TabelaDirective,
     DatePipe,
     RouterLink,
     MatCardModule,
@@ -137,7 +137,7 @@ type Participante = DetalheRun["participacoes"][number];
             @if (r.lancamentos.length === 0) {
               <p class="texto-secundario">Nenhum lançamento (pontos zerados).</p>
             } @else {
-              <table appResponsiva class="tabela" data-testid="lancamentos">
+              <table uiTabela class="tabela" data-testid="lancamentos">
                 <tbody>
                   @for (l of r.lancamentos; track l.id) {
                     <tr>

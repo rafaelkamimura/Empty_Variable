@@ -14,7 +14,7 @@ import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import type { Instancia } from "../core/instancias";
 import { ROTULO_STATUS, type ResumoRascunhoNag4eyes } from "../core/runs";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 interface RunResumo {
   id: string;
@@ -34,7 +34,7 @@ const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as c
 @Component({
   selector: "app-admin-runs",
   imports: [
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     DatePipe,
     RouterLink,
@@ -63,7 +63,7 @@ const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as c
             Grupos encerrados no Discord. Revise para registrar a run com os participantes já preenchidos, ou
             descarte se o grupo não deve pontuar.
           </p>
-          <table appResponsiva mat-table [dataSource]="rascunhos()">
+          <table uiTabela mat-table [dataSource]="rascunhos()">
             <ng-container matColumnDef="data">
               <th mat-header-cell *matHeaderCellDef>Data</th>
               <td mat-cell *matCellDef="let r">{{ r.data | date: "dd/MM/yyyy" : "UTC" }}</td>
@@ -144,7 +144,7 @@ const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as c
       @if (runs().length === 0) {
         <p class="texto-secundario">Nenhuma run encontrada.</p>
       } @else {
-        <table appResponsiva mat-table [dataSource]="runs()" data-testid="runs">
+        <table uiTabela mat-table [dataSource]="runs()" data-testid="runs">
           <ng-container matColumnDef="data">
             <th mat-header-cell *matHeaderCellDef>Data</th>
             <td mat-cell *matCellDef="let r">

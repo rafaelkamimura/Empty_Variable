@@ -10,8 +10,8 @@ import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import { paraCentesimos } from "../core/cadastros";
 import type { VersaoConfigLoja } from "../core/estoque";
-import { ComoFuncionaComponent } from "../core/layout";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 /** % digitado → pontos-base, com até 2 casas e entre 0 e 100 (null = inválido). */
 export function taxaParaBp(pct: number | null): number | null {
@@ -24,7 +24,7 @@ export function taxaParaBp(pct: number | null): number | null {
 @Component({
   selector: "app-admin-taxa",
   imports: [
-    TabelaResponsivaDirective,
+    TabelaDirective,
     ComoFuncionaComponent,
     FormsModule,
     DatePipe,
@@ -48,13 +48,13 @@ export function taxaParaBp(pct: number | null): number | null {
         </div>
       </div>
 
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>
           A taxa é retida das vendas consignadas (ofertas de jogadores) e sai de circulação. Cada mudança cria
           uma nova versão, que vale para as compras feitas depois dela; compras antigas guardam a taxa da
           época.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
 
       <form class="linha-acoes" (ngSubmit)="salvar()" data-testid="taxa-loja">
         <mat-form-field subscriptSizing="dynamic">
@@ -74,7 +74,7 @@ export function taxaParaBp(pct: number | null): number | null {
       </form>
 
       @if (historico().length > 0) {
-        <table appResponsiva class="tabela">
+        <table uiTabela class="tabela">
           <thead>
             <tr>
               <th scope="col">Versão</th>

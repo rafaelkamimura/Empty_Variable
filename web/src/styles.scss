@@ -4,6 +4,9 @@
 @use "styles/base";
 @use "styles/utilitarios";
 
+// Estilo de diretivas de shared/ui (diretiva não tem styles próprios), escopado na classe dela.
+@use "app/shared/ui/tabela/tabela";
+
 // Código antigo, até migrar para shared/ui (§10).
 @use "styles/legado";
 @use "styles/legado-farm";
