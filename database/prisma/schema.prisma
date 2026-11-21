@@ -905,6 +905,8 @@ model RascunhoRunParticipante {
 
   @@unique([rascunhoId, ordem])
   @@map("rascunho_run_participante")
+}
+
 // ---------------------------------------------------------------------------
 // Integração com o bot nag4eyes: caixa de saída das notificações por DM.
 // Contrato dos eventos em backend/src/notificacoes/eventos.ts.
