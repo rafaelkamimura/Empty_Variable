@@ -9,7 +9,7 @@ import { TabelaDirective } from "./tabela.directive";
   imports: [TabelaDirective, BotaoComponent],
   template: `
     <p class="meta">Abaixo de 760 px de conteúdo, cada linha vira um cartão "rótulo: valor".</p>
-    <table uiTabela>
+    <table uiTabela padrao>
       <thead>
         <tr>
           <th>Item</th>

@@ -57,7 +57,7 @@ import {
         (tentarNovamente)="carregar()"
       >
         <ng-template uiEstadoPronto [tipo]="estado()" let-ofertas>
-          <table uiTabela data-testid="minhas-ofertas">
+          <table uiTabela padrao data-testid="minhas-ofertas">
             <thead>
               <tr>
                 <th scope="col">Quando</th>
@@ -99,7 +99,10 @@ import {
         </ng-template>
       </ui-estado>
       <ui-painel-lateral titulo="Nova oferta" [aberto]="ofertando()" (fechar)="ofertando.set(false)">
-        <app-formulario-oferta [itens]="itens()" [enviando]="enviando()" (enviar)="ofertar($event)" />
+        <!-- Recriado a cada abertura: a nova oferta sempre começa vazia (sem repetir a anterior). -->
+        @if (ofertando()) {
+          <app-formulario-oferta [itens]="itens()" [enviando]="enviando()" (enviar)="ofertar($event)" />
+        }
       </ui-painel-lateral>
     </ui-pagina>
   `,

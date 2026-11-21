@@ -44,7 +44,7 @@ import { type Compra, ROTULO_STATUS_COMPRA, TOM_STATUS_COMPRA } from "../data/lo
       >
         <a uiBotao variante="principal" slot="vazio-acao" routerLink="/loja">Ir à loja</a>
         <ng-template uiEstadoPronto [tipo]="estado()" let-compras>
-          <table uiTabela data-testid="minhas-compras">
+          <table uiTabela padrao data-testid="minhas-compras">
             <thead>
               <tr>
                 <th scope="col">Quando</th>
@@ -134,6 +134,7 @@ export class ComprasPage {
       "Compra cancelada. Os pontos voltaram para o seu saldo.",
     );
     this.cancelando.set(null);
-    if (feito) await Promise.all([this.carregar(), this.saldo.atualizar()]);
+    // Recarrega mesmo se falhar: a compra pode ter sido entregue enquanto a página estava aberta.
+    await Promise.all([this.carregar(), feito ? this.saldo.atualizar() : Promise.resolve()]);
   }
 }

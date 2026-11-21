@@ -79,5 +79,23 @@ describe("ComprasPage", () => {
     el.querySelector<HTMLButtonElement>("tbody button")!.click();
     await esperar();
     http.expectNone((r) => r.method === "POST");
+    expect(el.querySelector("tbody button")?.textContent).toContain("Cancelar");
+  });
+
+  it("cancelamento que falha recarrega a lista (a compra pode ter sido entregue)", async () => {
+    const { http, el } = montar(true);
+    http.expectOne("/api/loja/compras").flush([compra({})]);
+    await esperar();
+    el.querySelector<HTMLButtonElement>("tbody button")!.click();
+    await esperar();
+    http
+      .expectOne((r) => r.method === "POST" && r.url === "/api/loja/compras/c1/cancelar")
+      .flush({ message: "A compra já foi entregue." }, { status: 409, statusText: "Conflito" });
+    await esperar();
+    http.expectOne("/api/loja/compras").flush([compra({ status: "ENTREGUE" })]);
+    http.expectNone("/api/saldo/me");
+    await esperar();
+    expect(el.querySelector("tbody button")).toBeNull();
+    expect(el.textContent).toContain("Entregue");
   });
 });

@@ -130,7 +130,11 @@ export class FormularioCompraComponent {
   protected readonly quantidade = signal(1);
   protected readonly preco = computed(() => this.cotacao()?.preco ?? this.item().preco ?? 0);
   protected readonly maximo = computed(() => maximoDaCompra(this.cotacao()));
-  protected readonly total = computed(() => (this.cotacao()?.preco ?? 0) * this.quantidade());
+  /** Total da compra; com o campo vazio ou inválido, 0 (o botão já fica desabilitado). */
+  protected readonly total = computed(() => {
+    const q = this.quantidade();
+    return Number.isFinite(q) ? (this.cotacao()?.preco ?? 0) * q : 0;
+  });
   protected readonly semSaldo = computed(() => this.saldo() !== null && this.total() > (this.saldo() ?? 0));
   protected readonly podeComprar = computed(
     () => !this.enviando() && compraValida(this.quantidade(), this.maximo(), this.total(), this.saldo()),

@@ -33,10 +33,14 @@ import { filtrarPorNome, type ItemCatalogoLoja, type ItemVitrine } from "../data
   ],
   template: `
     <ui-pagina titulo="Loja de Pontos" subtitulo="Troque seus pontos por itens do estoque do grupo.">
-      @if (linksLiberados) {
+      @if (comprasLiberada || ofertasLiberada) {
         <span slot="acao" class="links">
-          <a uiBotao routerLink="/loja/compras">Minhas compras</a>
-          <a uiBotao routerLink="/loja/ofertas">Minhas ofertas</a>
+          @if (comprasLiberada) {
+            <a uiBotao routerLink="/loja/compras">Minhas compras</a>
+          }
+          @if (ofertasLiberada) {
+            <a uiBotao routerLink="/loja/ofertas">Minhas ofertas</a>
+          }
         </span>
       }
       <ui-campo rotulo="Buscar item" class="busca">
@@ -101,8 +105,9 @@ export class CatalogoPage {
   private readonly api = inject(LojaApi);
   private readonly auth = inject(AuthService);
   protected readonly saldo = inject(SaldoService);
-  /** Compras e ofertas aparecem só quando as telas forem liberadas. */
-  protected readonly linksLiberados = telaLiberada("/loja/compras") && telaLiberada("/loja/ofertas");
+  /** Cada link aparece quando a tela dele for liberada. */
+  protected readonly comprasLiberada = telaLiberada("/loja/compras");
+  protected readonly ofertasLiberada = telaLiberada("/loja/ofertas");
 
   protected readonly estado = signal<Carregavel<ItemCatalogoLoja[]>>(carregando());
   protected readonly busca = signal("");

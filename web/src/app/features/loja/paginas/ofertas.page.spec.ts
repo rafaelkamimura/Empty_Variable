@@ -81,9 +81,23 @@ describe("OfertasPage", () => {
     expect(req.request.body).toEqual({ itemId: "i1", quantidade: 2 });
     req.flush(oferta({}));
     await esperar();
-    responder(http, [oferta({})], []);
+    responder(
+      http,
+      [oferta({})],
+      [{ id: "i1", nome: "Carta Naght Sieger", tipo: "CARTA", precoVigente: 300 }],
+    );
     await esperar();
     expect(el.querySelector("[role=dialog]")).toBeNull();
+
+    // Reabrir: o formulário começa vazio, sem repetir a oferta anterior.
+    Array.from(el.querySelectorAll("button"))
+      .find((b) => b.textContent?.includes("Nova oferta"))!
+      .click();
+    await esperar();
+    const reaberto = el.querySelector("[role=dialog]")!;
+    expect(reaberto.querySelector("select")!.value).toBe("");
+    expect(reaberto.querySelector<HTMLInputElement>("input[type=number]")!.value).toBe("1");
+    expect(reaberto.querySelector<HTMLButtonElement>("button[type=submit]")!.disabled).toBeTrue();
   });
 
   it("retirar uma oferta à venda pede confirmação de perigo", async () => {

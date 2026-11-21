@@ -114,7 +114,7 @@ Estes são os tokens que os componentes usam. Os contrastes foram medidos contra
 
 Um estado nunca é indicado só pela cor. Sempre há ícone e texto junto.
 
-**Tons de identidade.** Dão a cor estável do ícone de item e do emblema de classe (`tomDe()` em `core/visual.ts`). São decorativos: o nome do item ou da classe sempre aparece junto. Contraste medido contra `--superficie`, o fundo da arte do cartão.
+**Tons de identidade.** Dão a cor estável do ícone de item e do emblema de classe (`tomDe()` em `shared/dominio/visual.ts`). São decorativos: o nome do item ou da classe sempre aparece junto. Contraste medido contra `--superficie`, o fundo da arte do cartão.
 
 | Token            | Valor                         | Contraste |
 | ---------------- | ----------------------------- | --------- |
@@ -483,7 +483,7 @@ Enquanto o código antigo não migrar, essas regras rodam como **erro** em `shar
 
 A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**: quem mexer numa tela migra essa tela.
 
-1. **Fundação.** *(feita)* Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `core/visual.ts` é refeito com tons da paleta.
+1. **Fundação.** *(feita)* Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `shared/dominio/visual.ts` é refeito com tons da paleta.
 2. **Ferramentas.** *(feita)* Ligar as regras de lint da §8.3 (aviso no código antigo) e montar o catálogo da §8.2, para que cada peça base já nasça com exemplo.
 3. **Peças base.** *(feita)* Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
 3. **Casca.** *(feita: `layout/casca`, `layout/topo`, `layout/menu-lateral` e `features/acesso/paginas/login.page.ts`)* Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
