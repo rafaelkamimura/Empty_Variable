@@ -4,7 +4,6 @@ import { type ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import type { SituacaoVinculo, Solicitacao } from "../core/modelos";
-import { LoginComponent } from "./login.component";
 import { MeComponent } from "./me.component";
 import { VinculoComponent } from "./vinculo.component";
 
@@ -30,18 +29,6 @@ const solicitacao: Solicitacao = {
   jogador: null,
   analisadaPor: null,
 };
-
-describe("LoginComponent", () => {
-  it("mostra a mensagem de acesso restrito para quem não é do servidor (CT-79)", () => {
-    configurar();
-    const f = TestBed.createComponent(LoginComponent);
-    f.componentRef.setInput("erro", "nao-membro");
-    f.detectChanges();
-    expect(texto(f)).toContain("Acesso restrito aos membros do servidor");
-    const link = (f.nativeElement as HTMLElement).querySelector("a")!;
-    expect(link.getAttribute("href")).toBe("api/auth/discord");
-  });
-});
 
 describe("MeComponent", () => {
   it("mostra saldo (T-22), personagens e os pontos base por rank do motor compartilhado", async () => {

@@ -101,7 +101,7 @@ html {
   --duracao: 160ms;
   --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  --z-topo: 10;
+  --z-topo: 20; /* acima das dicas (z 10) das páginas antigas */
   --z-painel: 100;
   --z-dialogo: 200;
   --z-aviso: 300;

@@ -136,7 +136,7 @@ Um estado nunca é indicado só pela cor. Sempre há ícone e texto junto.
 | Peso       | 400 no texto, 600 em rótulos e botões, 700 em títulos e números de destaque                |
 | Sombra     | `--sombra-1: 0 1px 2px rgb(0 0 0 / 40%)` · `--sombra-2: 0 8px 24px rgb(0 0 0 / 45%)` · `--brilho-acento` só em foco ou destaque |
 | Movimento  | `--duracao: 160ms` e `--curva: cubic-bezier(.2,.8,.2,1)`. Tudo é desligado com `prefers-reduced-motion: reduce` |
-| Camadas    | `--z-topo: 10` · `--z-painel: 100` · `--z-dialogo: 200` · `--z-aviso: 300`                 |
+| Camadas    | `--z-topo: 20` · `--z-painel: 100` · `--z-dialogo: 200` · `--z-aviso: 300`                 |
 
 Números (pontos, zeny, quantidades) usam `font-variant-numeric: tabular-nums` para alinhar em colunas.
 
@@ -297,7 +297,7 @@ O projeto usa o vocabulário do Atomic Design para decidir **o que um componente
 
 O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no código atual.
 
-**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
+**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Na etapa 4 entraram `ui-marca` e o pipe `pontos` (`shared/pipes/pontos.pipe.ts`). Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
 
 | Componente                | Nível | Responsabilidade                                                                  | Substitui hoje                                       |
 | ------------------------- | --------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
@@ -486,7 +486,7 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 1. **Fundação.** *(feita)* Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `core/visual.ts` é refeito com tons da paleta.
 2. **Ferramentas.** *(feita)* Ligar as regras de lint da §8.3 (aviso no código antigo) e montar o catálogo da §8.2, para que cada peça base já nasça com exemplo.
 3. **Peças base.** *(feita)* Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
-3. **Casca.** Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
+3. **Casca.** *(feita: `layout/casca`, `layout/topo`, `layout/menu-lateral` e `features/acesso/paginas/login.page.ts`)* Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
 4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
    - loja e carteira;
    - farm;

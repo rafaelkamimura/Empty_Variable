@@ -8,6 +8,6 @@ describe("VazioComponent", () => {
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector(".frase")?.textContent).toBe("Nada aqui.");
-    expect(el.querySelector(".marca")?.getAttribute("aria-hidden")).toBe("true");
+    expect(el.querySelector("ui-marca")?.getAttribute("aria-hidden")).toBe("true");
   });
 });
