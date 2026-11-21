@@ -1,0 +1,433 @@
+import { DamageFormulaCalc, DamageFormulaCalcRow } from '../models/damage-summary.model';
+import { InfoForClass } from '../models/info-for-class.model';
+import { floor, formatCalcNumber } from '../utils';
+import { StarGladiator } from './StarGladiator';
+import { ActiveSkillModel, AtkSkillFormulaInput, AtkSkillModel, PassiveSkillModel } from './_character-base.abstract';
+import { ClassName } from './_class-name';
+
+const jobBonusTable: Record<number, [number, number, number, number, number, number]> = {
+  1: [1, 0, 0, 0, 0, 0],
+  2: [1, 0, 0, 0, 1, 0],
+  3: [1, 0, 0, 0, 1, 0],
+  4: [1, 0, 0, 0, 1, 0],
+  5: [1, 1, 0, 0, 1, 0],
+  6: [1, 1, 0, 0, 1, 0],
+  7: [1, 1, 0, 1, 1, 0],
+  8: [2, 1, 0, 1, 1, 0],
+  9: [2, 1, 0, 1, 1, 1],
+  10: [2, 1, 0, 1, 1, 1],
+  11: [2, 1, 0, 1, 2, 1],
+  12: [3, 1, 0, 1, 2, 1],
+  13: [3, 2, 0, 1, 2, 1],
+  14: [3, 2, 0, 1, 2, 1],
+  15: [3, 2, 0, 2, 2, 1],
+  16: [3, 2, 0, 2, 2, 2],
+  17: [3, 2, 1, 2, 2, 2],
+  18: [3, 2, 1, 2, 2, 2],
+  19: [4, 2, 1, 2, 2, 2],
+  20: [4, 2, 1, 2, 3, 2],
+  21: [4, 3, 1, 2, 3, 2],
+  22: [4, 3, 1, 2, 3, 2],
+  23: [5, 3, 1, 2, 3, 2],
+  24: [5, 3, 2, 2, 3, 2],
+  25: [5, 3, 2, 3, 3, 2],
+  26: [5, 3, 2, 3, 3, 2],
+  27: [5, 3, 2, 3, 4, 2],
+  28: [5, 3, 2, 3, 4, 2],
+  29: [5, 4, 2, 3, 4, 2],
+  30: [5, 4, 2, 3, 5, 2],
+  31: [6, 4, 2, 3, 5, 2],
+  32: [6, 4, 2, 3, 5, 2],
+  33: [6, 4, 2, 3, 5, 2],
+  34: [6, 4, 2, 3, 6, 2],
+  35: [6, 5, 2, 3, 6, 2],
+  36: [6, 5, 2, 3, 6, 3],
+  37: [6, 5, 3, 3, 6, 3],
+  38: [6, 5, 3, 3, 7, 3],
+  39: [7, 5, 3, 3, 7, 3],
+  40: [7, 5, 3, 3, 7, 3],
+  41: [7, 6, 3, 3, 7, 3],
+  42: [7, 6, 4, 3, 7, 3],
+  43: [8, 6, 4, 3, 7, 3],
+  44: [8, 6, 4, 3, 7, 3],
+  45: [8, 6, 4, 3, 8, 3],
+  46: [8, 6, 4, 3, 8, 3],
+  47: [8, 7, 4, 3, 8, 3],
+  48: [9, 7, 4, 3, 8, 3],
+  49: [9, 7, 4, 3, 8, 3],
+  50: [9, 7, 4, 3, 9, 3],
+  51: [9, 7, 4, 3, 9, 3],
+  52: [9, 7, 4, 3, 9, 3],
+  53: [9, 7, 4, 3, 9, 3],
+  54: [9, 7, 4, 3, 9, 3],
+  55: [9, 7, 4, 3, 9, 3],
+  56: [10, 7, 4, 3, 9, 3],
+  57: [10, 7, 4, 3, 9, 3],
+  58: [10, 7, 4, 3, 9, 3],
+  59: [10, 8, 4, 3, 9, 3],
+  60: [10, 8, 4, 3, 9, 3],
+  61: [10, 8, 4, 3, 9, 3],
+  62: [10, 8, 4, 3, 9, 3],
+  63: [10, 8, 4, 3, 9, 3],
+  64: [10, 8, 4, 3, 9, 3],
+  65: [11, 9, 5, 3, 9, 3],
+  66: [11, 9, 5, 3, 9, 3],
+  67: [11, 9, 5, 3, 9, 3],
+  68: [11, 9, 5, 3, 9, 3],
+  69: [11, 9, 5, 3, 9, 3],
+  70: [12, 10, 6, 3, 9, 3],
+};
+
+export class StarEmperor extends StarGladiator {
+  protected override CLASS_NAME = ClassName.StarEmperor;
+  protected override JobBonusTable = jobBonusTable;
+  protected override initialStatusPoint = 48;
+
+  private readonly classNames3rd = [ClassName.StarEmperor];
+  private readonly atkSkillList3rd: AtkSkillModel[] = [
+    {
+      label: 'New Moon Kick Lv7',
+      name: 'New Moon Kick',
+      value: 'New Moon Kick==7',
+      acd: 0,
+      fct: 1,
+      vct: 0,
+      cd: 1,
+      isMelee: true,
+      criDmgPercentage: 0.5,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { skillLevel } = input;
+
+        return 700 + skillLevel * 100;
+      },
+    },
+    {
+      label: 'Full Moon Kick Lv10',
+      name: 'Full Moon Kick',
+      value: 'Full Moon Kick==10',
+      acd: 0,
+      fct: 0,
+      vct: 0,
+      cd: 1,
+      isMelee: true,
+      criDmgPercentage: 0.5,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel } = input;
+        const baseLevel = model.level;
+        const bonus = this.isSkillActive('Lunar Luminance') ? 1.25 : 1;
+
+        return (1100 + skillLevel * 100) * (baseLevel / 100) * bonus;
+      },
+    },
+    {
+      label: 'Blaze Kick Lv7',
+      name: 'Blaze Kick',
+      value: 'Blaze Kick==7',
+      acd: 0,
+      fct: 0,
+      vct: 0,
+      cd: 0,
+      isMelee: true,
+      criDmgPercentage: 0.5,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { skillLevel } = input;
+
+        return 150 + skillLevel * 50;
+      },
+    },
+    {
+      label: 'Solar Explosion Lv10',
+      name: 'Solar Explosion',
+      value: 'Solar Explosion==10',
+      acd: 0.5,
+      fct: 0,
+      vct: 0,
+      cd: 0,
+      isMelee: true,
+      criDmgPercentage: 0.5,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel } = input;
+        const baseLevel = model.level;
+        const bonus = this.isSkillActive('Solar Luminance') ? 1.25 : 1;
+
+        return (1000 + skillLevel * 220) * (baseLevel / 100) * bonus;
+      },
+    },
+    {
+      name: 'Falling Stars',
+      label: 'Falling Stars Lv10',
+      value: 'Falling Stars==10',
+      acd: 0,
+      fct: 2,
+      vct: 1,
+      cd: 0,
+      hit: 3,
+      isMelee: true,
+      autoSpellChance: 0.15,
+      criDmgPercentage: 0.5,
+      totalHit: 2,
+      formula: (input: AtkSkillFormulaInput): number => {
+        const { model, skillLevel } = input;
+        const baseLevel = model.level;
+        const bonus = this.isSkillActive('Stellar Luminance') ? 1.25 : 1;
+
+        return (100 + skillLevel * 100) * (baseLevel / 100) * bonus;
+      },
+    },
+  ];
+
+  private readonly activeSkillList3rd: ActiveSkillModel[] = [
+    {
+      label: 'Lunar Luminance',
+      name: 'Lunar Luminance',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 5', value: 5, skillLv: 5, isUse: true },
+      ],
+    },
+    {
+      label: 'Solar Stance',
+      name: 'Solar Stance',
+      inputType: 'dropdown',
+      // The four stances are mutually exclusive: each one's client description says it
+      // cannot be combined with the other two basic stances, and Postura do Universo —
+      // whose own description omits the clause — is held to the same rule by
+      // browiki.org/wiki/Postura_do_Universo ("Não pode ser usada simultaneamente com a
+      // Postura Solar, Postura Lunar e Postura Estelar"). Postura Lunar is not offered
+      // here: it grants only HP máx +%, which this calculator does not measure.
+      exclusiveGroup: 'sje_stance',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 3', value: 3, skillLv: 3, isUse: true, bonus: { atkPercent: 5 } },
+      ],
+    },
+    {
+      label: 'Solar Luminance',
+      name: 'Solar Luminance',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 5', value: 5, skillLv: 5, isUse: true },
+      ],
+    },
+    {
+      label: 'ตัวลอย',
+      name: 'Fusion of Sun, Moon and Star',
+      inputType: 'selectButton',
+      dropdown: [
+        { label: 'Sim', value: 1, skillLv: 1, isUse: true, bonus: { forceCri: 1 } },
+        { label: 'Não', value: 0, isUse: false },
+      ],
+    },
+    {
+      label: 'Stellar Stance',
+      name: 'Stellar Stance',
+      inputType: 'dropdown',
+      exclusiveGroup: 'sje_stance',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 3', value: 3, skillLv: 3, isUse: true, bonus: { aspdPercent: 10 } },
+      ],
+    },
+    {
+      // Postura do Universo (SJ_UNIVERSESTANCE, 2583). A Mestre Estelar skill — the
+      // bROWiki "Mestres Estelares" navbox lists it, and "Mestres Celestiais" carries no
+      // stance at all — so the Mestre Celestial reaches it by inheriting this list.
+      // "Todos os atributos +3/+4/+5" per level, from the client description and the
+      // level table on browiki.org/wiki/Postura_do_Universo.
+      label: 'Universe Stance',
+      name: 'Universe Stance',
+      inputType: 'dropdown',
+      exclusiveGroup: 'sje_stance',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 1', value: 1, skillLv: 1, isUse: true, bonus: { str: 3, agi: 3, vit: 3, int: 3, dex: 3, luk: 3 } },
+        { label: 'Nv 2', value: 2, skillLv: 2, isUse: true, bonus: { str: 4, agi: 4, vit: 4, int: 4, dex: 4, luk: 4 } },
+        { label: 'Nv 3', value: 3, skillLv: 3, isUse: true, bonus: { str: 5, agi: 5, vit: 5, int: 5, dex: 5, luk: 5 } },
+      ],
+    },
+    {
+      label: 'Stellar Luminance',
+      name: 'Stellar Luminance',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', value: 0, isUse: false },
+        { label: 'Nv 5', value: 5, skillLv: 5, isUse: true },
+      ],
+    },
+  ];
+
+  private readonly passiveSkillList3rd: PassiveSkillModel[] = [
+    {
+      label: 'Blessing of Sun',
+      name: 'Blessing of Sun',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+    {
+      label: 'Blessing of Moon',
+      name: 'Blessing of Moon',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+    {
+      label: 'Blessing of Star',
+      name: 'Blessing of Star',
+      inputType: 'dropdown',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+  ];
+
+  constructor() {
+    super();
+
+    this.inheritSkills({
+      activeSkillList: this.activeSkillList3rd,
+      atkSkillList: this.atkSkillList3rd,
+      passiveSkillList: this.passiveSkillList3rd,
+      classNames: this.classNames3rd,
+    });
+  }
+
+  /**
+   * The three Wrath skills (Fúria Solar 435, Fúria Lunar 436, Fúria Estelar 437) — an
+   * ATK multiplier applied in modifyFinalAtk.
+   *
+   * **They are not three flavours of one bonus: each reaches only one target size.**
+   * That is decided by Oposição Solar, Lunar e Estelar (434), which permanently marks
+   * the target with a sun/moon/star alignment *according to its Size*:
+   *
+   *   [Lv 1] Sun  l Small  l min HP —
+   *   [Lv 2] Moon l Medium l min HP 6,000
+   *   [Lv 3] Star l Large  l min HP 20,000
+   *
+   * So a Medium-sized boss is a Moon target and Fúria Lunar is what applies to it, not
+   * Fúria Estelar. Against players there is no gate at all — the description says other
+   * characters can be aligned "with no size or HP restriction".
+   *
+   * STR enters only the Star one. The descriptions are explicit and differ: Sun and Moon
+   * read "based on your LUK, DEX and base level"; Star reads "based on STR, LUK, DEX and
+   * base level".
+   *
+   * The divisor 3 is the Lv3 one, the only level the toggles offer (yes/no). External
+   * sources give (12 − 3×level) across the three levels — 9, 6, 3.
+   *
+   * None of this is measured: there is no `.rrf` of a Star Gladiator / Sky Emperor with
+   * any Wrath active. A recording hitting Small, Medium and Large targets with the three
+   * of them is what would settle it.
+   */
+  private static readonly WRATH_BY_ALIGNMENT = [
+    { skill: 'Wrath of Sun' as const, size: 's', minHp: 0, withStr: false, name: 'Fúria Solar', wiki: 'https://browiki.org/wiki/F%C3%BAria_Solar' },
+    { skill: 'Wrath of Moon' as const, size: 'm', minHp: 6000, withStr: false, name: 'Fúria Lunar', wiki: 'https://browiki.org/wiki/F%C3%BAria_Lunar' },
+    { skill: 'Wrath of' as const, size: 'l', minHp: 20000, withStr: true, name: 'Fúria Estelar', wiki: 'https://browiki.org/wiki/F%C3%BAria_Estelar' },
+  ];
+
+  /** The one Wrath that reaches this target, with the bonus it pays. At most one can:
+   *  the alignment follows the target's Size, so ticking all three still leaves a single
+   *  match. Null when none applies. */
+  private resolveWrath(info: InfoForClass) {
+    const { model, status, monster } = info;
+    const { level } = model;
+    const { totalLuk, totalDex, totalStr } = status;
+    // Any alignment is allowed on a player, so no size/HP gate.
+    const isPlayerTarget = !!monster?.isPlayerTarget;
+
+    for (const wrath of StarEmperor.WRATH_BY_ALIGNMENT) {
+      const { skill, size, minHp, withStr } = wrath;
+      if (!this.isSkillActive(skill)) continue;
+      if (!isPlayerTarget && (monster?.size !== size || (monster?.data?.hp ?? 0) < minHp)) continue;
+
+      const str = withStr ? totalStr : 0;
+
+      return { wrath, bonus: Math.floor((level + totalLuk + totalDex + str) / 3), level, totalLuk, totalDex, str };
+    }
+
+    return null;
+  }
+
+  getWrathAtkBonus(info: InfoForClass): number {
+    return this.resolveWrath(info)?.bonus ?? 0;
+  }
+
+  override modifyFinalAtk(currentAtk: number, _params: InfoForClass) {
+    // LEARNED level: Kihop is passive (see StarGladiator.passiveSkillListHi).
+    const powerLv = this.learnLv('Power');
+    const wratBonus = (100 + this.getWrathAtkBonus(_params)) / 100;
+
+    // ATK is an integer in game before the percentage stages: Kihop multiplies the
+    // already-floored ATK, not the fraction P.ATK leaves behind (calcTotalAtk deliberately
+    // does not round that step). Without this floor the weaponless recording comes out at
+    // 4,194 instead of 4,193 — see SkyEmperor.replay.spec.ts.
+    let totalAtk = floor(currentAtk);
+    if (powerLv >= 1) totalAtk = totalAtk + floor(totalAtk * (powerLv * 15 + 10) * 0.01);
+    totalAtk = totalAtk * wratBonus;
+
+    return totalAtk;
+  }
+
+  /**
+   * Spells out the two multipliers modifyFinalAtk just applied, in its own order.
+   *
+   * The step is worth explaining here and nowhere else in the graph: it is the only place
+   * a Fúria pays, and which of the three pays is decided by the *target's* Size rather
+   * than by anything on the character sheet — so a reader comparing two builds can watch
+   * the number swing on a stat that appears nowhere else in the chain (Fúria Solar and
+   * Lunar read SOR and DES but not FOR; only Estelar adds FOR). The link points at the
+   * page for whichever one actually applied.
+   */
+  override getFinalAtkCalc(currentAtk: number, params: InfoForClass): DamageFormulaCalc | undefined {
+    const powerLv = this.learnLv('Power');
+    const resolved = this.resolveWrath(params);
+    if (powerLv < 1 && !resolved) return undefined;
+
+    const fmt = formatCalcNumber;
+    const rows: DamageFormulaCalcRow[] = [{ label: 'ATQ arredondado p/ baixo', display: fmt(floor(currentAtk)) }];
+
+    let totalAtk = floor(currentAtk);
+    if (powerLv >= 1) {
+      const percent = powerLv * 15 + 10;
+      totalAtk = totalAtk + floor(totalAtk * percent * 0.01);
+      rows.push({ label: `Kihop Nv ${powerLv} (+${percent}%)`, display: fmt(totalAtk) });
+    }
+
+    if (resolved) {
+      const { wrath, bonus, level, totalLuk, totalDex, str } = resolved;
+      const terms = `nível ${level} + SOR ${totalLuk} + DES ${totalDex}${wrath.withStr ? ` + FOR ${str}` : ''}`;
+      rows.push({ label: `${wrath.name}: (${terms}) ÷ 3`, display: `+${fmt(bonus)}%` });
+      totalAtk = totalAtk * ((100 + bonus) / 100);
+      rows.push({ label: `× ${wrath.name}`, display: fmt(totalAtk) });
+    }
+
+    rows.push({ label: 'ATQ (ajuste de classe)', display: fmt(floor(totalAtk)), emphasis: true });
+
+    return {
+      rows,
+      note: resolved
+        ? `Só uma das três Fúrias vale contra o mesmo alvo: a Oposição alinha o alvo pelo Tamanho dele, e é esse alinhamento que escolhe qual delas entra. Neste alvo é a ${resolved.wrath.name}.`
+        : undefined,
+      link: resolved ? { label: `${resolved.wrath.name} no bROWiki`, url: resolved.wrath.wiki } : undefined,
+    };
+  }
+}

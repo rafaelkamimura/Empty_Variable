@@ -5,3 +5,4 @@ pnpm-lock.yaml
 docs
 .angular
 web/public/equipamentos-latam.json
+packages/motor-latam/vendor
