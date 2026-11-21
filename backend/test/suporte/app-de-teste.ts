@@ -90,12 +90,16 @@ export class DivinePrideFalso {
   readonly chamadas: string[] = [];
   readonly servidores: (string | undefined)[] = [];
   readonly respostas = new Map<number, { status: number; corpo?: unknown } | "falha">();
+  /** D57: respostas de `/Monster/{id}`, por ID. */
+  readonly monstros = new Map<number, { status: number; corpo?: unknown } | "falha">();
 
   readonly buscar = async (url: string, init?: RequestInit) => {
     this.chamadas.push(url);
     this.servidores.push((init?.headers as Record<string, string> | undefined)?.["x-server"]);
+    const monstro = /\/Monster\/(\d+)/.exec(url)?.[1];
     const id = Number(/\/Item\/(\d+)/.exec(url)?.[1]);
-    const r = this.respostas.get(id) ?? { status: 404 };
+    const configurada = monstro === undefined ? this.respostas.get(id) : this.monstros.get(Number(monstro));
+    const r: { status: number; corpo?: unknown } | "falha" = configurada ?? { status: 404 };
     if (r === "falha") throw new Error("rede indisponível");
     return { status: r.status, json: async () => r.corpo ?? null };
   };
@@ -173,7 +177,7 @@ export async function criarApp(config: Partial<Configuracao> = {}): Promise<Cont
     await prisma.$transaction([
       prisma.$executeRawUnsafe("SET LOCAL session_replication_role = replica"),
       prisma.$executeRawUnsafe(
-        `TRUNCATE farm_checkin_drop, farm_checkin, farm_instancia_drop, farm_instancia_personagem, farm_instancia, farm_item, nome_item_divine_pride, notificacao, rascunho_run_participante, rascunho_run, transferencia_pontos, imagem_cache, receita_peca, receita_componente, preco_receita, solicitacao_nebula, receita,
+        `TRUNCATE chefe_instancia, monstro, farm_checkin_drop, farm_checkin, farm_instancia_drop, farm_instancia_personagem, farm_instancia, farm_item, nome_item_divine_pride, notificacao, rascunho_run_participante, rascunho_run, transferencia_pontos, imagem_cache, receita_peca, receita_componente, preco_receita, solicitacao_nebula, receita,
          movimento_estoque, compra_lote, compra, lote_estoque, oferta_venda, preco_item, config_loja,
          lancamento_pontos, emprestimo, drop_run, participacao, run, config_pontuacao, funcao_classe, encontro, versao_instancia, instancia, classe,
          item_catalogo, solicitacao_vinculo, personagem, jogador, sessao, auditoria, usuario CASCADE`,

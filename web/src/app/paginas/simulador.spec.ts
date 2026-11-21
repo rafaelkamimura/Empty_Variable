@@ -1,0 +1,400 @@
+// D57: a ficha mostra refino, grau, cartas e encantamentos, e a tela de simulação parte da build.
+import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { type ComponentFixture, TestBed } from "@angular/core/testing";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { ActivatedRoute, convertToParamMap, provideRouter } from "@angular/router";
+import { NAO_CONSIDERA } from "@betel/simulador";
+import { atributoDaBuild, detalhesDoEquipamento, refinoEGrau, resumoDosAtributos } from "../core/build";
+import type { AtributosBuild, ItemEquipamento, SituacaoVinculo } from "../core/modelos";
+import {
+  type AlvosSimulacao,
+  type MonstroAlvo,
+  type RespostaSimulacao,
+  SimuladorComponent,
+} from "./simulador.component";
+import { VinculoComponent } from "./vinculo.component";
+
+const esperar = () => new Promise((r) => setTimeout(r));
+const texto = (f: ComponentFixture<unknown>) => (f.nativeElement as HTMLElement).textContent ?? "";
+
+const ARMA: ItemEquipamento = {
+  id: 600020,
+  nome: "Espada de Duas Mãos",
+  refino: 12,
+  grau: "A",
+  cartas: [
+    { id: 4608, nome: "Carta Cavaleiro Branco" },
+    { id: 4625, nome: null },
+  ],
+  encantamentos: [{ id: 4700, nome: "FOR+1" }],
+};
+
+const ATRIBUTOS: AtributosBuild = {
+  nivelClasse: 55,
+  base: { str: 130, agi: 90, dex: 60, luk: 50 },
+  bonusClasse: { str: 12, dex: 6 },
+  talentos: { pow: 100, con: 50, crt: 0 },
+  habilidade: { nome: "Dragonic Breath", nivel: 10 },
+  elementoAtaque: "FOGO",
+};
+
+const NAGHT: MonstroAlvo = {
+  idJogo: 20996,
+  nome: "Naght Sieger",
+  origem: "REFERENCIA",
+  servidor: null,
+  fonte: "https://www.divine-pride.net/database/monster/20996",
+  nivel: 250,
+  hp: 300_000_000,
+  def: 410,
+  mdef: 80,
+  vit: 90,
+  int: 220,
+  res: 300,
+  mres: 200,
+  raca: "DEMONIO",
+  tamanho: "GRANDE",
+  elemento: "FANTASMA",
+  nivelElemento: 3,
+  chefe: true,
+  danoRecebidoPct: 100,
+};
+
+const ALVOS: AlvosSimulacao = {
+  divinePride: false,
+  instancias: [
+    { id: "i-covil", nome: "Covil de Vermes", nivelMinimo: 140, chefes: [] },
+    {
+      id: "i-torre",
+      nome: "Torre da Constelação",
+      nivelMinimo: 240,
+      chefes: [
+        {
+          idMonstro: 20996,
+          nome: "Naght Sieger",
+          observacao: "Andar 25. Na instância o HP base é 300 milhões.",
+          fonte: "https://browiki.org/wiki/Torre_da_Constelação",
+          monstro: NAGHT,
+        },
+      ],
+    },
+  ],
+};
+
+const SITUACAO: SituacaoVinculo = {
+  jogador: {
+    id: "j1",
+    apelido: "Ana",
+    personagens: [
+      { id: "p-antigo", nome: "Ana-Antiga", ativo: true, nivelBase: 200, equipamentos: { arma: "Faca" } },
+      {
+        id: "p-dk",
+        nome: "Ana-DK",
+        ativo: true,
+        nivelBase: 250,
+        equipamentos: { arma: ARMA },
+        atributos: ATRIBUTOS,
+      },
+    ],
+  },
+  solicitacao: null,
+};
+
+describe("Build da ficha (D57)", () => {
+  it("descreve refino, grau, cartas e encantamentos; ficha antiga não tem detalhes", () => {
+    expect(refinoEGrau(ARMA)).toBe("+12 · Grau A");
+    expect(detalhesDoEquipamento(ARMA)).toEqual([
+      "+12 · Grau A",
+      "Cartas: Carta Cavaleiro Branco, Item 4625",
+      "Encantamentos: FOR+1",
+    ]);
+    expect(detalhesDoEquipamento({ id: 5011, nome: "Antena", refino: 0 })).toEqual([]);
+    expect(detalhesDoEquipamento({ id: 5011, nome: "Antena" })).toEqual([]);
+    expect(detalhesDoEquipamento("Faca")).toEqual([]);
+    expect(detalhesDoEquipamento(undefined)).toEqual([]);
+  });
+
+  it("resume os atributos e soma base com bônus de classe", () => {
+    expect(resumoDosAtributos(ATRIBUTOS)).toEqual([
+      "Nível de classe 55 · FOR 130+12 · AGI 90 · DES 60+6 · SOR 50",
+      "POD 100 · CON 50",
+      "Habilidade: Dragonic Breath nv. 10",
+    ]);
+    expect(resumoDosAtributos(undefined)).toEqual([]);
+    expect(resumoDosAtributos({})).toEqual([]);
+    expect(atributoDaBuild(ATRIBUTOS, "str")).toBe(142);
+    expect(atributoDaBuild(ATRIBUTOS, "int")).toBe(0);
+    expect(atributoDaBuild(undefined, "str")).toBe(0);
+  });
+});
+
+describe("Ficha: importação da build completa (D57)", () => {
+  it("guarda refino, grau, cartas, encantamentos e atributos, e envia tudo ao salvar", async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideNoopAnimations(),
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const f = TestBed.createComponent(VinculoComponent);
+    f.detectChanges();
+    http.expectOne("/api/vinculo").flush(SITUACAO);
+    http.expectOne("/api/vinculo/classes").flush([]);
+    await esperar();
+    const c = f.componentInstance;
+    const ficha = {
+      nome: "Ana-DK",
+      classeId: "dk",
+      nivelBase: 250,
+      build: "",
+      equipamentos: { topo: { id: 5011, nome: "Antena" } },
+    };
+    c.editando.set(ficha);
+    c.linkSimulador = "https://short.latam-tools.com.br/abc";
+    const importacao = c.importarBuild(ficha);
+    http.expectOne("/api/vinculo/build-simulador").flush({
+      classeId: null,
+      classeNome: null,
+      nivelBase: 250,
+      equipamentos: { arma: { ...ARMA, nome: null } },
+      atributos: ATRIBUTOS,
+    });
+    http.expectOne("/equipamentos-latam.json").flush({ slots: { arma: [{ id: 600020, nome: ARMA.nome }] } });
+    await importacao;
+    expect(ficha as object).toEqual({
+      nome: "Ana-DK",
+      classeId: "dk",
+      nivelBase: 250,
+      build: "",
+      equipamentos: { arma: ARMA },
+      atributos: ATRIBUTOS,
+    });
+    expect(c.tituloDoSlot(ARMA)).toBe("Espada de Duas Mãos · +12 · Grau A");
+    expect(c.tituloDoSlot(undefined)).toBeNull();
+
+    c.editandoId = "p-dk";
+    const envio = c.salvarFicha(ficha);
+    const pedido = http.expectOne("/api/vinculo/personagens/p-dk");
+    expect(pedido.request.body).toEqual(
+      jasmine.objectContaining({ equipamentos: { arma: ARMA }, atributos: ATRIBUTOS }),
+    );
+    pedido.flush({});
+    await esperar();
+    http.expectOne("/api/vinculo").flush(SITUACAO);
+    http.expectOne("/api/vinculo/classes").flush([]);
+    await envio;
+  });
+});
+
+describe("SimuladorComponent (D57)", () => {
+  async function abrir(personagem: string | null = null) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideNoopAnimations(),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap(personagem ? { personagem } : {}) } },
+        },
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const f = TestBed.createComponent(SimuladorComponent);
+    f.detectChanges();
+    http.expectOne("/api/vinculo").flush(SITUACAO);
+    http.expectOne("/api/simulador/alvos").flush(ALVOS);
+    await esperar();
+    f.detectChanges();
+    return { f, c: f.componentInstance, http };
+  }
+
+  it("diz que é uma estimativa e lista o que fica de fora", async () => {
+    const { f } = await abrir();
+    const pagina = f.nativeElement as HTMLElement;
+    expect(pagina.querySelector('[data-testid="aviso-estimativa"]')?.textContent).toContain("estimativa");
+    const fora = pagina.querySelector('[data-testid="nao-considera"]')?.textContent ?? "";
+    for (const linha of NAO_CONSIDERA) expect(fora).toContain(linha);
+    expect(pagina.querySelector('[data-testid="resultado"]')).toBeNull();
+  });
+
+  it("parte da build do personagem pedido na URL", async () => {
+    const { f, c } = await abrir("p-dk");
+    expect(c.personagemId()).toBe("p-dk");
+    expect(c.atacante).toEqual({
+      nivelBase: 250,
+      str: 142,
+      dex: 66,
+      int: 0,
+      luk: 50,
+      pow: 100,
+      spl: 0,
+      con: 50,
+    });
+    expect(c.arma.refino).toBe(12);
+    expect(c.elementoAtaque).toBe("FOGO");
+    expect(texto(f)).toContain("Arma: Espada de Duas Mãos +12 · Grau A.");
+    expect(texto(f)).toContain("Habilidade da build: Dragonic Breath nv. 10.");
+  });
+
+  it("ficha antiga, sem atributos, só traz o nível e pede a importação", async () => {
+    const { c } = await abrir("p-antigo");
+    expect(c.atacante).toEqual({ nivelBase: 200, str: 0, dex: 0, int: 0, luk: 0, pow: 0, spl: 0, con: 0 });
+    expect(c.arma.refino).toBe(0);
+    expect(c.notaDaBuild()).toContain("não tem os atributos da build");
+  });
+
+  it("escolher instância e chefe preenche o alvo e mostra a fonte; instância sem chefes avisa", async () => {
+    const { f, c } = await abrir();
+    c.escolherInstancia("i-covil");
+    f.detectChanges();
+    expect((f.nativeElement as HTMLElement).querySelector('[data-testid="sem-chefes"]')).not.toBeNull();
+    c.escolherInstancia("i-torre");
+    c.escolherChefe(20996);
+    f.detectChanges();
+    expect(c.alvo).toEqual({
+      nome: "Naght Sieger",
+      nivel: 250,
+      hp: 300_000_000,
+      def: 410,
+      mdef: 80,
+      vit: 90,
+      int: 220,
+      res: 300,
+      mres: 200,
+      tamanho: "GRANDE",
+      elemento: "FANTASMA",
+      nivelElemento: 3,
+      danoRecebidoPct: 100,
+    });
+    expect(c.idMonstro).toBe(20996);
+    const nota =
+      (f.nativeElement as HTMLElement).querySelector('[data-testid="nota-alvo"]')?.textContent ?? "";
+    expect(nota).toContain("não conferidos no LATAM");
+    expect(nota).toContain("Raça: Demônio.");
+    expect(texto(f)).toContain("Andar 25.");
+  });
+
+  it("busca um monstro pelo ID e avisa o que a fonte não trouxe", async () => {
+    const { c, http } = await abrir();
+    c.idMonstro = 1002;
+    const busca = c.buscarMonstro();
+    http.expectOne("/api/simulador/monstros/1002").flush({
+      ...NAGHT,
+      idJogo: 1002,
+      nome: "Poring",
+      origem: "DIVINE_PRIDE",
+      servidor: "LATAM",
+      vit: null,
+      int: null,
+      res: null,
+      mres: null,
+      danoRecebidoPct: null,
+    });
+    await busca;
+    expect(c.alvo).toEqual(
+      jasmine.objectContaining({ nome: "Poring", vit: null, res: null, danoRecebidoPct: 100 }),
+    );
+    expect(c.notaDoAlvo()).toContain("Atributos da Divine Pride (servidor LATAM).");
+    expect(c.notaDoAlvo()).toContain("A fonte não trouxe: VIT, INT, RES, RESM.");
+
+    c.idMonstro = 5;
+    const falha = c.buscarMonstro();
+    http
+      .expectOne("/api/simulador/monstros/5")
+      .flush(
+        { message: "Monstro não encontrado na Divine Pride." },
+        { status: 404, statusText: "Not Found" },
+      );
+    await falha;
+    expect(c.erro()).toContain("Monstro não encontrado");
+  });
+
+  it("envia a simulação com os campos em branco como zero e mostra o resultado", async () => {
+    const { f, c, http } = await abrir("p-dk");
+    c.escolherInstancia("i-torre");
+    c.escolherChefe(20996);
+    c.arma = { tipo: "ESPADA_DUAS_MAOS", ataque: 300, nivel: 4, refino: 12 };
+    c.habilidade = { pct: 500, acertos: 3 };
+    c.bonusFisico.racaPct = 20;
+    c.alvo.vit = null;
+    const envio = c.simular();
+    const pedido = http.expectOne("/api/simulador/simular");
+    expect(pedido.request.body).toEqual({
+      tipo: "FISICO",
+      atacante: { nivelBase: 250, str: 142, dex: 66, int: 0, luk: 50, pow: 100, spl: 0, con: 50 },
+      arma: { tipo: "ESPADA_DUAS_MAOS", ataque: 300, nivel: 4, refino: 12 },
+      elementoAtaque: "FOGO",
+      bonus: jasmine.objectContaining({ racaPct: 20, atkPct: 0, ignoraPenalidadeDeTamanho: false }),
+      habilidade: { pct: 500, acertos: 3 },
+      alvo: {
+        nivel: 250,
+        def: 410,
+        mdef: 80,
+        vit: 0,
+        int: 220,
+        res: 300,
+        mres: 200,
+        tamanho: "GRANDE",
+        elemento: "FANTASMA",
+        nivelElemento: 3,
+        danoRecebidoPct: 100,
+        hp: 300_000_000,
+      },
+    });
+    const resposta: RespostaSimulacao = {
+      tipo: "FISICO",
+      porAcerto: { minimo: 1000, maximo: 2000, medio: 1500 },
+      total: { minimo: 3000, maximo: 6000, medio: 4500 },
+      detalhe: {
+        ataqueDeAtributos: 700,
+        ataqueDaArma: { minimo: 500, maximo: 800 },
+        amplificacao: 43,
+        modificadorElementalPct: 100,
+        penalidadeDeTamanhoPct: 100,
+        defesa: 410,
+        passaPelaDefesaPct: 54.44,
+        defesaDeAtributos: 170,
+        resistencia: 300,
+        passaPelaResistenciaPct: 65.71,
+      },
+      contraHp: {
+        hp: 300_000_000,
+        pctMinimo: 0.001,
+        pctMaximo: 0.002,
+        usosMinimo: 50_000,
+        usosMaximo: 100_000,
+      },
+    };
+    pedido.flush(resposta);
+    await envio;
+    f.detectChanges();
+    const resultado =
+      (f.nativeElement as HTMLElement).querySelector('[data-testid="resultado"]')?.textContent ?? "";
+    expect(resultado).toContain("Resultado estimado");
+    expect(resultado.replace(/\s+/g, " ")).toMatch(/3[.,]000 a 6[.,]000/);
+    expect(resultado).toContain("sem contar cura nem regeneração");
+  });
+
+  it("no dano mágico envia os bônus mágicos; erro da API aparece e limpa o resultado", async () => {
+    const { c, http } = await abrir();
+    c.tipo = "MAGICO";
+    c.bonusMagico.matkPct = 30;
+    const envio = c.simular();
+    const pedido = http.expectOne("/api/simulador/simular");
+    expect(pedido.request.body.bonus).toEqual(jasmine.objectContaining({ matkPct: 30, ignorarMdefPct: 0 }));
+    expect(pedido.request.body.alvo.hp).toBeUndefined();
+    pedido.flush(
+      { message: "Nível do alvo deve ser um número inteiro entre 1 e 999." },
+      { status: 400, statusText: "Bad Request" },
+    );
+    await envio;
+    expect(c.erro()).toContain("Nível do alvo");
+    expect(c.resultado()).toBeNull();
+  });
+});

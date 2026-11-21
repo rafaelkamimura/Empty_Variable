@@ -14,6 +14,7 @@ import {
 import { MULTIPLICADORES_TORRE_V1 } from "@betel/scoring";
 import { CODIGO_TORRE, PREFIXO_BROWIKI } from "../instancias/instancias.service.js";
 import { REFERENCIA_BROWIKI } from "../instancias/referencia-browiki.js";
+import { CHEFES_DE_REFERENCIA } from "../simulador/chefes-referencia.js";
 
 /** D22: a taxa da loja existe como parâmetro e começa em 0%. */
 export const TAXA_CONSIGNACAO_V1_BP = 0;
@@ -29,6 +30,8 @@ export interface ResultadoSeed {
   catalogoEpico3: boolean;
   receitas: boolean;
   instanciasBrowiki: boolean;
+  /** D57: chefes de instância e monstros de referência da simulação de dano. */
+  chefes: boolean;
 }
 
 /** Código estável de uma instância do catálogo da browiki (ex.: "BROWIKI_GLASTHEIM_SOMBRIA"). */
@@ -213,6 +216,56 @@ export class SeedService implements OnApplicationBootstrap {
     return true;
   }
 
+  /**
+   * D57: cadastra os chefes de referência nas instâncias que existem e guarda os atributos citados
+   * de cada monstro. Só cria o que falta: um chefe que o gestor removeu fica desativado e não volta,
+   * e atributos já guardados (da Divine Pride ou da própria referência) não são alterados.
+   */
+  private async garantirChefes(tx: Tx): Promise<boolean> {
+    let mudou = false;
+    for (const chefe of CHEFES_DE_REFERENCIA) {
+      const instancia = await tx.instancia.findUnique({
+        where: { codigo: chefe.instancia },
+        select: { id: true },
+      });
+      if (instancia !== null) {
+        const criado = await tx.chefeInstancia.createMany({
+          data: [
+            {
+              instanciaId: instancia.id,
+              idMonstro: chefe.idMonstro,
+              nome: chefe.nome,
+              observacao: chefe.observacao,
+              fonte: chefe.fonte,
+            },
+          ],
+          skipDuplicates: true,
+        });
+        if (criado.count > 0) mudou = true;
+      }
+      const { fonte, hp, int, ...atributos } = chefe.monstro;
+      const guardado = await tx.monstro.createMany({
+        data: [
+          {
+            idJogo: chefe.idMonstro,
+            nome: chefe.nome,
+            existe: true,
+            origem: "REFERENCIA",
+            fonte,
+            hp: BigInt(hp),
+            inteligencia: int,
+            chefe: true,
+            ...atributos,
+            buscadoEm: new Date(),
+          },
+        ],
+        skipDuplicates: true,
+      });
+      if (guardado.count > 0) mudou = true;
+    }
+    return mudou;
+  }
+
   async aplicar(): Promise<ResultadoSeed> {
     return this.prisma.$transaction(async (tx) => {
       // Trava para duas instâncias subindo juntas não semearem em dobro.
@@ -226,6 +279,7 @@ export class SeedService implements OnApplicationBootstrap {
         catalogoEpico3: false,
         receitas: false,
         instanciasBrowiki: false,
+        chefes: false,
       };
 
       if ((await tx.configPontuacao.count()) === 0) {
@@ -282,6 +336,7 @@ export class SeedService implements OnApplicationBootstrap {
       if ((await tx.receita.count()) === 0) {
         r.receitas = await this.semearReceitas(tx);
       }
+      r.chefes = await this.garantirChefes(tx);
       return r;
     });
   }

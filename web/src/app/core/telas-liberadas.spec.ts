@@ -23,6 +23,11 @@ describe("Telas liberadas", () => {
     expect(telaLiberada("/farm")).toBeTrue();
   });
 
+  it("libera a simulação de dano (D57)", () => {
+    expect(liberadas).toContain("simulador");
+    expect(telaLiberada("/simulador?personagem=abc")).toBeTrue();
+  });
+
   it("mantém de fora a correção de run e as demais telas de gestão", () => {
     for (const path of [
       "gestao",
