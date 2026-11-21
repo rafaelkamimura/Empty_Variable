@@ -5,7 +5,8 @@ import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatDialog, MatDialogModule, type MatDialogRef } from "@angular/material/dialog";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, RouterLink } from "@angular/router";
+import { detalhesDoEquipamento, refinoEGrau, resumoDosAtributos } from "../core/build";
 import { ImagemItemComponent } from "../core/imagem-item.component";
 import { agruparClasses } from "../core/grupos-classes";
 import { iconeDaClasse } from "../core/icones-classes";
@@ -13,7 +14,9 @@ import { firstValueFrom } from "rxjs";
 import { EquipamentoSelectComponent, EquipamentosLatam } from "../core/equipamento-select.component";
 import { AuthService } from "../core/auth.service";
 import {
+  type AtributosBuild,
   type EquipamentoFicha,
+  type ItemEquipamento,
   mensagemDeErro,
   type PersonagemResumo,
   type SituacaoVinculo,
@@ -32,13 +35,17 @@ interface Ficha {
   nivelBase: number | null;
   build: string;
   equipamentos: Partial<Record<string, EquipamentoFicha>>;
+  /** D57: atributos da build importada; fichas sem importação não têm o campo. */
+  atributos?: AtributosBuild;
 }
 /** D55: resposta de POST /api/vinculo/build-simulador. */
 export interface BuildImportada {
   classeId: string | null;
   classeNome: string | null;
   nivelBase: number | null;
-  equipamentos: Partial<Record<string, { id: number; nome: string | null }>>;
+  equipamentos: Partial<Record<string, Omit<ItemEquipamento, "nome"> & { nome: string | null }>>;
+  /** D57: atributos, talentos, nível de classe e habilidade da build. */
+  atributos?: AtributosBuild;
 }
 /** Frase que confirma o que a importação preencheu e o que ficou para o membro escolher. */
 export function resumoDaImportacao(build: BuildImportada, equipamentos: number): string {
@@ -75,6 +82,7 @@ const SLOTS = [
   selector: "app-vinculo",
   imports: [
     FormsModule,
+    RouterLink,
     DatePipe,
     NgTemplateOutlet,
     MatCardModule,
@@ -306,6 +314,25 @@ const SLOTS = [
                     [ngTemplateOutlet]="importarFicha"
                     [ngTemplateOutletContext]="{ $implicit: ficha }"
                   />
+                  @if (resumoDosAtributos(ficha.atributos); as linhas) {
+                    @if (linhas.length) {
+                      <div class="atributos-build" data-testid="atributos-build">
+                        @for (linha of linhas; track linha) {
+                          <span>{{ linha }}</span>
+                        }
+                      </div>
+                    }
+                  }
+                  @if (editandoId) {
+                    <a
+                      class="link-simular"
+                      routerLink="/simulador"
+                      [queryParams]="{ personagem: editandoId }"
+                      mat-dialog-close
+                    >
+                      Simular dano contra um chefe
+                    </a>
+                  }
                 }
               }
               @if (erroFicha(); as mensagem) {
@@ -395,8 +422,8 @@ const SLOTS = [
             {{ importando() ? "Lendo build…" : "Importar build" }}
           </button>
           <small id="ajuda-importar-build">
-            Preenche a classe, o n&iacute;vel e os equipamentos com os da simula&ccedil;&atilde;o (link
-            completo ou curto). Refino, cartas e encantamentos n&atilde;o entram.
+            Preenche a classe, o n&iacute;vel, os equipamentos (com refino, grau, cartas e encantamentos) e os
+            atributos com os da simula&ccedil;&atilde;o (link completo ou curto).
           </small>
           @if (avisoImportacao(); as aviso) {
             <p class="aviso-importacao" role="status">{{ aviso }}</p>
@@ -413,9 +440,12 @@ const SLOTS = [
                 class="slot-ficha"
                 [attr.aria-pressed]="slotAtivo()[0] === slot[0]"
                 (click)="slotAtivo.set(slot)"
-                [attr.title]="nomeEquipado(ficha.equipamentos[slot[0]]) || null"
+                [attr.title]="tituloDoSlot(ficha.equipamentos[slot[0]])"
               >
                 <span class="slot-arte" aria-hidden="true">
+                  @if (itemEquipado(ficha.equipamentos[slot[0]])?.refino; as refino) {
+                    <span class="slot-refino">+{{ refino }}</span>
+                  }
                   @if (itemEquipado(ficha.equipamentos[slot[0]]); as item) {
                     <app-imagem-item [idJogo]="item.id" [nome]="item.nome" [tamanho]="26" />
                   } @else {
@@ -434,6 +464,9 @@ const SLOTS = [
                 [valor]="ficha.equipamentos[slot[0]]"
                 (mudou)="alterarEquipamento(ficha, slot[0], $event)"
               />
+              @for (linha of detalhesDoEquipamento(ficha.equipamentos[slot[0]]); track linha) {
+                <p class="slot-detalhe" [attr.title]="linha">{{ linha }}</p>
+              }
             </div>
           }
         </section>
@@ -593,6 +626,42 @@ const SLOTS = [
     .rejeitada {
       border-left: 4px solid var(--mat-sys-error, #b3261e);
     }
+    .slot-arte {
+      position: relative;
+    }
+    .slot-refino {
+      position: absolute;
+      right: -5px;
+      bottom: -5px;
+      padding: 0 3px;
+      border-radius: 4px;
+      background: #302b22;
+      color: #f6e6bb;
+      font-size: 10px;
+      line-height: 14px;
+    }
+    .slot-detalhe {
+      margin: 4px 0 0;
+      overflow: hidden;
+      color: var(--texto-suave);
+      font-size: 12px;
+      line-height: 16px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .atributos-build {
+      display: grid;
+      gap: 2px;
+      margin-top: 10px;
+      color: var(--texto-suave);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    .link-simular {
+      display: inline-block;
+      margin-top: 10px;
+      color: var(--acento-forte);
+    }
   `,
 })
 export class VinculoComponent implements OnInit {
@@ -631,6 +700,8 @@ export class VinculoComponent implements OnInit {
 
   readonly filaAprovacoes = inject(ActivatedRoute).snapshot.data["filaAprovacoes"] === true;
   readonly iconeDaClasse = iconeDaClasse;
+  readonly detalhesDoEquipamento = detalhesDoEquipamento;
+  readonly resumoDosAtributos = resumoDosAtributos;
 
   async ngOnInit(): Promise<void> {
     await this.recarregar();
@@ -698,6 +769,12 @@ export class VinculoComponent implements OnInit {
     return typeof valor === "string" ? valor : valor?.nome;
   }
 
+  /** Nome do equipamento com refino e grau, para a dica do slot; null se o slot está vazio. */
+  tituloDoSlot(valor: EquipamentoFicha | undefined): string | null {
+    const nome = this.nomeEquipado(valor);
+    return nome ? [nome, refinoEGrau(valor)].filter((parte) => parte !== "").join(" · ") : null;
+  }
+
   alterarEquipamento(ficha: Ficha, slot: string, valor: EquipamentoFicha | undefined): void {
     if (valor === undefined) delete ficha.equipamentos[slot];
     else ficha.equipamentos[slot] = valor;
@@ -711,6 +788,7 @@ export class VinculoComponent implements OnInit {
           nivelBase: char.nivelBase ?? null,
           build: char.build ?? "",
           equipamentos: { ...char.equipamentos },
+          ...(char.atributos && Object.keys(char.atributos).length ? { atributos: char.atributos } : {}),
         }
       : novaFicha();
     this.abrirModal(ficha, true, char?.id ?? null);
@@ -748,7 +826,8 @@ export class VinculoComponent implements OnInit {
 
   /**
    * D55: preenche a ficha aberta com a classe, o nível e os equipamentos de um link do simulador.
-   * Os equipamentos da build substituem os da ficha; nada é salvo até o membro confirmar.
+   * D57: cada equipamento vem com refino, grau, cartas e encantamentos, e a build traz os atributos.
+   * Os equipamentos e os atributos da build substituem os da ficha; nada é salvo até o membro confirmar.
    */
   async importarBuild(ficha: Ficha): Promise<void> {
     const link = this.linkSimulador.trim();
@@ -768,9 +847,11 @@ export class VinculoComponent implements OnInit {
       for (const [slot, item] of Object.entries(build.equipamentos)) {
         if (!item) continue;
         const nome = this.catalogoEquipamentos.nomeDoItem(slot, item.id) ?? item.nome ?? `Item ${item.id}`;
-        equipamentos[slot] = { id: item.id, nome };
+        equipamentos[slot] = { ...item, nome };
       }
       ficha.equipamentos = equipamentos;
+      if (build.atributos && Object.keys(build.atributos).length) ficha.atributos = build.atributos;
+      else delete ficha.atributos;
       this.linkSimulador = "";
       this.avisoImportacao.set(resumoDaImportacao(build, Object.keys(equipamentos).length));
     } catch (erro) {
@@ -786,7 +867,7 @@ export class VinculoComponent implements OnInit {
     const vinculada = this.fichaVinculada;
     const pedido = this.situacao()?.solicitacao;
     const nomeAnterior = this.nomeAnterior;
-    const corpo = { ...ficha, nome: ficha.nome.trim().normalize("NFC") };
+    const corpo = { ...ficha, atributos: ficha.atributos ?? {}, nome: ficha.nome.trim().normalize("NFC") };
     const dialog = this.dialogFicha;
     this.erroFicha.set(null);
     this.enviando.set(true);

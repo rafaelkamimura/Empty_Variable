@@ -146,6 +146,8 @@ model Personagem {
   nivelBase    Int?    @map("nivel_base")
   build        String?
   equipamentos Json    @default("{}")
+  /// D57: atributos, talentos, nível de classe e habilidade vindos da build do simulador.
+  atributos    Json    @default("{}")
   classe       Classe? @relation(fields: [classeId], references: [id], onDelete: Restrict)
 
   jogador       Jogador        @relation(fields: [jogadorId], references: [id])
@@ -799,6 +801,7 @@ model Instancia {
 
   rascunhosRun   RascunhoRun[]
   farmInstancias FarmInstancia[]
+  chefes         ChefeInstancia[]
 
   @@map("instancia")
 }
@@ -1070,4 +1073,52 @@ model NomeItemDivinePride {
   buscadoEm DateTime @map("buscado_em") @db.Timestamptz(3)
 
   @@map("nome_item_divine_pride")
+}
+
+/// D57: atributos de um monstro pelo ID do jogo. Vêm da API da Divine Pride (com a chave, buscados uma
+/// vez por ID e guardados) ou de uma referência citada em `fonte`. `existe = false` marca um ID que a
+/// Divine Pride não conhece; é revisto depois de uma semana. Campos nulos são os que a fonte não trouxe.
+model Monstro {
+  idJogo          Int      @id @map("id_jogo")
+  nome            String?
+  existe          Boolean
+  /// DIVINE_PRIDE (API) ou REFERENCIA (dados citados no código, a confirmar).
+  origem          String
+  servidor        String?
+  fonte           String?
+  nivel           Int?
+  hp              BigInt?
+  def             Int?
+  mdef            Int?
+  vit             Int?
+  inteligencia    Int?
+  res             Int?
+  mres            Int?
+  raca            String?
+  tamanho         String?
+  elemento        String?
+  nivelElemento   Int?     @map("nivel_elemento")
+  chefe           Boolean?
+  danoRecebidoPct Int?     @map("dano_recebido_pct")
+  buscadoEm       DateTime @map("buscado_em") @db.Timestamptz(3)
+
+  @@map("monstro")
+}
+
+/// D57: chefe (monstro, pelo ID do jogo) de uma instância do catálogo. Remover só desativa, para a
+/// referência inicial não voltar sozinha.
+model ChefeInstancia {
+  id          String   @id @default(uuid()) @db.Uuid
+  instanciaId String   @map("instancia_id") @db.Uuid
+  idMonstro   Int      @map("id_monstro")
+  nome        String
+  observacao  String?
+  fonte       String?
+  ativo       Boolean  @default(true)
+  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  instancia Instancia @relation(fields: [instanciaId], references: [id], onDelete: Cascade)
+
+  @@unique([instanciaId, idMonstro])
+  @@map("chefe_instancia")
 }
