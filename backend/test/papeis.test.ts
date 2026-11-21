@@ -8,7 +8,6 @@ const GESTAO = [
   "/api/runs",
   "/api/saldos",
   "/api/jogadores",
-  "/api/vinculo/solicitacoes",
   "/api/classes",
   "/api/config-pontuacao",
   "/api/config-pontuacao/vigente",
@@ -17,8 +16,9 @@ const GESTAO = [
   "/api/painel/gestao",
 ];
 
-/** Rotas de leitura da Administração: só o admin. */
+/** Rotas de leitura da Administração: só o admin. A fila de vínculos fica com os admins (D40). */
 const ADMINISTRACAO = [
+  "/api/vinculo/solicitacoes",
   "/api/estoque",
   "/api/estoque/movimentos",
   "/api/compras",
