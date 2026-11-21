@@ -1,6 +1,8 @@
 // D57: a ficha mostra refino, grau, cartas e encantamentos, e a tela de simulação parte da build.
 // D59: com a build importada na ficha, a simulação calcula os efeitos dos itens e mostra o que foi
 // aplicado e o que foi ignorado.
+// D61: a tela do simulador completo troca a build e o alvo com a interface do simulador pelo
+// armazenamento do navegador.
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { type ComponentFixture, TestBed } from "@angular/core/testing";
@@ -16,6 +18,13 @@ import {
   type RespostaSimulacao,
   SimuladorComponent,
 } from "./simulador.component";
+import {
+  CHAVE_BUILD,
+  CHAVE_MONSTRO,
+  CHAVE_PERSONAGEM_ABERTO,
+  type InstanciaDoHub,
+  SimuladorHubComponent,
+} from "./simulador-hub.component";
 import { VinculoComponent } from "./vinculo.component";
 
 const esperar = () => new Promise((r) => setTimeout(r));
@@ -606,5 +615,141 @@ describe("SimuladorComponent: efeitos dos equipamentos da build (D59)", () => {
     expect(pedido.request.body.personagemId).toBeUndefined();
     pedido.flush({}, { status: 400, statusText: "Bad Request" });
     await envio;
+  });
+});
+
+describe("SimuladorHubComponent (D61)", () => {
+  const CHAVES = [CHAVE_BUILD, CHAVE_MONSTRO, CHAVE_PERSONAGEM_ABERTO, "ro-set-compare"];
+  const INSTANCIAS: InstanciaDoHub[] = [
+    { id: "i-covil", nome: "Covil de Vermes", nivelMinimo: 140, chefes: [] },
+    {
+      id: "i-torre",
+      nome: "Torre da Constelação",
+      nivelMinimo: 240,
+      chefes: [
+        {
+          idMonstro: 990001,
+          nome: "Rainha Verme",
+          observacao: null,
+          fonte: null,
+          monstro: null,
+          noSimulador: false,
+        },
+        {
+          idMonstro: 20996,
+          nome: "Naght Sieger",
+          observacao: null,
+          fonte: null,
+          monstro: NAGHT,
+          noSimulador: true,
+        },
+      ],
+    },
+  ];
+
+  async function abrir(personagem: string | null = null) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideNoopAnimations(),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap(personagem ? { personagem } : {}) } },
+        },
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const f = TestBed.createComponent(SimuladorHubComponent);
+    f.detectChanges();
+    http.expectOne("/api/vinculo").flush(SITUACAO);
+    http.expectOne("/api/simulador/alvos").flush({ divinePride: false, instancias: INSTANCIAS });
+    http
+      .match((pedido) => pedido.url.endsWith("simulador-latam/origem.json"))
+      .forEach((p) => p.flush({ imagens: null }));
+    await esperar();
+    f.detectChanges();
+    return { f, c: f.componentInstance, http };
+  }
+
+  beforeEach(() => CHAVES.forEach((chave) => localStorage.removeItem(chave)));
+  afterEach(() => CHAVES.forEach((chave) => localStorage.removeItem(chave)));
+
+  it("carrega o simulador servido pelo sistema e só lista instâncias com chefes", async () => {
+    const { f, c } = await abrir();
+    const quadro = (f.nativeElement as HTMLElement).querySelector("iframe");
+    expect(quadro?.getAttribute("src")).toContain("simulador-latam/index.html");
+    expect(c.instancias().map((i) => i.nome)).toEqual(["Torre da Constelação"]);
+    expect(c.chefeId()).toBe(20996);
+    expect(c.personagemId()).toBe("p-antigo");
+    expect(texto(f)).toContain("licença MIT");
+  });
+
+  it("abre a build do personagem pedido na URL: grava o rascunho do simulador e limpa a comparação", async () => {
+    localStorage.setItem("ro-set-compare", "{}");
+    const { f, c, http } = await abrir("p-sage");
+    http.expectOne("/api/simulador/personagens/p-sage/build").flush({
+      personagem: { id: "p-sage", nome: "Ana-Sage" },
+      build: { class: 8, level: 105 },
+      avisos: ["aviso"],
+    });
+    await esperar();
+    f.detectChanges();
+    expect(JSON.parse(localStorage.getItem(CHAVE_BUILD) ?? "")).toEqual({ class: 8, level: 105 });
+    expect(localStorage.getItem("ro-set-compare")).toBeNull();
+    expect(localStorage.getItem(CHAVE_PERSONAGEM_ABERTO)).toBe("p-sage");
+    expect(c.nota()).toBe("Build de Ana-Sage aberta no simulador.");
+    expect(c.avisos()).toEqual(["aviso"]);
+  });
+
+  it("aponta o chefe como alvo do simulador; chefe fora do simulador não pode ser escolhido", async () => {
+    const { c } = await abrir();
+    c.usarAlvo();
+    expect(localStorage.getItem(CHAVE_MONSTRO)).toBe("20996");
+    expect(c.nota()).toBe("Alvo do simulador: Naght Sieger.");
+    c.chefeId.set(990001);
+    expect(c.chefeNoSimulador()).toBeFalse();
+    c.usarAlvo();
+    expect(localStorage.getItem(CHAVE_MONSTRO)).toBe("20996");
+  });
+
+  it("grava na ficha a build que está no simulador e pede confirmação se ela veio de outro personagem", async () => {
+    const { c, http } = await abrir();
+    await c.salvar();
+    expect(c.erro()).toContain("ainda não tem uma build");
+
+    localStorage.setItem(CHAVE_BUILD, JSON.stringify({ class: 8, level: 110 }));
+    localStorage.setItem(CHAVE_PERSONAGEM_ABERTO, "p-dk");
+    c.personagemId.set("p-sage");
+    const confirmar = spyOn(window, "confirm").and.returnValue(false);
+    await c.salvar();
+    expect(confirmar).toHaveBeenCalledTimes(1);
+    http.expectNone("/api/simulador/personagens/p-sage/build");
+
+    confirmar.and.returnValue(true);
+    const envio = c.salvar();
+    const pedido = http.expectOne("/api/simulador/personagens/p-sage/build");
+    expect(pedido.request.method).toBe("POST");
+    expect(pedido.request.body).toEqual({ build: { class: 8, level: 110 } });
+    pedido.flush({
+      personagem: { id: "p-sage", nome: "Ana-Sage", nivelBase: 110, classe: "Feiticeiro" },
+      equipamentos: 9,
+      buildInteira: true,
+      avisos: [],
+    });
+    await envio;
+    expect(c.nota()).toBe("Ficha de Ana-Sage atualizada: Feiticeiro, nível 110, 9 equipamento(s).");
+    expect(localStorage.getItem(CHAVE_PERSONAGEM_ABERTO)).toBe("p-sage");
+
+    const falha = c.salvar();
+    http
+      .expectOne("/api/simulador/personagens/p-sage/build")
+      .flush(
+        { message: "O simulador não devolveu uma build válida." },
+        { status: 400, statusText: "Bad Request" },
+      );
+    await falha;
+    expect(c.erro()).toContain("não devolveu uma build válida");
   });
 });

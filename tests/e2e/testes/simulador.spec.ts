@@ -2,6 +2,9 @@
 // preenche o ataque e vê a estimativa, no computador e no celular.
 // D59: com a build importada na ficha, o resultado traz os efeitos dos equipamentos e lista o que
 // foi aplicado e o que foi ignorado.
+// D61: /simulador abre o simulador completo (a interface da latam-tools servida pelo próprio
+// sistema) com a build da ficha, aponta um chefe como alvo e grava a build mudada de volta na ficha.
+// A estimativa à mão fica em /simulador/estimativa.
 import { type APIResponse, type Page, expect, test } from "@playwright/test";
 import { ORIGEM } from "../playwright.config";
 
@@ -10,6 +13,7 @@ const MEMBRO = { discordId: "900000000000000571", username: "membro-simulador" }
 /** Sufixo por execução: o teste pode rodar de novo no mesmo banco. */
 const N = String(Date.now()).slice(-6);
 const SAGE = { discordId: `9000000059${N}`, username: `sage-simulador-${N}` };
+const HUB = { discordId: `9000000061${N}`, username: `hub-simulador-${N}` };
 const headers = { Origin: ORIGEM };
 
 /** Token do link https://short.latam-tools.com.br/Ukxuq4: Feiticeiro 105/50 com Lanças de Fogo nv. 10. */
@@ -49,12 +53,91 @@ async function ok<T>(r: Promise<APIResponse>, status: number): Promise<T> {
   return (await resposta.json()) as T;
 }
 
+/**
+ * Prepara pela API um jogador vinculado ao usuário, com a build do link de exemplo importada na
+ * ficha do personagem, e deixa a sessão desse usuário aberta.
+ * @returns ID do personagem
+ */
+async function membroComBuild(
+  page: Page,
+  usuario: { discordId: string; username: string },
+  personagem: string,
+): Promise<string> {
+  await entrar(page, ADMIN);
+  const jogador = await ok<{ id: string }>(
+    page.request.post("/api/jogadores", {
+      headers,
+      data: { apelido: personagem, personagens: [personagem] },
+    }),
+    201,
+  );
+  await entrar(page, usuario);
+  await ok(page.request.post("/api/vinculo/solicitacoes", { headers, data: { jogadorId: jogador.id } }), 201);
+  await entrar(page, ADMIN);
+  const pendentes = await ok<{ id: string; jogador: { id: string } | null }[]>(
+    page.request.get("/api/vinculo/solicitacoes?status=PENDENTE"),
+    200,
+  );
+  const pedido = pendentes.find((s) => s.jogador?.id === jogador.id);
+  if (!pedido) throw new Error("Solicitação de vínculo não encontrada");
+  await ok(page.request.post(`/api/vinculo/solicitacoes/${pedido.id}/aprovar`, { headers }), 200);
+  await entrar(page, usuario);
+  const importada = await ok<{
+    classeId: string;
+    nivelBase: number;
+    equipamentos: Record<string, { id: number; nome: string | null }>;
+    atributos: object;
+  }>(
+    page.request.post("/api/vinculo/build-simulador", {
+      headers,
+      data: { link: `https://simulador.latam-tools.com.br/s/${TOKEN_FEITICEIRO}/` },
+    }),
+    200,
+  );
+  const ficha = (await fichas(page)).find((p) => p.nome === personagem);
+  if (!ficha) throw new Error("Personagem não encontrado no vínculo");
+  await ok(
+    page.request.patch(`/api/vinculo/personagens/${ficha.id}`, {
+      headers,
+      data: {
+        nome: personagem,
+        classeId: importada.classeId,
+        nivelBase: importada.nivelBase,
+        build: "",
+        equipamentos: Object.fromEntries(
+          Object.entries(importada.equipamentos).map(([slot, item]) => [
+            slot,
+            { ...item, nome: item.nome ?? `Item ${item.id}` },
+          ]),
+        ),
+        atributos: importada.atributos,
+      },
+    }),
+    200,
+  );
+  return ficha.id;
+}
+
+interface FichaE2e {
+  id: string;
+  nome: string;
+  nivelBase: number | null;
+  equipamentos: Record<string, { id: number; refino?: number }>;
+  atributos: { token?: string };
+}
+
+/** Personagens do vínculo do usuário da sessão. */
+async function fichas(page: Page): Promise<FichaE2e[]> {
+  const situacao = await ok<{ jogador: { personagens: FichaE2e[] } }>(page.request.get("/api/vinculo"), 200);
+  return situacao.jogador.personagens;
+}
+
 test("membro simula o dano contra um chefe da Torre e vê a estimativa", async ({ page }, info) => {
   const erros: string[] = [];
   page.on("pageerror", (erro) => erros.push(erro.message));
   const campo = (nome: string) => page.getByRole("spinbutton", { name: nome, exact: true });
   await entrar(page);
-  await page.goto("/simulador");
+  await page.goto("/simulador/estimativa");
   await expect(page.getByRole("heading", { name: "Simulação de dano", level: 1 })).toBeVisible();
   await expect(page.getByTestId("aviso-estimativa")).toContainText("estimativa");
 
@@ -97,67 +180,9 @@ test("membro com a build importada vê o dano com os efeitos dos equipamentos e 
 }, info) => {
   const erros: string[] = [];
   page.on("pageerror", (erro) => erros.push(erro.message));
-  const personagem = `Sage${N}`;
+  const fichaId = await membroComBuild(page, SAGE, `Sage${N}`);
 
-  // Preparação pela API: jogador vinculado, com a build do link importada na ficha.
-  await entrar(page, ADMIN);
-  const jogador = await ok<{ id: string }>(
-    page.request.post("/api/jogadores", {
-      headers,
-      data: { apelido: `Sage${N}`, personagens: [personagem] },
-    }),
-    201,
-  );
-  await entrar(page, SAGE);
-  await ok(page.request.post("/api/vinculo/solicitacoes", { headers, data: { jogadorId: jogador.id } }), 201);
-  await entrar(page, ADMIN);
-  const pendentes = await ok<{ id: string; jogador: { id: string } | null }[]>(
-    page.request.get("/api/vinculo/solicitacoes?status=PENDENTE"),
-    200,
-  );
-  const pedido = pendentes.find((s) => s.jogador?.id === jogador.id);
-  if (!pedido) throw new Error("Solicitação de vínculo não encontrada");
-  await ok(page.request.post(`/api/vinculo/solicitacoes/${pedido.id}/aprovar`, { headers }), 200);
-  await entrar(page, SAGE);
-  const importada = await ok<{
-    classeId: string;
-    nivelBase: number;
-    equipamentos: Record<string, { id: number; nome: string | null }>;
-    atributos: object;
-  }>(
-    page.request.post("/api/vinculo/build-simulador", {
-      headers,
-      data: { link: `https://simulador.latam-tools.com.br/s/${TOKEN_FEITICEIRO}/` },
-    }),
-    200,
-  );
-  const situacao = await ok<{ jogador: { personagens: { id: string; nome: string }[] } }>(
-    page.request.get("/api/vinculo"),
-    200,
-  );
-  const ficha = situacao.jogador.personagens.find((p) => p.nome === personagem);
-  if (!ficha) throw new Error("Personagem não encontrado no vínculo");
-  await ok(
-    page.request.patch(`/api/vinculo/personagens/${ficha.id}`, {
-      headers,
-      data: {
-        nome: personagem,
-        classeId: importada.classeId,
-        nivelBase: importada.nivelBase,
-        build: "",
-        equipamentos: Object.fromEntries(
-          Object.entries(importada.equipamentos).map(([slot, item]) => [
-            slot,
-            { ...item, nome: item.nome ?? `Item ${item.id}` },
-          ]),
-        ),
-        atributos: importada.atributos,
-      },
-    }),
-    200,
-  );
-
-  await page.goto(`/simulador?personagem=${ficha.id}`);
+  await page.goto(`/simulador/estimativa?personagem=${fichaId}`);
   await expect(page.getByRole("checkbox", { name: /Calcular os efeitos dos equipamentos/ })).toBeChecked();
   await expect(page.getByTestId("nota-efeitos")).toBeVisible();
   await expect(page.getByRole("spinbutton", { name: "FOR", exact: true })).toBeHidden();
@@ -195,5 +220,69 @@ test("membro com a build importada vê o dano com os efeitos dos equipamentos e 
 
   await page.getByRole("checkbox", { name: /Calcular os efeitos dos equipamentos/ }).uncheck();
   await expect(page.getByRole("spinbutton", { name: "FOR", exact: true })).toBeVisible();
+  expect(erros).toEqual([]);
+});
+
+test("membro abre a build no simulador completo, troca o alvo, muda o nível e grava na ficha", async ({
+  page,
+}, info) => {
+  const erros: string[] = [];
+  page.on("pageerror", (erro) => erros.push(erro.message));
+  // O simulador servido pelo sistema não pode depender de outro servidor: qualquer pedido dele para
+  // fora é cortado e anotado. O site da latam-tools não participa deste teste.
+  const pedidosParaFora: string[] = [];
+  await page.route(
+    (url) => url.origin !== ORIGEM,
+    (rota) => {
+      if (rota.request().frame().url().includes("/simulador-latam/"))
+        pedidosParaFora.push(rota.request().url());
+      return rota.abort();
+    },
+  );
+  const personagem = `Hub${N}`;
+  const fichaId = await membroComBuild(page, HUB, personagem);
+
+  await page.goto(`/simulador?personagem=${fichaId}`);
+  await expect(page.getByRole("heading", { name: "Simulador de dano", level: 1 })).toBeVisible();
+  await expect(page.getByTestId("hub-nota")).toHaveText(`Build de ${personagem} aberta no simulador.`);
+  const simulador = page.frameLocator('[data-testid="quadro"]');
+  await expect(simulador.locator("#ro-splash")).toHaveCount(0, { timeout: 30_000 });
+  await expect(simulador.getByRole("combobox", { name: "Classe" })).toContainText("Feiticeiro");
+  await expect(simulador.locator("#level")).toHaveText("105");
+  await expect(simulador.locator("body")).toContainText("Livro Feiticeiro do Éden");
+
+  // Mesmos números lidos em https://simulador.latam-tools.com.br/ (0.1.228-beta) em 2026-11-21 para
+  // este link contra o Naght Sieger: 75 a 185 de dano e 1.300 por uso.
+  await page.locator('select[name="instancia"]').selectOption({ label: "Torre da Constelação" });
+  await page.locator('select[name="chefe"]').selectOption({ label: "Naght Sieger" });
+  await page.getByTestId("usar-alvo").click();
+  await expect(page.getByTestId("hub-nota")).toHaveText("Alvo do simulador: Naght Sieger.");
+  await expect(simulador.locator("body")).toContainText("250 Naght Sieger", { timeout: 30_000 });
+  await expect(simulador.locator("body")).toContainText("Lanças de Fogo");
+  await expect(simulador.locator("body")).toContainText("75 – 185");
+  await expect(simulador.locator("body")).toContainText("1.300");
+  await page.screenshot({ path: info.outputPath("simulador-hub-desktop.png"), fullPage: true });
+
+  await simulador.locator("#level").click();
+  await simulador.getByRole("option", { name: "110", exact: true }).click();
+  await expect(simulador.locator("#level")).toHaveText("110");
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("ro-set") ?? "{}").level))
+    .toBe(110);
+  await page.getByTestId("salvar-build").click();
+  await expect(page.getByTestId("hub-nota")).toContainText(`Ficha de ${personagem} atualizada`);
+  await expect(page.getByTestId("hub-nota")).toContainText("nível 110");
+  const salva = (await fichas(page)).find((p) => p.id === fichaId);
+  expect(salva?.nivelBase).toBe(110);
+  expect(salva?.equipamentos["arma"]?.id).toBe(540031);
+  expect(salva?.atributos.token).toBeTruthy();
+
+  await page.reload();
+  await expect(simulador.locator("#ro-splash")).toHaveCount(0, { timeout: 30_000 });
+  await expect(simulador.locator("#level")).toHaveText("110");
+  await page.getByRole("link", { name: "estimativa à mão" }).click();
+  await expect(page.getByTestId("aviso-estimativa")).toBeVisible();
+
+  expect(pedidosParaFora).toEqual([]);
   expect(erros).toEqual([]);
 });

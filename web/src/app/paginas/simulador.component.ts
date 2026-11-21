@@ -2,7 +2,7 @@ import { DecimalPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, type OnInit, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, RouterLink } from "@angular/router";
 import {
   BONUS_FISICO_ZERADO,
   BONUS_MAGICO_ZERADO,
@@ -279,7 +279,7 @@ const alvoVazio = (): AlvoFormulario => ({
  */
 @Component({
   selector: "app-simulador",
-  imports: [FormsModule, DecimalPipe],
+  imports: [FormsModule, DecimalPipe, RouterLink],
   template: `
     <div class="pagina simulador">
       <header>
@@ -288,7 +288,8 @@ const alvoVazio = (): AlvoFormulario => ({
           É uma <strong>estimativa</strong>. Com a build da ficha, os efeitos dos equipamentos, cartas,
           encantamentos e conjuntos são calculados pelo motor do simulador da latam-tools, e o resultado lista
           o que foi aplicado e o que foi ignorado. À mão, só entram os bônus que você digitar. Veja no fim da
-          página o que entra na conta.
+          página o que entra na conta. Para montar e mudar a build inteira, use o
+          <a routerLink="/simulador">simulador completo</a>.
         </p>
       </header>
       @if (erro(); as mensagem) {
