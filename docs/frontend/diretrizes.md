@@ -159,6 +159,7 @@ Números (pontos, zeny, quantidades) usam `font-variant-numeric: tabular-nums` p
 - As variáveis `--mat-sys-*` são mapeadas para os tokens semânticos **num único lugar**, `styles/_material.scss`, da mesma forma que hoje ficam em `styles.scss`.
 - O tema `azure-blue.css` pré-compilado deve sair do `angular.json` quando o mapeamento estiver completo.
 - `::ng-deep` é proibido em código novo. Se um componente do Material precisa de outro visual, o ajuste é feito por token `--mat-*` no componente `shared/ui` que o envolve.
+- Quando um componente de `shared/ui` precisa estilizar conteúdo projetado (ex.: os parágrafos do `ui-como-funciona`), ele usa `ViewEncapsulation.None` com **todas** as regras escopadas na classe do próprio host (`.ui-como-funciona …`), em vez de `::ng-deep`.
 
 ---
 
@@ -296,6 +297,8 @@ O projeto usa o vocabulário do Atomic Design para decidir **o que um componente
 
 O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no código atual.
 
+**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
+
 | Componente                | Nível | Responsabilidade                                                                  | Substitui hoje                                       |
 | ------------------------- | --------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `ui-pagina`               | Template | Esqueleto de página: título, subtítulo, slot de ação principal, slot de abas e conteúdo | `.pagina`, `.cabecalho`, `.cabecalho-acoes`     |
@@ -309,10 +312,10 @@ O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no c
 | `ui-skeleton`             | Átomo | Placeholder animado de linha, cartão ou tabela                                    | "Carregando…"                                        |
 | `ui-aviso`                | Molécula | Mensagem inline com tom `info`, `sucesso`, `alerta` ou `erro`, ícone e `role` correto | `.dica` e `<p role="alert">`                     |
 | `ui-campo`                | Molécula | Rótulo, controle projetado, dica e erro, ligados por `aria-describedby`           | `.campo`, `.campo-largo`                             |
-| `ui-painel-lateral`       | Organismo | Formulário de criar e editar à direita (mover de `core/layout.ts`)                | `app-painel-lateral`                                 |
-| `ui-como-funciona`        | Molécula | Explicação recolhida (mover de `core/layout.ts`)                                  | `app-como-funciona`                                  |
+| `ui-painel-lateral`       | Organismo | Formulário de criar e editar à direita, com o foco preso e devolvido ao fechar     | `app-painel-lateral` (de `core/layout.ts`)           |
+| `ui-como-funciona`        | Molécula | Explicação recolhida                                                              | `app-como-funciona` (de `core/layout.ts`)            |
 | `ui-confirmacao`          | Organismo | Diálogo de confirmação para ações destrutivas, com descrição do efeito            | `confirm()` e confirmações ad hoc                    |
-| `table[uiTabela]`         | Organismo | Tabela responsiva (evolução da diretiva `appResponsiva`), com cabeçalho fixo e linha vazia | `.tabela`, `.tabela-responsiva`             |
+| `table[uiTabela]`         | Organismo | Tabela responsiva. É **diretiva**, porque também vai em `<table mat-table>`; o estilo fica em `tabela/tabela.scss`, escopado em `table.ui-tabela` e carregado por `styles.scss` | `appResponsiva`, `.tabela-responsiva` |
 | `ui-badge`                | Átomo | Rótulo de status com tom semântico                                                | chips de status de compra e run                      |
 | `ui-marca`                | Átomo | Logotipo `{∅_}` com o cursor animado                                              | (novo)                                               |
 | Pipes `pontos` e `zeny`   | — | Formatação pt-BR com sufixo e `tabular-nums`                                      | `number` + " pts" repetido                           |
@@ -482,7 +485,7 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 
 1. **Fundação.** *(feita)* Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `core/visual.ts` é refeito com tons da paleta.
 2. **Ferramentas.** *(feita)* Ligar as regras de lint da §8.3 (aviso no código antigo) e montar o catálogo da §8.2, para que cada peça base já nasça com exemplo.
-3. **Peças base.** Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
+3. **Peças base.** *(feita)* Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
 3. **Casca.** Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
 4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
    - loja e carteira;

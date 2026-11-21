@@ -11,14 +11,14 @@ import { MatTabsModule } from "@angular/material/tabs";
 import { firstValueFrom } from "rxjs";
 import { AuthService } from "../core/auth.service";
 import { type Jogador, mensagemDeErro, type Solicitacao } from "../core/modelos";
-import { PainelLateralComponent } from "../core/layout";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 /** Admin: fila de solicitações de vínculo (D12) e cadastro de jogadores/personagens. */
 @Component({
   selector: "app-admin-jogadores",
   imports: [
-    TabelaResponsivaDirective,
+    TabelaDirective,
     FormsModule,
     DatePipe,
     MatTabsModule,
@@ -46,7 +46,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
           @if (pendentes().length === 0) {
             <p class="texto-secundario vazio">Nenhuma solicitação pendente.</p>
           } @else {
-            <table appResponsiva mat-table [dataSource]="pendentes()" data-testid="fila">
+            <table uiTabela mat-table [dataSource]="pendentes()" data-testid="fila">
               <ng-container matColumnDef="usuario">
                 <th mat-header-cell *matHeaderCellDef>Discord</th>
                 <td mat-cell *matCellDef="let s">{{ s.usuario.globalName ?? s.usuario.discordUsername }}</td>
@@ -104,7 +104,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
         </mat-tab>
 
         <mat-tab [label]="'Jogadores (' + jogadores().length + ')'">
-          <table appResponsiva mat-table [dataSource]="jogadores()" data-testid="jogadores">
+          <table uiTabela mat-table [dataSource]="jogadores()" data-testid="jogadores">
             <ng-container matColumnDef="apelido">
               <th mat-header-cell *matHeaderCellDef>Apelido</th>
               <td mat-cell *matCellDef="let j">{{ j.apelido }}</td>
@@ -142,7 +142,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
         </mat-tab>
       </mat-tab-group>
 
-      <app-painel-lateral titulo="Novo jogador" [aberto]="cadastrando()" (fechar)="cadastrando.set(false)">
+      <ui-painel-lateral titulo="Novo jogador" [aberto]="cadastrando()" (fechar)="cadastrando.set(false)">
         <form class="formulario" (ngSubmit)="criarJogador()">
           <mat-form-field>
             <mat-label>Apelido</mat-label>
@@ -154,7 +154,7 @@ import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
           </mat-form-field>
           <button mat-flat-button type="submit" [disabled]="novoApelido.trim().length < 2">Cadastrar</button>
         </form>
-      </app-painel-lateral>
+      </ui-painel-lateral>
     </div>
   `,
   styles: `

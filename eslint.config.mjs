@@ -135,6 +135,17 @@ export default tseslint.config(
     },
   },
   {
+    // Componente de atributo de shared/ui (button[uiBotao]), §3.2: a regra só aceita um estilo
+    // de nome por vez, então este arquivo usa o do atributo (camelCase).
+    files: ["web/src/app/shared/ui/botao/botao.component.ts"],
+    rules: {
+      "@angular-eslint/component-selector": [
+        "error",
+        { type: "attribute", prefix: "ui", style: "camelCase" },
+      ],
+    },
+  },
+  {
     // HttpClient só em features/*/data/ e core/ (§4.5).
     files: SEM_HTTP_CLIENT.map((g) => `${g}/*.ts`),
     rules: { "no-restricted-imports": regraHttpClient },

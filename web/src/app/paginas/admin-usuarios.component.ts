@@ -7,7 +7,7 @@ import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
 import { AuthService } from "../core/auth.service";
 import type { Papel } from "../core/modelos";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 export interface UsuarioSistema {
   id: string;
@@ -37,7 +37,7 @@ export function bloqueioPapel(u: UsuarioSistema, eu: string | undefined): string
 /** D38: o admin define quem é gestor (ou admin). Cada troca fica na auditoria. */
 @Component({
   selector: "app-admin-usuarios",
-  imports: [DatePipe, MatSelectModule, MatSnackBarModule, TabelaResponsivaDirective],
+  imports: [DatePipe, MatSelectModule, MatSnackBarModule, TabelaDirective],
   template: `
     <div class="pagina">
       <div class="cabecalho-pagina">
@@ -54,7 +54,7 @@ export function bloqueioPapel(u: UsuarioSistema, eu: string | undefined): string
         }
       </div>
 
-      <table appResponsiva class="tabela" data-testid="usuarios">
+      <table uiTabela class="tabela" data-testid="usuarios">
         <thead>
           <tr>
             <th scope="col">Usuário</th>

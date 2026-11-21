@@ -23,7 +23,8 @@ import {
   ROTULO_RETORNO,
   situacaoInstancia,
 } from "../core/instancias";
-import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
+import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 import { mensagemDeErro } from "../core/modelos";
 import { tomDe } from "../core/visual";
 
@@ -87,7 +88,7 @@ export function deReferencia(r: ReferenciaInstancia): NovaInstancia {
         </div>
       </div>
 
-      <app-como-funciona>
+      <ui-como-funciona>
         <p>
           Pontos de uma participação = B × peso do rank da função × multiplicador do encontro × status ×
           fração. B, o peso dos ranks e o status são os Parâmetros (iguais para todas); o encontro (chefe ou
@@ -98,7 +99,7 @@ export function deReferencia(r: ReferenciaInstancia): NovaInstancia {
           então ela aparece no registro de runs. Mudar algo sempre cria outra versão, e as runs antigas mantêm
           a delas.
         </p>
-      </app-como-funciona>
+      </ui-como-funciona>
 
       <div class="grade-cartoes" data-testid="instancias">
         @for (i of instancias(); track i.id) {
@@ -132,7 +133,7 @@ export function deReferencia(r: ReferenciaInstancia): NovaInstancia {
         }
       </div>
 
-      <app-painel-lateral titulo="Nova instância" [aberto]="cadastrando()" (fechar)="cadastrando.set(false)">
+      <ui-painel-lateral titulo="Nova instância" [aberto]="cadastrando()" (fechar)="cadastrando.set(false)">
         <form class="formulario" (ngSubmit)="criar()">
           <mat-form-field subscriptSizing="dynamic">
             <mat-label>A partir da lista da browiki (opcional)</mat-label>
@@ -228,7 +229,7 @@ export function deReferencia(r: ReferenciaInstancia): NovaInstancia {
           }
           <button mat-flat-button type="submit" [disabled]="pendencias().length > 0">Cadastrar</button>
         </form>
-      </app-painel-lateral>
+      </ui-painel-lateral>
     </div>
   `,
   styles: `

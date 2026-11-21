@@ -27,9 +27,10 @@ import {
   textoMultiplicador,
   type VersaoHistorico,
 } from "../core/instancias";
-import { ComoFuncionaComponent, PainelLateralComponent } from "../core/layout";
+import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
+import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 import { mensagemDeErro } from "../core/modelos";
-import { TabelaResponsivaDirective } from "../core/tabela-responsiva.directive";
+import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";
 
 /** Pontos de uma participação completa e concluída com B e α da v1 (para a prévia do editor). */
 export function pontosPrevia(rank: number | null, multiplicador: number | null): number | null {
@@ -46,7 +47,7 @@ export function pontosPrevia(rank: number | null, multiplicador: number | null):
     RouterLink,
     ComoFuncionaComponent,
     PainelLateralComponent,
-    TabelaResponsivaDirective,
+    TabelaDirective,
     MatButtonModule,
     MatCheckboxModule,
     MatFormFieldModule,
@@ -96,7 +97,7 @@ export function pontosPrevia(rank: number | null, multiplicador: number | null):
           <p class="aviso">Sem funções e ranks: crie uma versão nova com eles antes de ativar a instância.</p>
         }
 
-        <app-como-funciona>
+        <ui-como-funciona>
           <p>
             O multiplicador do encontro e o rank da função entram no cálculo de cada participação. Mudar
             qualquer um deles cria uma versão nova, que vale para as runs registradas depois; as runs antigas
@@ -112,11 +113,11 @@ export function pontosPrevia(rank: number | null, multiplicador: number | null):
               }
             </p>
           }
-        </app-como-funciona>
+        </ui-como-funciona>
 
         <mat-tab-group animationDuration="0ms">
           <mat-tab label="Encontros">
-            <table appResponsiva class="tabela" data-testid="encontros">
+            <table uiTabela class="tabela" data-testid="encontros">
               <thead>
                 <tr>
                   <th scope="col">Encontro</th>
@@ -136,7 +137,7 @@ export function pontosPrevia(rank: number | null, multiplicador: number | null):
             </table>
           </mat-tab>
           <mat-tab [label]="'Funções e ranks (' + (i.vigente?.funcoes?.length ?? 0) + ')'">
-            <table appResponsiva class="tabela" data-testid="funcoes">
+            <table uiTabela class="tabela" data-testid="funcoes">
               <thead>
                 <tr>
                   <th scope="col">Classe</th>
@@ -163,7 +164,7 @@ export function pontosPrevia(rank: number | null, multiplicador: number | null):
             }
           </mat-tab>
           <mat-tab label="Histórico">
-            <table appResponsiva class="tabela" data-testid="historico-versoes">
+            <table uiTabela class="tabela" data-testid="historico-versoes">
               <thead>
                 <tr>
                   <th scope="col">Versão</th>
@@ -194,7 +195,7 @@ export function pontosPrevia(rank: number | null, multiplicador: number | null):
           </mat-tab>
         </mat-tab-group>
 
-        <app-painel-lateral
+        <ui-painel-lateral
           [titulo]="'Nova versão v' + ((i.vigente?.versao ?? 0) + 1)"
           [aberto]="editando()"
           (fechar)="editando.set(false)"
@@ -274,7 +275,7 @@ export function pontosPrevia(rank: number | null, multiplicador: number | null):
               <button mat-button type="button" (click)="editando.set(false)">Cancelar</button>
             </div>
           </form>
-        </app-painel-lateral>
+        </ui-painel-lateral>
       }
     </div>
   `,
