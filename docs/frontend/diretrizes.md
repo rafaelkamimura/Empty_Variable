@@ -324,7 +324,8 @@ Os componentes de RO, usados por mais de uma feature, vão para `shared/dominio/
 1. confirme que nenhum componente existente resolve com uma variante;
 2. crie em `shared/ui/<nome>/` o componente e o `.spec.ts`;
 3. documente os inputs com JSDoc;
-4. acrescente uma linha na tabela acima, no mesmo PR.
+4. crie o `<nome>.catalogo.ts` e registre a entrada no catálogo (§8.2);
+5. acrescente uma linha na tabela acima, no mesmo PR.
 
 ---
 
@@ -427,11 +428,14 @@ As ferramentas de teste continuam as que o projeto já usa: Karma/Jasmine para s
 
 Os componentes de `shared/ui` são desenvolvidos e revisados **fora das telas**, para que cada um funcione sozinho.
 
-- **Storybook** (com suporte a Angular) é proposto como o catálogo vivo:
-  - cada componente de `shared/ui` tem um `*.stories.ts` ao lado, com uma história por variante e por estado (padrão, desabilitado, carregando, erro, texto longo);
-  - o catálogo serve de documentação: a tabela da §5 aponta para ele, e o JSDoc dos inputs aparece como descrição;
-  - na revisão de PR, componentes visuais novos ou alterados são conferidos no Storybook antes da tela.
-- **A decidir na validação:** se o Storybook parecer pesado para o tamanho do projeto, a alternativa é uma rota `/dev/catalogo`, disponível só fora de produção, que mostra todos os componentes de `shared/ui` com as suas variantes. A regra é a mesma nos dois casos: componente sem exemplo no catálogo não é aprovado.
+O catálogo é a rota **`/dev/catalogo`**, que só existe fora de produção (decidido na validação, no lugar do Storybook, para não acrescentar dependências nem um build separado no CI).
+
+- **Rodar:** `pnpm --filter @betel/web start` e abrir `/dev/catalogo`. No build de produção a rota não é registrada (`isDevMode()` em `app.routes.ts`) e o código da página fica fora do bundle.
+- **Cada componente de `shared/ui`** tem ao lado um `<nome>.catalogo.ts`, que exporta um componente standalone (`<Nome>CatalogoComponent`) com o componente real em cada variante e estado: padrão, desabilitado, carregando, erro e texto longo.
+- **Registro:** uma entrada em `web/src/app/dev/catalogo/entradas.ts`, com `id` (kebab-case, vira a URL), `nome` (o seletor), `nivel` (§3.3), `descricao` (uma frase) e `carregar` (import dinâmico do `*.catalogo.ts`). O spec do catálogo confere que todo exemplo registrado carrega.
+- **Revisão de PR:** componentes visuais novos ou alterados são conferidos no catálogo antes da tela.
+
+Componente sem exemplo no catálogo não é aprovado.
 
 ### 8.3 Regras verificadas pelo linter
 
@@ -440,14 +444,17 @@ O que pode ser checado por máquina não depende de revisão humana. As regras a
 | Regra                                          | Como                                                                 |
 | ---------------------------------------------- | -------------------------------------------------------------------- |
 | Prefixo de seletor (`ui-` em `shared/ui`, `app-` no resto) | `@angular-eslint/component-selector` e `directive-selector`, por pasta |
+| Sufixo de classe (`Page` em páginas, `Component` no resto) | `@angular-eslint/component-class-suffix` |
 | `OnPush` em componentes                        | `@angular-eslint/prefer-on-push-component-change-detection`          |
 | Signals em vez de decoradores                  | `@angular-eslint/prefer-signals` e `no-input-rename`/`no-output-rename` |
 | Sem `HttpClient` fora de `data/` e `core/`     | `no-restricted-imports` em `shared/**`, `features/*/componentes/**` e `features/*/paginas/**` |
-| Fronteiras entre camadas (§3.1)                | `no-restricted-imports` com padrões (`features/*` não importa outra feature) |
-| Sem hex e sem `::ng-deep` em componentes       | Stylelint (`color-no-hex` fora de `styles/_tokens.scss` e `selector-pseudo-element-disallowed-list`) |
-| Acessibilidade de template                     | `@angular-eslint/template/accessibility` (alt, label, foco, papéis)  |
+| Fronteiras entre camadas (§3.1)                | Regra local `betel/fronteiras` (`tools/eslint/fronteiras-frontend.mjs`), que resolve os imports relativos e aplica a tabela da §3.1 |
+| Sem hex e sem `::ng-deep` em componentes       | Stylelint nos `.scss` (`color-no-hex` fora de `styles/_tokens.scss` e `selector-pseudo-element-disallowed-list`); nos estilos inline (`styles:` do `.ts`), `no-restricted-syntax` do ESLint |
+| Acessibilidade de template                     | `angular.configs.templateAccessibility` (alt, label, foco, papéis)   |
 
-Enquanto o código antigo não migrar, essas regras rodam como **erro** para arquivos novos e para `shared/` e `features/`, e como **aviso** para `paginas/` e `core/` antigos.
+Enquanto o código antigo não migrar, essas regras rodam como **erro** em `shared/`, `features/`, `layout/` e `dev/`, e como **aviso** em `paginas/`, `core/` e nos arquivos da raiz de `app/` (inclusive as regras gerais de TypeScript, que o `web/` não tinha). Por isso código novo nasce nas pastas novas, e não em `paginas/` ou `core/`.
+
+`pnpm lint` roda o ESLint e o Stylelint (`stylelint.config.mjs`). Os avisos do código antigo aparecem na saída, mas não falham o CI.
 
 ---
 
@@ -474,7 +481,7 @@ Enquanto o código antigo não migrar, essas regras rodam como **erro** para arq
 A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**: quem mexer numa tela migra essa tela.
 
 1. **Fundação.** *(feita)* Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `core/visual.ts` é refeito com tons da paleta.
-2. **Ferramentas.** Ligar as regras de lint da §8.3 (aviso no código antigo) e montar o catálogo da §8.2, para que cada peça base já nasça com exemplo.
+2. **Ferramentas.** *(feita)* Ligar as regras de lint da §8.3 (aviso no código antigo) e montar o catálogo da §8.2, para que cada peça base já nasça com exemplo.
 3. **Peças base.** Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
 3. **Casca.** Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
 4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
