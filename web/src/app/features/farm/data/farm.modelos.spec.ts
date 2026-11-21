@@ -6,10 +6,12 @@ import {
   type InstanciaFarm,
   itensDoEditor,
   MAXIMO_POR_DROP,
+  nomesDosCheckins,
   nomesDosDrops,
   quantidadeDoTexto,
   situacaoDoPersonagem,
   textoDosDrops,
+  totaisDosCheckins,
   valorDosDrops,
 } from "./farm.modelos";
 
@@ -87,5 +89,13 @@ describe("farm.modelos", () => {
     expect(dropsDoRascunho(["a", "b", "c"], { a: "2", b: "0" })).toEqual([
       { farmItemId: "a", quantidade: 2 },
     ]);
+  });
+
+  it("totais dos check-ins usam o preço vigente e guardam os nomes", () => {
+    const t = totaisDosCheckins([checkin()], (id) => (id === "a" ? 1_500_000 : null));
+    expect(t.itens).toBe(2);
+    expect(t.valor).toBe(3_000_000);
+    expect(nomesDosCheckins([checkin()]).itens.get("a")).toBe("Oridecon");
+    expect(nomesDosCheckins([checkin()]).instancias.get("i1")).toBe("Cripta");
   });
 });

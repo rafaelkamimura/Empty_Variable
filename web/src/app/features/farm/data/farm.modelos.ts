@@ -1,11 +1,17 @@
 // Diário de farm (D48–D54): o que a API /api/farm devolve e as regras puras das telas.
 import {
   cicloDoCalendario,
+  DIAS_SEMANA,
+  dataDoDia,
   diaDoJogo,
+  diaMes,
+  horaDoServidor,
   type Recarga,
   rotuloDoDia,
   type Situacao,
   situacao,
+  type Totais,
+  totalizar,
 } from "@betel/farm";
 
 export interface PersonagemFarm {
@@ -185,4 +191,45 @@ export function dropsDoRascunho(
   return ids
     .map((farmItemId) => ({ farmItemId, quantidade: quantidadeDoTexto(rascunho[farmItemId]) }))
     .filter((d) => d.quantidade > 0);
+}
+
+// ---------- Totais ----------
+
+/** "sáb 21/11 17:30", no fuso e no dia do jogo (reset às 04:00). */
+export function quandoDoCheckin(iso: string): string {
+  const ms = Date.parse(iso);
+  const d = diaDoJogo(ms);
+  return `${DIAS_SEMANA[dataDoDia(d).diaSemana]} ${diaMes(d)} ${horaDoServidor(ms)}`;
+}
+
+/** Totais (por item, instância e personagem) de uma lista de check-ins, com o preço vigente. */
+export function totaisDosCheckins(
+  checkins: readonly CheckinFarm[],
+  precoDe: (itemId: string) => number | null,
+): Totais {
+  return totalizar(
+    checkins.map((c) => ({
+      personagemId: c.personagemId,
+      instanciaId: c.farmInstanciaId,
+      drops: c.drops.map((d) => ({ itemId: d.farmItemId, quantidade: d.quantidade })),
+    })),
+    precoDe,
+  );
+}
+
+/**
+ * Nomes guardados nos próprios check-ins: itens e instâncias excluídos depois continuam com nome
+ * nos totais de períodos antigos.
+ */
+export function nomesDosCheckins(checkins: readonly CheckinFarm[]): {
+  itens: Map<string, string>;
+  instancias: Map<string, string>;
+} {
+  const itens = new Map<string, string>();
+  const instancias = new Map<string, string>();
+  for (const c of checkins) {
+    instancias.set(c.farmInstanciaId, c.nomeInstancia);
+    for (const d of c.drops) itens.set(d.farmItemId, d.nome);
+  }
+  return { itens, instancias };
 }
