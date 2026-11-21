@@ -905,4 +905,34 @@ model RascunhoRunParticipante {
 
   @@unique([rascunhoId, ordem])
   @@map("rascunho_run_participante")
+// ---------------------------------------------------------------------------
+// Integração com o bot nag4eyes: caixa de saída das notificações por DM.
+// Contrato dos eventos em backend/src/notificacoes/eventos.ts.
+// Índice parcial (SQL): pendentes por ordem de criação.
+// ---------------------------------------------------------------------------
+
+enum StatusNotificacao {
+  PENDENTE
+  ENTREGUE
+  FALHOU
+}
+
+/// Gravada na mesma transação da mudança de negócio; o nag4eyes busca, envia a DM e confirma.
+/// Sem chave estrangeira: guarda o Discord ID do destinatário no momento do evento.
+model Notificacao {
+  id           String            @id @default(uuid()) @db.Uuid
+  discordId    String            @map("discord_id")
+  tipo         String
+  dados        Json              @db.JsonB
+  status       StatusNotificacao @default(PENDENTE)
+  /// Quantas vezes já foi entregue ao nag4eyes sem confirmação.
+  tentativas   Int               @default(0)
+  /// Reservada para um lote até este instante; depois volta a ser entregue se não houver confirmação.
+  reservadaAte DateTime?         @map("reservada_ate") @db.Timestamptz(3)
+  motivoFalha  String?           @map("motivo_falha")
+  criadaEm     DateTime          @default(now()) @map("criada_em") @db.Timestamptz(3)
+  confirmadaEm DateTime?         @map("confirmada_em") @db.Timestamptz(3)
+
+  @@index([status, confirmadaEm])
+  @@map("notificacao")
 }

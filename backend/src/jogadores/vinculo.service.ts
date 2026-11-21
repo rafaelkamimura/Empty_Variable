@@ -9,6 +9,7 @@ import type { StatusSolicitacao, Usuario } from "@prisma/client";
 import { AuditoriaService } from "../auditoria/auditoria.service.js";
 import { grupoDaClasseLatam } from "../cadastros/classes-latam.js";
 import { ehViolacaoUnicidade } from "../comum/filtro-prisma.js";
+import { NotificacoesService } from "../notificacoes/notificacoes.service.js";
 import { PrismaService, type Tx } from "../prisma/prisma.service.js";
 
 export interface FichaPersonagem {
@@ -80,6 +81,7 @@ export class VinculoService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly notificacoes: NotificacoesService,
   ) {}
 
   async minhaSituacao(usuario: Usuario) {
@@ -321,6 +323,7 @@ export class VinculoService {
         await this.conferirConflitos(tx, s.usuarioId, pedido);
 
         let jogadorId: string;
+        let apelido: string;
         if (pedido.jogadorId !== undefined) {
           const r = await tx.jogador.updateMany({
             where: { id: pedido.jogadorId, usuarioId: null },
@@ -328,11 +331,13 @@ export class VinculoService {
           });
           if (r.count !== 1) throw new ConflictException("Este jogador já está vinculado a outro usuário.");
           jogadorId = pedido.jogadorId;
+          apelido = (await tx.jogador.findUniqueOrThrow({ where: { id: jogadorId } })).apelido;
         } else {
           const novo = await tx.jogador.create({
             data: { apelido: pedido.apelidoProposto ?? "", usuarioId: s.usuarioId },
           });
           jogadorId = novo.id;
+          apelido = novo.apelido;
         }
         if (pedido.personagensNovos.length > 0) {
           await tx.personagem.createMany({
@@ -347,6 +352,15 @@ export class VinculoService {
           where: { id },
           data: { status: "APROVADA", analisadaPorId: admin.id, analisadaEm: new Date(), jogadorId },
         });
+        await this.notificacoes.registrar(tx, [
+          {
+            destinatario: { usuarioId: s.usuarioId },
+            evento: {
+              tipo: "VINCULO_APROVADO",
+              dados: { solicitacaoId: id, jogador: apelido, personagens: pedido.personagensNovos },
+            },
+          },
+        ]);
         await this.auditoria.registrar(
           {
             usuarioId: admin.id,
@@ -373,12 +387,22 @@ export class VinculoService {
 
   async rejeitar(id: string, motivo: string, admin: Usuario) {
     return this.prisma.$transaction(async (tx) => {
-      await this.travarPendente(tx, id);
+      const pendente = await this.travarPendente(tx, id);
       const s = await tx.solicitacaoVinculo.update({
         where: { id },
         data: { status: "REJEITADA", motivo, analisadaPorId: admin.id, analisadaEm: new Date() },
         select: SELECAO_SOLICITACAO,
       });
+      await this.notificacoes.registrar(
+        tx,
+        [
+          {
+            destinatario: { usuarioId: pendente.usuarioId },
+            evento: { tipo: "VINCULO_REJEITADO", dados: { solicitacaoId: id, motivo } },
+          },
+        ],
+        admin.id,
+      );
       await this.auditoria.registrar(
         {
           usuarioId: admin.id,

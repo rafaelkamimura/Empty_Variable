@@ -18,6 +18,7 @@ import { LedgerService } from "../ledger/ledger.service.js";
 import { PrismaService, type Tx } from "../prisma/prisma.service.js";
 import type { EntradaRun } from "./entrada-run.js";
 import { InstanciasService } from "../instancias/instancias.service.js";
+import { NotificacoesService } from "../notificacoes/notificacoes.service.js";
 
 export interface ResultadoRegistro {
   runId: string;
@@ -118,6 +119,7 @@ export class RunsService {
     private readonly ledger: LedgerService,
     private readonly auditoria: AuditoriaService,
     private readonly instancias: InstanciasService,
+    private readonly notificacoes: NotificacoesService,
   ) {}
 
   /**
@@ -192,6 +194,7 @@ export class RunsService {
       const config = await tx.configPontuacao.findFirst({ orderBy: { versao: "desc" } });
       if (config === null) throw new ConflictException("Nenhuma versão de parâmetros cadastrada.");
       const resultado = await this.gravar(tx, entrada, admin, config.id, null);
+      await this.notificacoes.registrarRun(tx, resultado.runId);
       if (aoRegistrar !== undefined) await aoRegistrar(tx, resultado);
       return resultado;
     });
@@ -221,6 +224,7 @@ export class RunsService {
           ? { ...entrada, instanciaId: original.versaoInstancia.instanciaId }
           : entrada;
       const r = await this.gravar(tx, entradaCorrecao, admin, original.configId, runId);
+      await this.notificacoes.registrarCorrecao(tx, runId, r.runId);
       await this.auditoria.registrar(
         {
           usuarioId: admin.id,

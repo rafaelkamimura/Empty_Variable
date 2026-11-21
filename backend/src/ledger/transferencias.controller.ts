@@ -12,6 +12,7 @@ import {
 import type { Usuario } from "@prisma/client";
 import { UsuarioAtual } from "../auth/decoradores.js";
 import { inteiro, objeto, uuid } from "../comum/validacao.js";
+import { NotificacoesService } from "../notificacoes/notificacoes.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { LedgerService } from "./ledger.service.js";
 
@@ -20,6 +21,7 @@ export class TransferenciasController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
+    private readonly notificacoes: NotificacoesService,
   ) {}
 
   @Get("destinatarios")
@@ -43,7 +45,7 @@ export class TransferenciasController {
     return this.prisma.$transaction(async (tx) => {
       const remetente = await tx.jogador.findUnique({
         where: { usuarioId: usuario.id },
-        select: { id: true },
+        select: { id: true, apelido: true },
       });
       if (!remetente) throw new ForbiddenException("Vincule sua conta a um jogador para transferir pontos.");
       if (remetente.id === destinatarioId) throw new BadRequestException("Escolha outro jogador.");
@@ -94,6 +96,15 @@ export class TransferenciasController {
         criadoPorId: usuario.id,
         transferenciaId: id,
       });
+      await this.notificacoes.registrar(tx, [
+        {
+          destinatario: { jogadorId: destinatarioId },
+          evento: {
+            tipo: "TRANSFERENCIA_RECEBIDA",
+            dados: { transferenciaId: id, pontos, remetente: remetente.apelido },
+          },
+        },
+      ]);
       return transferencia;
     });
   }
