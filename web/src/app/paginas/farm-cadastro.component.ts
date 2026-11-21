@@ -22,6 +22,18 @@ import { ImagemItemComponent } from "../core/imagem-item.component";
 import { mensagemDeErro } from "../core/modelos";
 
 /** D49, D50, D52: personagens do vínculo, instâncias pessoais com os drops e os preços em zeny. */
+/** Nome de instância para comparar: sem acentos, maiúsculas, pontuação nem "de", "do", "da". */
+function chaveDoNome(nome: string): string {
+  return nome
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(" ")
+    .filter((parte) => parte !== "" && !["de", "do", "da", "dos", "das"].includes(parte))
+    .join(" ");
+}
+
 @Component({
   selector: "app-farm-cadastro",
   imports: [RouterLink, ImagemItemComponent, FarmBuscaItemComponent],
@@ -130,13 +142,14 @@ import { mensagemDeErro } from "../core/modelos";
                 (escolher)="adicionarDrop(i, $event)"
               />
 
-              @if (i.instanciaId) {
+              @if (idDoCatalogo(i)) {
                 <div class="loot" [attr.data-testid]="'loot-' + i.nome">
-                  <span class="rotulo">Loot dos chefes</span>
+                  <span class="rotulo">Loot da instância</span>
                   @let loot = lootDe()[i.id];
                   @if (!loot) {
                     <p class="dica">
-                      Lista do que os chefes desta instância dropam, pela Divine Pride (servidor LATAM).
+                      Recompensas da instância (browiki) e o que os chefes dela dropam (Divine Pride, servidor
+                      LATAM).
                     </p>
                     <button
                       type="button"
@@ -144,7 +157,7 @@ import { mensagemDeErro } from "../core/modelos";
                       [disabled]="carregandoLoot() === i.id"
                       (click)="verLoot(i)"
                     >
-                      {{ carregandoLoot() === i.id ? "Buscando…" : "Ver loot dos chefes" }}
+                      {{ carregandoLoot() === i.id ? "Buscando…" : "Ver loot da instância" }}
                     </button>
                   } @else {
                     <p class="dica">{{ resumoDoLoot(loot) }}</p>
@@ -163,7 +176,7 @@ import { mensagemDeErro } from "../core/modelos";
                             />
                             {{ nomeDoLoot(item) }}
                           </span>
-                          <span class="chance">{{ chanceDe(item) }}</span>
+                          <span class="chance">{{ item.recompensa ? "recompensa" : chanceDe(item) }}</span>
                           <button type="button" class="botao pequeno" (click)="adicionarLoot(i, [item])">
                             Adicionar
                           </button>
@@ -410,8 +423,13 @@ export class FarmCadastroComponent implements OnInit {
     return item.precoZeny === null ? "" : formatarZenyCompleto(item.precoZeny);
   }
 
+  /** Abre ou fecha o cartão; ao abrir uma instância do catálogo, já busca o loot dela (D60). */
   alternar(id: string): void {
     this.aberta.set(this.aberta() === id ? null : id);
+    const instancia = this.farm.estado()?.instancias.find((i) => i.id === id);
+    if (this.aberta() === id && instancia && this.idDoCatalogo(instancia) && !this.lootDe()[id]) {
+      void this.verLoot(instancia);
+    }
   }
 
   private async salvar(op: () => Promise<unknown>, sucesso: string | null = null): Promise<boolean> {
@@ -446,6 +464,7 @@ export class FarmCadastroComponent implements OnInit {
       this.novoNome.set("");
       this.novaDoCatalogo.set(null);
       this.aberta.set((criada as InstanciaFarm).id);
+      void this.verLoot(criada as InstanciaFarm);
     }
   }
 
@@ -473,12 +492,23 @@ export class FarmCadastroComponent implements OnInit {
     await this.salvar(() => this.farm.adicionarDrop(i.id, { nome: item.nome, idJogo: item.idJogo }));
   }
 
+  /**
+   * Instância do catálogo desta instância do diário: a ligada no cadastro ou, nas digitadas à mão,
+   * a de mesmo nome (sem acentos, maiúsculas nem "de", "do", "da").
+   */
+  idDoCatalogo(i: InstanciaFarm): string | null {
+    if (i.instanciaId) return i.instanciaId;
+    const chave = chaveDoNome(i.nome);
+    return this.catalogo().find((c) => chaveDoNome(c.nome) === chave)?.id ?? null;
+  }
+
   /** D60: busca a lista de loot dos chefes da instância do catálogo ligada a esta. */
   async verLoot(i: InstanciaFarm): Promise<void> {
-    if (!i.instanciaId || this.carregandoLoot()) return;
+    const idDoCatalogo = this.idDoCatalogo(i);
+    if (!idDoCatalogo || this.carregandoLoot()) return;
     this.carregandoLoot.set(i.id);
     try {
-      const loot = await this.farm.lootDaInstancia(i.instanciaId);
+      const loot = await this.farm.lootDaInstancia(idDoCatalogo);
       this.lootDe.update((atual) => ({ ...atual, [i.id]: loot }));
     } catch (e) {
       this.acao.avisar(mensagemDeErro(e));
@@ -502,11 +532,11 @@ export class FarmCadastroComponent implements OnInit {
   }
 
   resumoDoLoot(loot: LootInstancia): string {
-    if (loot.chefes === 0) {
-      return "Esta instância ainda não tem chefes cadastrados: o gestor cadastra na Simulação de dano.";
+    if (loot.chefes === 0 && loot.itens.length === 0) {
+      return "A browiki não nomeia chefes nem recompensas desta instância: o gestor cadastra os chefes na Simulação de dano.";
     }
     const partes = [
-      `${loot.itens.length} item(ns) de ${loot.chefes - loot.pendentes} de ${loot.chefes} chefe(s).`,
+      `${loot.itens.length} item(ns): recompensas da instância e drops de ${loot.chefes - loot.pendentes} de ${loot.chefes} chefe(s).`,
     ];
     if (loot.pendentes) {
       partes.push(
