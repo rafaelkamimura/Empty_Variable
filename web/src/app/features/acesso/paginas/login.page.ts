@@ -28,7 +28,7 @@ export function mensagemDoErro(erro: string | undefined): string | null {
     <div class="cena">
       <ui-cartao class="cartao">
         <div class="marca">
-          <ui-marca tamanho="g" />
+          <ui-marca tamanho="g" rotulo="Empty Variable" />
           <span class="nome" aria-hidden="true">Empty Variable</span>
         </div>
         <h1>Betel · Torre da Constelação</h1>
@@ -41,6 +41,7 @@ export function mensagemDoErro(erro: string | undefined): string | null {
           >Entrar com Discord</a
         >
       </ui-cartao>
+      <p class="credito">Imagens: Divine Pride · Ragnarok Online © Gravity</p>
     </div>
   `,
   styles: `
@@ -49,8 +50,11 @@ export function mensagemDoErro(erro: string | undefined): string | null {
     }
     .cena {
       display: grid;
-      place-items: center;
+      place-content: center;
+      justify-items: center;
+      gap: var(--esp-4);
       min-height: 100vh;
+      min-height: 100dvh;
       box-sizing: border-box;
       padding: var(--esp-5) var(--esp-4);
       background: var(--aurora-brilho), var(--fundo);
@@ -89,6 +93,12 @@ export function mensagemDoErro(erro: string | undefined): string | null {
     p {
       margin: 0;
       color: var(--texto);
+    }
+    .credito {
+      margin: 0;
+      font-size: var(--fs-xs);
+      color: var(--texto-apagado);
+      text-align: center;
     }
     a[uiBotao] {
       width: 100%;

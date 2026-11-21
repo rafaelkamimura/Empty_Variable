@@ -21,44 +21,41 @@ import { MarcaComponent } from "../shared/ui/marca/marca.component";
         <span class="nome">Empty Variable</span>
       </a>
       <span class="espaco"></span>
-      @if (usuario(); as u) {
-        <div class="carteira" aria-label="Saldo da carteira" data-testid="saldo-topo">
-          <small>Carteira</small>
-          <strong>{{ textoSaldo() }}</strong>
-        </div>
-        <button
-          type="button"
-          class="avatar"
-          [matMenuTriggerFor]="menuPerfil"
-          aria-label="Menu do perfil"
-          [title]="nome()"
-        >
-          @if (u.avatarUrl) {
-            <img [src]="u.avatarUrl" alt="" />
-          } @else {
-            {{ inicial() }}
+      @let u = usuario();
+      <div class="carteira" aria-label="Saldo da carteira" data-testid="saldo-topo">
+        <small>Carteira</small>
+        <strong>{{ textoSaldo() }}</strong>
+      </div>
+      <button
+        type="button"
+        class="avatar"
+        [matMenuTriggerFor]="menuPerfil"
+        aria-label="Menu do perfil"
+        [title]="nome()"
+      >
+        @if (u.avatarUrl) {
+          <img [src]="u.avatarUrl" alt="" />
+        } @else {
+          {{ inicial() }}
+        }
+      </button>
+      <mat-menu #menuPerfil="matMenu">
+        <a mat-menu-item routerLink="/vinculo"><app-icone nome="usuarios" /> Vínculo de jogador</a>
+        @if (ehGestor()) {
+          <a mat-menu-item routerLink="/gestao/grupos"><app-icone nome="usuarios" /> Grupos agendados</a>
+          @if (runsLiberadas()) {
+            <a mat-menu-item routerLink="/gestao/runs"><app-icone nome="espadas" /> Runs</a>
           }
-        </button>
-        <mat-menu #menuPerfil="matMenu">
-          <a mat-menu-item routerLink="/vinculo"><app-icone nome="usuarios" /> Vínculo de jogador</a>
-          @if (ehGestor()) {
-            <a mat-menu-item routerLink="/gestao/grupos"><app-icone nome="usuarios" /> Grupos agendados</a>
-            @if (runsLiberadas()) {
-              <a mat-menu-item routerLink="/gestao/runs"><app-icone nome="espadas" /> Runs</a>
-            }
-          }
-          @if (ehAdmin()) {
-            <a mat-menu-item routerLink="/vinculo/aprovacoes"
-              ><app-icone nome="usuarios" /> Aprovar vínculos</a
-            >
-          }
-          <a mat-menu-item routerLink="/carteira"><app-icone nome="moedas" /> Carteira</a>
-          @if (ehAdmin()) {
-            <a mat-menu-item routerLink="/admin/estoque"><app-icone nome="armazem" /> Estoque</a>
-          }
-          <button mat-menu-item type="button" (click)="sair.emit()"><app-icone nome="sair" /> Sair</button>
-        </mat-menu>
-      }
+        }
+        @if (ehAdmin()) {
+          <a mat-menu-item routerLink="/vinculo/aprovacoes"><app-icone nome="usuarios" /> Aprovar vínculos</a>
+        }
+        <a mat-menu-item routerLink="/carteira"><app-icone nome="moedas" /> Carteira</a>
+        @if (ehAdmin()) {
+          <a mat-menu-item routerLink="/admin/estoque"><app-icone nome="armazem" /> Estoque</a>
+        }
+        <button mat-menu-item type="button" (click)="sair.emit()"><app-icone nome="sair" /> Sair</button>
+      </mat-menu>
     </header>
   `,
   styles: `
@@ -176,8 +173,8 @@ import { MarcaComponent } from "../shared/ui/marca/marca.component";
   `,
 })
 export class TopoComponent {
-  /** Usuário logado; sem ele, o topo mostra só a marca. */
-  readonly usuario = input<UsuarioMe | null>(null);
+  /** Usuário logado (a casca só mostra o topo com usuário). */
+  readonly usuario = input.required<UsuarioMe>();
   /** Saldo em pontos (null enquanto carrega). */
   readonly saldo = input<number | null>(null);
   readonly ehGestor = input(false);
@@ -188,10 +185,10 @@ export class TopoComponent {
 
   protected readonly nome = computed(() => {
     const u = this.usuario();
-    return u === null ? "" : (u.globalName ?? u.discordUsername);
+    return u.globalName ?? u.discordUsername;
   });
   protected readonly inicial = computed(() => this.nome().slice(0, 1).toUpperCase());
   protected readonly textoSaldo = computed(() =>
-    this.usuario()?.jogador ? formatarPontos(this.saldo()) : "Sem vínculo",
+    this.usuario().jogador ? formatarPontos(this.saldo()) : "Sem vínculo",
   );
 }

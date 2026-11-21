@@ -69,6 +69,7 @@ const ITENS_MENU: readonly ItemMenu[] = [
     }
     .sozinho {
       min-height: 100vh;
+      min-height: 100dvh;
     }
     .credito {
       margin: var(--esp-5) 0 var(--esp-2);

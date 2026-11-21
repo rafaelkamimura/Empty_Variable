@@ -136,7 +136,7 @@ Um estado nunca é indicado só pela cor. Sempre há ícone e texto junto.
 | Peso       | 400 no texto, 600 em rótulos e botões, 700 em títulos e números de destaque                |
 | Sombra     | `--sombra-1: 0 1px 2px rgb(0 0 0 / 40%)` · `--sombra-2: 0 8px 24px rgb(0 0 0 / 45%)` · `--brilho-acento` só em foco ou destaque |
 | Movimento  | `--duracao: 160ms` e `--curva: cubic-bezier(.2,.8,.2,1)`. Tudo é desligado com `prefers-reduced-motion: reduce` |
-| Camadas    | `--z-topo: 10` · `--z-painel: 100` · `--z-dialogo: 200` · `--z-aviso: 300`                 |
+| Camadas    | `--z-topo: 20` · `--z-painel: 100` · `--z-dialogo: 200` · `--z-aviso: 300`                 |
 
 Números (pontos, zeny, quantidades) usam `font-variant-numeric: tabular-nums` para alinhar em colunas.
 
