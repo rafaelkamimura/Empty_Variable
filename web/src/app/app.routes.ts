@@ -22,7 +22,7 @@ const rotasCompletas: Routes = [
     path: "login",
     canActivate: [anonimoGuard],
     title: "Entrar · Empty Variable",
-    loadComponent: () => import("./paginas/login.component").then((m) => m.LoginComponent),
+    loadComponent: () => import("./features/acesso/paginas/login.page").then((m) => m.LoginPage),
   },
   {
     path: "vinculo/aprovacoes",

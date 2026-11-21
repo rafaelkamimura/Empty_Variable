@@ -85,7 +85,9 @@ describe("Menu do perfil", () => {
     });
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>("button.avatar")?.click();
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>("[aria-label='Menu do perfil']")
+      ?.click();
     fixture.detectChanges();
     return document.body;
   }
