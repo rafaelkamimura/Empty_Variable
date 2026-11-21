@@ -36,6 +36,9 @@ export interface AtributosBuild {
   talentos?: Pontos<"pow" | "sta" | "wis" | "spl" | "con" | "crt">;
   habilidade?: { nome: string; nivel?: number };
   elementoAtaque?: string;
+  /** D59: número da classe no simulador e token do link importado, usados pela simulação. */
+  classeSimulador?: number;
+  token?: string;
 }
 export type EquipamentoFicha = string | ItemEquipamento;
 

@@ -1,0 +1,29 @@
+{
+  "name": "@betel/motor-latam",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Motor de dano com efeitos de equipamentos (D59): código e dados de adsonpleal/latam-ro-calc (MIT), só para a API.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "dados"
+  ],
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js --log-level=warning && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.25.0",
+    "vitest": "^2.1.8"
+  }
+}

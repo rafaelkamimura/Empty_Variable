@@ -190,6 +190,11 @@ jobs:
           curl -fsSk "$base/api/saude" | grep '"status":"ok"'
           curl -fsSk "$base/" | grep '<app-root>'
           curl -fsSkI "$base/" | grep -i 'strict-transport-security'
+          # D61: só o simulador de dano pode ser emoldurado, e só pela mesma origem.
+          curl -fsSkI "$base/" | grep -i 'x-frame-options: DENY'
+          curl -fsSkI "$base/simulador-latam/index.html" | grep -i 'x-frame-options: SAMEORIGIN'
+          curl -fsSkI "$base/simulador-latam/index.html" | grep -i "frame-ancestors 'self'"
+          curl -fsSk "$base/simulador-latam/index.html" | grep 'Carregando o simulador'
           curl -sSk -o /dev/null -w '%{http_code}' "$base/api/auth/me" | grep 401
           "${caddy[@]}" exec -T backup sh /scripts/backup.sh
           "${caddy[@]}" exec -T backup sh /scripts/testar-restauracao.sh
@@ -232,6 +237,7 @@ jobs:
           base="http://127.0.0.1:$PORTA_WEB"
           curl -fsS "$base/api/saude" | grep '"status":"ok"'
           curl -fsS "$base/" | grep '<base href="/emptyvariable/"'
+          curl -fsS "$base/simulador-latam/index.html" | grep 'Carregando o simulador'
           curl -sS -o /dev/null -w '%{http_code}' "$base/api/auth/me" | grep 401
           # O login precisa voltar para a sub-rota, e o cookie de state ficar restrito a ela.
           curl -sS -o /dev/null -D - "$base/api/auth/discord" | grep -i 'set-cookie:.*Path=/emptyvariable/api/auth'

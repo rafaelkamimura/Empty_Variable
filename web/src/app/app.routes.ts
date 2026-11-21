@@ -64,7 +64,13 @@ const rotasCompletas: Routes = [
   {
     path: "simulador",
     canActivate: [autenticadoGuard],
-    title: "Simulação de dano · Empty Variable",
+    title: "Simulador de dano · Empty Variable",
+    loadComponent: () => import("./paginas/simulador-hub.component").then((m) => m.SimuladorHubComponent),
+  },
+  {
+    path: "simulador/estimativa",
+    canActivate: [autenticadoGuard],
+    title: "Estimativa de dano · Empty Variable",
     loadComponent: () => import("./paginas/simulador.component").then((m) => m.SimuladorComponent),
   },
   {

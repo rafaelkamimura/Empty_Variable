@@ -3,7 +3,16 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/.angular/**", "**/coverage/**", "docs/**", "web/**"],
+    ignores: [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/.angular/**",
+      "**/coverage/**",
+      "docs/**",
+      "web/**",
+      // Código de terceiros copiado sem alteração (D59).
+      "packages/motor-latam/vendor/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strict,
@@ -19,7 +28,7 @@ export default tseslint.config(
   },
   {
     // Scripts Node em JavaScript (ex.: tests/e2e/servidor.mjs)
-    files: ["tests/**/*.mjs"],
+    files: ["tests/**/*.mjs", "packages/*/scripts/**/*.mjs"],
     languageOptions: {
       globals: { process: "readonly", console: "readonly", setTimeout: "readonly", URL: "readonly" },
     },

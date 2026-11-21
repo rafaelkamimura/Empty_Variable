@@ -1,0 +1,118 @@
+import { ElementType } from '../constants/element-type.const';
+import { EquipmentModel } from '../constants/item-type.enum';
+import { RotationTab } from '../core/rotation-tabs';
+import { SlotColorMap } from '../core/slot-colors';
+import { CustomAttachments } from '../core/custom-attachments';
+import type { SkillFormulaVersion } from '../skills/skill-formula-version';
+
+export interface MainModel extends Partial<EquipmentModel> {
+  skillFormulaVersion?: SkillFormulaVersion;
+  customAttachments?: CustomAttachments;
+  class: number;
+  level: number;
+  jobLevel: number;
+
+  /**
+   * Character appearance, for the saved-sim paper-doll. Populated by the replay
+   * import; left undefined for builds assembled by hand (the paper-doll then
+   * falls back to its male / default-hair defaults). `sex`: 0 = female, 1 = male.
+   * `hairStyle` is a sprite id; `hairColor` / `clothesColor` are palette indices.
+   */
+  sex?: number;
+  hairStyle?: number;
+  hairColor?: number;
+  clothesColor?: number;
+
+  str: number;
+  jobStr?: number;
+  agi: number;
+  jobAgi?: number;
+  vit: number;
+  jobVit?: number;
+  int: number;
+  jobInt?: number;
+  dex: number;
+  jobDex?: number;
+  luk: number;
+  jobLuk?: number;
+
+  pow: number;
+  jobPow: number;
+  sta: number;
+  jobSta: number;
+  wis: number;
+  jobWis: number;
+  spl: number;
+  jobSpl: number;
+  con: number;
+  jobCon: number;
+  crt: number;
+  jobCrt: number;
+
+  /**
+   * The single skill the engine solves against.
+   * Also a write-through mirror of the first real skill in {@link MainModel.rotation} —
+   * keep the two in sync through `syncRotationMirror()`, never by hand, or the two
+   * panels disagree about what is being calculated.
+   */
+  selectedAtkSkill?: string;
+  /**
+   * The attack rotation the "Resumo de Batalha" panel cycles through: ordered,
+   * duplicates allowed, `"<Name>==<level>"` values plus `BASIC_ATTACK_VALUE`.
+   * See src/app/core/rotation.ts. Empty on a build saved before rotations existed,
+   * which `normalizeRotation` migrates to `[selectedAtkSkill]`.
+   */
+  rotation: string[];
+  /** Selected accumulation for offensive skills that build up through repeated casts. */
+  skillStacks?: Record<string, number>;
+  /** Accumulation for each rotation tile, in the same order as `rotation`. */
+  rotationStacks?: number[];
+  /**
+   * The rotations this build keeps side by side, as the "Rotação 1 | Rotação 2 | +" strip
+   * draws them, with {@link MainModel.rotationTab} saying which one `rotation` is holding.
+   * Empty while the build has the single rotation it starts with, which is also what a
+   * build saved before the strip existed loads as.
+   *
+   * Read it through `readRotationTabs()` (src/app/core/rotation-tabs.ts) and never by
+   * hand: the active tab's slot here is a stale copy that only that function refreshes.
+   */
+  rotationTabs: RotationTab[];
+  /** Which tab of {@link MainModel.rotationTabs} `rotation` is currently holding. */
+  rotationTab?: number;
+  /** Configurable auto-cast choices, stored as in-game skill ids. */
+  autoCastSelections: {
+    autoSpell?: number;
+    plagiarism?: number;
+    reproduce?: number;
+  };
+  propertyAtk?: ElementType;
+  rawOptionTxts: string[];
+
+  /**
+   * The highlight colour put on each equipment card (slot key -> palette id, see
+   * src/app/core/slot-colors.ts). Purely a mark for the person reading the build —
+   * the engine never looks at it — but it travels with the build, so a share link
+   * carries which pieces were called core and which were stand-ins. Empty on a
+   * simulation saved before the feature existed.
+   */
+  slotColors: SlotColorMap;
+
+  skillBuffs: number[];
+  skillBuffMap: Record<string, number>;
+
+  activeSkills: number[];
+  activeSkillMap: Record<string, number>;
+  passiveSkills: number[];
+  passiveSkillMap: Record<string, number>;
+  consumables: number[];
+  consumables2: number[];
+  aspdPotion?: number;
+  aspdPotions: number[];
+
+  /**
+   * The pet intimacy tier (see `PetLoyalty`), which decides which line of the egg's
+   * description applies. Absent in simulations saved before the field existed — readers
+   * should fall back to `DEFAULT_PET_LOYALTY`, not 0.
+   */
+  petLoyalty?: number;
+}

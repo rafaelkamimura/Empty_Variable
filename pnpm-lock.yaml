@@ -29,6 +29,9 @@ importers:
       '@betel/farm':
         specifier: workspace:*
         version: link:../packages/farm
+      '@betel/motor-latam':
+        specifier: workspace:*
+        version: link:../packages/motor-latam
       '@betel/scoring':
         specifier: workspace:*
         version: link:../packages/scoring
@@ -101,6 +104,18 @@ importers:
 
   packages/farm:
     devDependencies:
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.5)(less@4.2.2)(sass@1.85.0)(terser@5.39.0)
+
+  packages/motor-latam:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.5
+      esbuild:
+        specifier: ^0.25.0
+        version: 0.25.12
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.5)(less@4.2.2)(sass@1.85.0)(terser@5.39.0)

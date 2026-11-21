@@ -1,0 +1,64 @@
+{
+  "repositorio": "https://github.com/adsonpleal/latam-ro-calc",
+  "commit": "5c9afd71c02a73bd60ee7042747df9ad92bb154d",
+  "licenca": "MIT, Copyright (c) 2026 Adson Leal (ver LICENSE)",
+  "imagens": null,
+  "dadosDispensados": [
+    "itemNamesEs",
+    "itemNamesEn",
+    "itemsDescEs",
+    "itemsDescEn",
+    "itemsDescMcp",
+    "releaseHistory"
+  ],
+  "ajustes": [
+    {
+      "arquivo": "src/react/views/content/item-search.tsx",
+      "motivo": "Sem servidor de imagens, a busca de itens não pede a figura do item à Divine Pride."
+    },
+    {
+      "arquivo": "src/main.ts",
+      "motivo": "A interface roda numa sub-rota: a troca de endereço na abertura mantém o caminho."
+    },
+    {
+      "arquivo": "src/app/core/shorten-url.ts",
+      "motivo": "Sem encurtador: o link de compartilhamento fica no formato completo."
+    },
+    {
+      "arquivo": "src/react/state/calculator-session.ts",
+      "motivo": "O link de compartilhamento abre no site público do simulador, não neste sistema."
+    },
+    {
+      "arquivo": "src/react/controllers/custom-item-studio.ts",
+      "motivo": "O link de um item personalizado também abre no site público do simulador."
+    },
+    {
+      "arquivo": "src/react/services/locale.ts",
+      "motivo": "Só o português é levado: a pergunta de idioma da primeira visita não aparece."
+    },
+    {
+      "arquivo": "src/react/services/assets.ts",
+      "motivo": "Sem servidor de imagens, ícones numéricos ficam sem endereço em vez de apontar para a raiz."
+    },
+    {
+      "arquivo": "src/react/services/assets.ts",
+      "motivo": "Sem servidor de imagens, o sprite do monstro fica sem endereço."
+    },
+    {
+      "arquivo": "src/react/services/assets.ts",
+      "motivo": "Sem servidor de imagens, o ícone trocado de um item personalizado fica sem endereço."
+    },
+    {
+      "arquivo": "src/app/domain/char-sprite-url.ts",
+      "motivo": "Sem servidor de imagens, o boneco do personagem fica sem endereço."
+    },
+    {
+      "arquivo": "src/app/domain/char-sprite-url.ts",
+      "motivo": "Sem servidor de imagens, o sprite da classe fica sem endereço."
+    },
+    {
+      "arquivo": "src/react/controllers/rotation-list.ts",
+      "motivo": "O ícone do ataque básico vinha de um endereço fixo do servidor de imagens de origem."
+    }
+  ]
+}

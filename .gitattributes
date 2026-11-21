@@ -1,1 +1,3 @@
 * text=auto eol=lf
+# D61: interface do simulador gerada por web/tools/montar-simulador-latam.mjs (sem diff linha a linha).
+web/public/simulador-latam/** -diff linguist-generated

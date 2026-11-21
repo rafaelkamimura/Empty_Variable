@@ -149,6 +149,7 @@ const TIPOS = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript",
   ".css": "text/css",
+  ".json": "application/json",
   ".ico": "image/x-icon",
   ".svg": "image/svg+xml",
   ".png": "image/png",

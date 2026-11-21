@@ -2,7 +2,7 @@ import { DecimalPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, type OnInit, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, RouterLink } from "@angular/router";
 import {
   BONUS_FISICO_ZERADO,
   BONUS_MAGICO_ZERADO,
@@ -74,6 +74,73 @@ export type RespostaSimulacao = ResultadoSimulacao & {
   contraHp: ({ hp: number } & ContraHp) | null;
 };
 
+export interface EfeitoLido {
+  rotulo: string;
+  valor: number;
+}
+
+/** D59: item da build que o motor leu, com os bônus que ele deu nesta conta. */
+export interface ItemLido {
+  slot: string;
+  tipo: "EQUIPAMENTO" | "CARTA" | "ENCANTAMENTO";
+  id: number;
+  nome: string;
+  refino?: number;
+  grau?: string;
+  efeitos: EfeitoLido[];
+}
+
+export interface ItemIgnorado {
+  slot: string;
+  tipo: "EQUIPAMENTO" | "CARTA" | "ENCANTAMENTO";
+  id: number;
+  nome: string | null;
+  motivo: string;
+}
+
+/** D59: resposta de POST /api/simulador/simular-build. */
+export interface RespostaBuild {
+  modo: "BUILD";
+  personagem: { id: string; nome: string };
+  classe: { id: number; nome: string };
+  nivelBase: number;
+  nivelClasse: number;
+  habilidade: {
+    valor: string;
+    nome: string;
+    nivel: number | null;
+    tipo: "FISICO" | "MAGICO" | "OUTRO";
+    elemento: Elemento | null;
+    acertos: number;
+    pct: number | null;
+    precisaoPct: number | null;
+  };
+  habilidadesDisponiveis: { valor: string; nome: string }[];
+  dano: { minimo: number; maximo: number };
+  porUso: { minimo: number; maximo: number; medio: number };
+  basico: { minimo: number; maximo: number; criticoMinimo: number; criticoMaximo: number };
+  atributos: {
+    ataque: number;
+    ataqueMagico: number;
+    precisao: number;
+    critico: number;
+    velocidadeDeAtaque: number;
+    hpMaximo: number;
+    spMaximo: number;
+  };
+  alvo: { nome: string; reducaoPct: number; multiplicadorDef: number };
+  itens: ItemLido[];
+  conjuntos: { item: string; com: string[] }[];
+  ignorados: ItemIgnorado[];
+  consumiveis: string[];
+  habilidadesEBuffs: string[];
+  bonusTotais: EfeitoLido[];
+  avisos: string[];
+  bonusNaoAplicados: string[];
+  contraHp: ({ hp: number } & ContraHp) | null;
+  origem: { repositorio: string; commit: string };
+}
+
 interface AlvoFormulario {
   nome: string;
   nivel: number | null;
@@ -88,6 +155,9 @@ interface AlvoFormulario {
   elemento: Elemento;
   nivelElemento: number;
   danoRecebidoPct: number | null;
+  /** Raça do alvo; vazio quando não foi informada. Só entra na conta com a build da ficha. */
+  raca: string;
+  chefe: boolean;
 }
 
 const ROTULOS_ELEMENTO: Record<Elemento, string> = {
@@ -114,6 +184,16 @@ const ROTULOS_RACA: Record<string, string> = {
   HUMANOIDE: "Humanoide",
   ANJO: "Anjo",
   DRAGAO: "Dragão",
+};
+const ROTULOS_ENCAIXE: Record<ItemLido["tipo"], string> = {
+  EQUIPAMENTO: "",
+  CARTA: "carta",
+  ENCANTAMENTO: "encantamento",
+};
+const ROTULOS_TIPO_DANO: Record<RespostaBuild["habilidade"]["tipo"], string> = {
+  FISICO: "Físico",
+  MAGICO: "Mágico",
+  OUTRO: "Outro",
 };
 
 const ATRIBUTOS_ATACANTE = [
@@ -186,24 +266,30 @@ const alvoVazio = (): AlvoFormulario => ({
   elemento: "NEUTRO",
   nivelElemento: 1,
   danoRecebidoPct: 100,
+  raca: "",
+  chefe: false,
 });
 
 /**
  * D57: simulação de dano da build de um personagem contra um chefe de instância ou outro monstro.
- * A conta é a de `packages/simulador` (fórmulas públicas do Renewal), feita pela API. Os efeitos dos
- * itens não são lidos: o membro digita os bônus, e a tela diz o que entra e o que fica de fora.
+ * D59: com a build da ficha, a API calcula os efeitos dos equipamentos, cartas, encantamentos e
+ * conjuntos e a fórmula da habilidade pelo motor do simulador da latam-tools, e a tela mostra o que
+ * foi aplicado e o que foi ignorado. À mão, a conta é a de `packages/simulador` (fórmulas públicas
+ * do Renewal) e só entram os bônus digitados.
  */
 @Component({
   selector: "app-simulador",
-  imports: [FormsModule, DecimalPipe],
+  imports: [FormsModule, DecimalPipe, RouterLink],
   template: `
     <div class="pagina simulador">
       <header>
         <h1>Simulação de dano</h1>
         <p class="aviso" data-testid="aviso-estimativa">
-          É uma <strong>estimativa</strong> pelas fórmulas públicas do Ragnarok Renewal. Os efeitos dos seus
-          equipamentos, cartas e encantamentos <strong>não são calculados</strong>: some os bônus à mão. Veja
-          no fim da página o que entra na conta.
+          É uma <strong>estimativa</strong>. Com a build da ficha, os efeitos dos equipamentos, cartas,
+          encantamentos e conjuntos são calculados pelo motor do simulador da latam-tools, e o resultado lista
+          o que foi aplicado e o que foi ignorado. À mão, só entram os bônus que você digitar. Veja no fim da
+          página o que entra na conta. Para montar e mudar a build inteira, use o
+          <a routerLink="/simulador">simulador completo</a>.
         </p>
       </header>
       @if (erro(); as mensagem) {
@@ -232,10 +318,50 @@ const alvoVazio = (): AlvoFormulario => ({
             } @else {
               <p class="dica">Você ainda não tem personagens no vínculo: preencha os atributos à mão.</p>
             }
+            @if (personagemId()) {
+              <label class="marcar">
+                <input
+                  type="checkbox"
+                  name="comEfeitos"
+                  [ngModel]="comEfeitos()"
+                  (ngModelChange)="comEfeitos.set($event)"
+                />
+                Calcular os efeitos dos equipamentos, cartas, encantamentos e conjuntos da build
+              </label>
+            }
             @if (notaDaBuild(); as nota) {
               <p class="dica" data-testid="nota-build">{{ nota }}</p>
             }
-            <div class="grade">
+            @if (modoBuild()) {
+              <p class="dica" data-testid="nota-efeitos">
+                Nível, atributos, equipamentos e habilidade vêm da ficha; sombrios, visuais, mascote, buffs e
+                consumíveis vêm do link importado nela.
+              </p>
+              <div class="grade">
+                <label class="campo largo"
+                  >Habilidade
+                  <select name="habilidadeBuild" [(ngModel)]="habilidadeEscolhida">
+                    <option value="">A da ficha</option>
+                    @for (h of habilidades(); track h.valor) {
+                      <option [value]="h.valor">{{ h.nome }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="campo"
+                  >Tipo dos bônus digitados
+                  <select name="tipoBonus" [(ngModel)]="tipo">
+                    <option value="FISICO">Físico</option>
+                    <option value="MAGICO">Mágico</option>
+                  </select>
+                </label>
+              </div>
+              @if (!habilidades().length) {
+                <p class="dica">
+                  As outras habilidades da classe aparecem aqui depois da primeira simulação.
+                </p>
+              }
+            }
+            <div class="grade" [hidden]="modoBuild()">
               <label class="campo"
                 >Nível base
                 <input type="number" name="nivelBase" min="1" max="250" [(ngModel)]="atacante.nivelBase" />
@@ -253,10 +379,12 @@ const alvoVazio = (): AlvoFormulario => ({
                 </label>
               }
             </div>
-            <p class="dica">Atributos totais: some aos da build os bônus de equipamentos e buffs.</p>
+            <p class="dica" [hidden]="modoBuild()">
+              Atributos totais: some aos da build os bônus de equipamentos e buffs.
+            </p>
           </section>
 
-          <section class="bloco" aria-labelledby="titulo-ataque">
+          <section class="bloco" aria-labelledby="titulo-ataque" [hidden]="modoBuild()">
             <h2 id="titulo-ataque">Ataque</h2>
             <div class="grade">
               <label class="campo"
@@ -315,7 +443,11 @@ const alvoVazio = (): AlvoFormulario => ({
           <section class="bloco" aria-labelledby="titulo-bonus">
             <h2 id="titulo-bonus">Bônus de equipamentos, cartas e buffs</h2>
             <p class="dica">
-              Tudo começa em zero. Some o que os seus itens dão; o sistema não lê os efeitos.
+              @if (modoBuild()) {
+                Opcional. O que você digitar soma aos efeitos que o sistema lê dos itens da build.
+              } @else {
+                Tudo começa em zero. Some o que os seus itens dão; à mão o sistema não lê os efeitos.
+              }
             </p>
             <div class="grade bonus">
               @if (tipo === "FISICO") {
@@ -511,7 +643,23 @@ const alvoVazio = (): AlvoFormulario => ({
                 >Nível da propriedade
                 <input type="number" name="nivelElemento" min="1" max="4" [(ngModel)]="alvo.nivelElemento" />
               </label>
+              <label class="campo"
+                >Raça
+                <select name="racaAlvo" [(ngModel)]="alvo.raca">
+                  <option value="">Não informada</option>
+                  @for (r of racas; track r[0]) {
+                    <option [value]="r[0]">{{ r[1] }}</option>
+                  }
+                </select>
+              </label>
+              <label class="marcar">
+                <input type="checkbox" name="chefeAlvo" [(ngModel)]="alvo.chefe" />
+                É chefe
+              </label>
             </div>
+            <p class="dica">
+              A raça e a marca de chefe só entram na conta com a build da ficha, pelos efeitos dos itens.
+            </p>
           </section>
 
           <button type="submit" class="botao principal" [disabled]="ocupado()">Simular</button>
@@ -569,6 +717,140 @@ const alvoVazio = (): AlvoFormulario => ({
           </section>
         }
 
+        @if (resultadoBuild(); as b) {
+          <section
+            class="bloco resultado"
+            aria-labelledby="titulo-resultado-build"
+            data-testid="resultado-build"
+          >
+            <h2 id="titulo-resultado-build">Resultado estimado com a build</h2>
+            <p class="dica">
+              {{ b.personagem.nome }} · {{ b.classe.nome }} {{ b.nivelBase }}/{{ b.nivelClasse }} contra
+              {{ b.alvo.nome }}
+            </p>
+            <dl>
+              <dt>Habilidade</dt>
+              <dd>
+                {{ b.habilidade.nome }}{{ b.habilidade.nivel ? " nv. " + b.habilidade.nivel : "" }} ·
+                {{ rotulosTipoDano[b.habilidade.tipo] }}
+                @if (b.habilidade.elemento; as e) {
+                  · {{ rotulosElemento[e] }}
+                }
+                @if (b.habilidade.pct !== null) {
+                  · {{ b.habilidade.pct | number: "1.0-0" }}%
+                }
+              </dd>
+              <dt>
+                {{ b.habilidade.acertos > 1 ? "Por acerto (" + b.habilidade.acertos + " acertos)" : "Dano" }}
+              </dt>
+              <dd>{{ b.dano.minimo | number: "1.0-0" }} a {{ b.dano.maximo | number: "1.0-0" }}</dd>
+              <dt>Por uso (todos os acertos)</dt>
+              <dd>
+                <strong
+                  >{{ b.porUso.minimo | number: "1.0-0" }} a {{ b.porUso.maximo | number: "1.0-0" }}</strong
+                >
+                (média {{ b.porUso.medio | number: "1.0-0" }})
+              </dd>
+              @if (b.contraHp; as hp) {
+                <dt>Do HP informado ({{ hp.hp | number: "1.0-0" }})</dt>
+                <dd>
+                  {{ hp.pctMinimo | number: "1.0-4" }}% a {{ hp.pctMaximo | number: "1.0-4" }}% por uso
+                  @if (hp.usosMinimo !== null && hp.usosMaximo !== null) {
+                    · {{ hp.usosMinimo | number: "1.0-0" }} a {{ hp.usosMaximo | number: "1.0-0" }} usos, sem
+                    contar cura nem regeneração
+                  }
+                </dd>
+              }
+              <dt>Ataque básico</dt>
+              <dd>
+                {{ b.basico.minimo | number: "1.0-0" }} a {{ b.basico.maximo | number: "1.0-0" }} (crítico
+                {{ b.basico.criticoMinimo | number: "1.0-0" }} a
+                {{ b.basico.criticoMaximo | number: "1.0-0" }})
+              </dd>
+              @if (b.alvo.reducaoPct > 0 || b.alvo.multiplicadorDef !== 1) {
+                <dt>Alvo</dt>
+                <dd>
+                  @if (b.alvo.reducaoPct > 0) {
+                    o simulador reduz em {{ b.alvo.reducaoPct }}% o dano neste monstro
+                  }
+                  @if (b.alvo.multiplicadorDef !== 1) {
+                    · DEF multiplicada por {{ b.alvo.multiplicadorDef }} na instância
+                  }
+                </dd>
+              }
+            </dl>
+            <h3>O que foi aplicado</h3>
+            <ul data-testid="aplicados">
+              @for (item of b.itens; track $index) {
+                <li>
+                  <strong
+                    >{{ item.slot
+                    }}{{ rotulosEncaixe[item.tipo] ? ", " + rotulosEncaixe[item.tipo] : "" }}:</strong
+                  >
+                  {{ item.nome }}{{ item.refino ? " +" + item.refino : ""
+                  }}{{ item.grau ? " grau " + item.grau : "" }} — {{ textoDosEfeitos(item.efeitos) }}
+                </li>
+              }
+              @for (conjunto of b.conjuntos; track $index) {
+                <li><strong>Conjunto:</strong> {{ conjunto.item }} com {{ conjunto.com.join(", ") }}</li>
+              }
+              @if (b.consumiveis.length) {
+                <li><strong>Consumíveis:</strong> {{ b.consumiveis.join(", ") }}</li>
+              }
+              @if (b.habilidadesEBuffs.length) {
+                <li><strong>Habilidades e buffs:</strong> {{ b.habilidadesEBuffs.join(", ") }}</li>
+              }
+              @if (!b.itens.length) {
+                <li>
+                  Nenhum item da ficha foi lido: a conta usou só atributos, habilidade e bônus digitados.
+                </li>
+              }
+            </ul>
+            <h3>O que foi ignorado</h3>
+            <ul data-testid="ignorados">
+              @for (item of b.ignorados; track $index) {
+                <li>
+                  <strong
+                    >{{ item.slot
+                    }}{{ rotulosEncaixe[item.tipo] ? ", " + rotulosEncaixe[item.tipo] : "" }}:</strong
+                  >
+                  {{ item.nome ?? "Item" }} (ID {{ item.id }}) — {{ item.motivo }}
+                </li>
+              }
+              @for (campo of b.bonusNaoAplicados; track campo) {
+                <li><strong>Bônus digitado:</strong> {{ campo }} não entra na conta com a build</li>
+              }
+              @for (aviso of b.avisos; track $index) {
+                <li>{{ aviso }}</li>
+              }
+              @if (!b.ignorados.length && !b.bonusNaoAplicados.length && !b.avisos.length) {
+                <li>Nada: todos os itens da build foram lidos.</li>
+              }
+            </ul>
+            <h3>Atributos calculados</h3>
+            <dl class="detalhe">
+              <dt>ATQ de atributos</dt>
+              <dd>{{ b.atributos.ataque | number: "1.0-0" }}</dd>
+              <dt>ATQM de atributos</dt>
+              <dd>{{ b.atributos.ataqueMagico | number: "1.0-0" }}</dd>
+              <dt>Precisão</dt>
+              <dd>{{ b.atributos.precisao | number: "1.0-0" }}</dd>
+              <dt>Crítico</dt>
+              <dd>{{ b.atributos.critico | number: "1.0-0" }}</dd>
+              <dt>HP e SP máximos</dt>
+              <dd>
+                {{ b.atributos.hpMaximo | number: "1.0-0" }} e {{ b.atributos.spMaximo | number: "1.0-0" }}
+              </dd>
+              <dt>Soma dos bônus</dt>
+              <dd>{{ textoDosEfeitos(b.bonusTotais) }}</dd>
+            </dl>
+            <p class="dica" data-testid="origem-motor">
+              Conta feita pelo motor do simulador da latam-tools (adsonpleal/latam-ro-calc, licença MIT,
+              versão {{ b.origem.commit.slice(0, 7) }}). Continua sendo uma estimativa.
+            </p>
+          </section>
+        }
+
         <section class="bloco limites" aria-labelledby="titulo-limites">
           <h2 id="titulo-limites">O que entra na conta</h2>
           <h3>Considera</h3>
@@ -609,6 +891,9 @@ const alvoVazio = (): AlvoFormulario => ({
     form {
       display: grid;
       gap: 16px;
+    }
+    [hidden] {
+      display: none !important;
     }
     .aviso {
       margin: 8px 0 0;
@@ -705,6 +990,7 @@ const alvoVazio = (): AlvoFormulario => ({
       margin: 0;
       overflow-wrap: anywhere;
     }
+    .resultado ul,
     .limites ul {
       margin: 0;
       padding-left: 18px;
@@ -743,6 +1029,13 @@ export class SimuladorComponent implements OnInit {
   /** Resultado da última busca por nome; null antes de buscar. */
   readonly encontrados = signal<MonstroAlvo[] | null>(null);
   readonly resultado = signal<RespostaSimulacao | null>(null);
+  /** D59: resultado da simulação com os efeitos da build. */
+  readonly resultadoBuild = signal<RespostaBuild | null>(null);
+  /** D59: calcular com os efeitos dos itens da ficha (só com um personagem escolhido). */
+  readonly comEfeitos = signal(false);
+  /** Habilidades de ataque da classe, conhecidas depois da primeira simulação da build. */
+  readonly habilidades = signal<{ valor: string; nome: string }[]>([]);
+  readonly modoBuild = computed(() => this.personagemId() !== "" && this.comEfeitos());
 
   readonly instancia = computed(() => this.instancias().find((i) => i.id === this.instanciaId()) ?? null);
   readonly chefe = computed(
@@ -759,6 +1052,9 @@ export class SimuladorComponent implements OnInit {
   readonly rotulosArma = TIPOS_ARMA;
   readonly rotulosElemento = ROTULOS_ELEMENTO;
   readonly rotulosTamanho = ROTULOS_TAMANHO;
+  readonly rotulosEncaixe = ROTULOS_ENCAIXE;
+  readonly rotulosTipoDano = ROTULOS_TIPO_DANO;
+  readonly racas = Object.entries(ROTULOS_RACA);
   readonly atributosAtacante = ATRIBUTOS_ATACANTE;
   readonly camposFisicos = CAMPOS_FISICOS;
   readonly camposMagicos = CAMPOS_MAGICOS;
@@ -781,6 +1077,8 @@ export class SimuladorComponent implements OnInit {
   bonusMagico: BonusMagico = { ...BONUS_MAGICO_ZERADO };
   alvo: AlvoFormulario = alvoVazio();
   idMonstro: number | null = null;
+  /** Habilidade escolhida para a build, no formato do simulador; vazio usa a da ficha. */
+  habilidadeEscolhida = "";
   buscaMonstro = "";
   nomeNovoChefe = "";
 
@@ -804,11 +1102,15 @@ export class SimuladorComponent implements OnInit {
 
   /**
    * Preenche o atacante com o que a ficha guarda da build: nível, atributos (base mais bônus de
-   * classe), talentos, refino da arma, propriedade do ataque e o nome da habilidade.
+   * classe), talentos, refino da arma, propriedade do ataque e o nome da habilidade. Se a ficha
+   * tem a build importada (D59), a simulação já parte com os efeitos dos itens ligados.
    */
   escolherPersonagem(id: string): void {
     this.personagemId.set(id);
+    this.habilidades.set([]);
+    this.habilidadeEscolhida = "";
     const p = this.personagens().find((personagem) => personagem.id === id);
+    this.comEfeitos.set(Boolean(p?.atributos?.token || p?.atributos?.classeSimulador));
     if (!p) {
       this.notaDaBuild.set(null);
       return;
@@ -838,7 +1140,7 @@ export class SimuladorComponent implements OnInit {
             a.habilidade
               ? `Habilidade da build: ${a.habilidade.nome}${a.habilidade.nivel ? ` nv. ${a.habilidade.nivel}` : ""}.`
               : "",
-            "Os atributos vieram da build (base mais bônus de classe), sem os bônus dos equipamentos.",
+            "À mão, os atributos abaixo são os da build (base mais bônus de classe), sem os bônus dos equipamentos.",
           ]
             .filter((x) => x !== "")
             .join(" "),
@@ -880,6 +1182,8 @@ export class SimuladorComponent implements OnInit {
       elemento: monstro.elemento ?? "NEUTRO",
       nivelElemento: monstro.nivelElemento ?? 1,
       danoRecebidoPct: monstro.danoRecebidoPct ?? 100,
+      raca: monstro.raca ?? "",
+      chefe: monstro.chefe ?? false,
     };
     const faltam = [
       ...CAMPOS_ALVO.filter(([chave]) => chave !== "danoRecebidoPct" && monstro[chave] === null).map(
@@ -1020,11 +1324,45 @@ export class SimuladorComponent implements OnInit {
     };
   }
 
+  /**
+   * Corpo de POST /api/simulador/simular-build (D59): o personagem, o alvo com o ID do monstro, a
+   * raça e a marca de chefe, a habilidade escolhida e os bônus digitados do tipo selecionado.
+   */
+  corpoDaBuild(): object {
+    const manual = this.corpoDaSimulacao() as { tipo: string; bonus: object; alvo: object };
+    const a = this.alvo;
+    const nome = a.nome.trim();
+    return {
+      personagemId: this.personagemId(),
+      tipo: manual.tipo,
+      bonus: manual.bonus,
+      ...(this.habilidadeEscolhida ? { habilidade: this.habilidadeEscolhida } : {}),
+      alvo: {
+        ...manual.alvo,
+        ...(this.idMonstro ? { idMonstro: this.idMonstro } : {}),
+        ...(nome ? { nome } : {}),
+        ...(a.raca ? { raca: a.raca } : {}),
+        chefe: a.chefe,
+      },
+    };
+  }
+
+  /** Simula com os efeitos da build quando ela está ligada; senão, à mão. */
   async simular(): Promise<void> {
     if (this.ocupado()) return;
     this.ocupado.set(true);
     this.erro.set(null);
     try {
+      if (this.modoBuild()) {
+        const resposta = await firstValueFrom(
+          this.http.post<RespostaBuild>("/api/simulador/simular-build", this.corpoDaBuild()),
+        );
+        this.resultado.set(null);
+        this.resultadoBuild.set(resposta);
+        this.habilidades.set(resposta.habilidadesDisponiveis);
+        return;
+      }
+      this.resultadoBuild.set(null);
       this.resultado.set(
         await firstValueFrom(
           this.http.post<RespostaSimulacao>("/api/simulador/simular", this.corpoDaSimulacao()),
@@ -1032,9 +1370,21 @@ export class SimuladorComponent implements OnInit {
       );
     } catch (e) {
       this.resultado.set(null);
+      this.resultadoBuild.set(null);
       this.erro.set(mensagemDeErro(e));
     } finally {
       this.ocupado.set(false);
     }
+  }
+
+  /**
+   * Bônus de um item num texto curto, como "ATQM +180, Dano mágico % +5".
+   * @param efeitos Bônus lidos pelo motor
+   */
+  textoDosEfeitos(efeitos: EfeitoLido[]): string {
+    if (!efeitos.length) return "nenhum efeito dele valeu nesta conta";
+    return efeitos
+      .map((efeito) => `${efeito.rotulo} ${efeito.valor > 0 ? "+" : ""}${efeito.valor}`)
+      .join(", ");
   }
 }

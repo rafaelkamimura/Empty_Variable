@@ -1,0 +1,401 @@
+import { AdditionalBonusInput, InfoForClass } from '../models/info-for-class.model';
+import { ClassName } from './_class-name';
+import { ActiveSkillModel, AtkSkillModel, PassiveSkillModel } from './_character-base.abstract';
+import { Mage } from './Mage';
+import { EARTH_SPIKE, HEAVENS_DRIVE } from '../skills/shared-skills';
+import { ClassAutoCastDefinition } from '../models/auto-cast.model';
+
+const AUTO_SPELL_TIERS: Array<[number, number[]]> = [
+  [1, [19, 14, 20]],
+  [4, [13, 17]],
+  [7, [88, 90]],
+  [10, [21, 91]],
+];
+
+const SCHOLAR_AUTO_CASTS: ClassAutoCastDefinition[] = [{
+  key: 'auto-spell',
+  resolve: ({ skillState, optionsFor, model }) => {
+    const level = skillState.learnedLevel('Auto Spell');
+    if (level <= 0) return {};
+    const ids = AUTO_SPELL_TIERS.filter(([minimum]) => level >= minimum).flatMap(([, skillIds]) => skillIds);
+    const slot = { key: 'autoSpell' as const, name: 'Desejo Arcano', icon: 279, level, options: optionsFor(ids) };
+    const skillId = Number(model.autoCastSelections?.autoSpell);
+    if (!skillId || !slot.options.some((option) => option.value === skillId)) return { slots: [slot] };
+
+    return {
+      slots: [slot],
+      sources: [{
+        key: `config-auto-spell-${skillId}`, kind: 'configurable', skillId,
+        skillLevel: Math.ceil(level / 2), chance: level * 2,
+        trigger: 'physical-hit', sourceName: slot.name, slot: slot.key,
+        enablingSkillId: 279,
+        chanceBreakdown: [
+          { label: 'Desejo Arcano', value: `Nv. ${level}` },
+          { label: 'Chance', value: `2% × ${level} = ${level * 2}%` },
+        ],
+      }],
+    };
+  },
+}];
+
+const jobBonusTable: Record<number, [number, number, number, number, number, number]> = {
+  1: [0, 0, 0, 1, 0, 0],
+  2: [0, 0, 0, 2, 0, 0],
+  3: [0, 1, 0, 2, 0, 0],
+  4: [0, 1, 0, 2, 0, 0],
+  5: [1, 1, 0, 2, 0, 0],
+  6: [1, 1, 0, 2, 0, 0],
+  7: [1, 1, 1, 2, 0, 0],
+  8: [1, 1, 1, 2, 1, 0],
+  9: [1, 1, 1, 2, 1, 0],
+  10: [1, 1, 1, 2, 1, 0],
+  11: [1, 1, 1, 3, 1, 0],
+  12: [1, 2, 1, 3, 1, 0],
+  13: [1, 2, 1, 3, 1, 0],
+  14: [1, 2, 1, 4, 1, 0],
+  15: [1, 2, 1, 4, 1, 0],
+  16: [1, 2, 1, 4, 2, 0],
+  17: [1, 2, 1, 4, 2, 0],
+  18: [2, 2, 1, 4, 2, 0],
+  19: [2, 2, 1, 4, 2, 0],
+  20: [2, 2, 1, 4, 3, 0],
+  21: [2, 2, 1, 4, 3, 1],
+  22: [2, 2, 1, 5, 3, 1],
+  23: [2, 3, 1, 5, 3, 1],
+  24: [2, 3, 2, 5, 3, 1],
+  25: [2, 3, 2, 5, 3, 1],
+  26: [2, 3, 2, 5, 4, 1],
+  27: [3, 3, 2, 5, 4, 1],
+  28: [3, 3, 2, 5, 4, 1],
+  29: [3, 3, 2, 5, 5, 1],
+  30: [3, 3, 2, 6, 5, 1],
+  31: [3, 3, 2, 6, 5, 1],
+  32: [3, 4, 2, 6, 5, 1],
+  33: [3, 4, 2, 6, 5, 1],
+  34: [3, 4, 2, 6, 6, 1],
+  35: [3, 4, 2, 6, 6, 1],
+  36: [4, 4, 2, 6, 6, 1],
+  37: [4, 4, 2, 6, 7, 1],
+  38: [4, 4, 2, 7, 7, 1],
+  39: [4, 4, 3, 7, 7, 1],
+  40: [4, 4, 3, 7, 7, 1],
+  41: [4, 4, 3, 8, 7, 1],
+  42: [4, 4, 3, 8, 7, 1],
+  43: [4, 5, 3, 8, 7, 1],
+  44: [4, 5, 3, 8, 7, 1],
+  45: [5, 5, 3, 8, 7, 1],
+  46: [5, 5, 3, 8, 8, 1],
+  47: [5, 5, 3, 8, 8, 1],
+  48: [5, 5, 3, 8, 8, 1],
+  49: [5, 5, 3, 9, 8, 1],
+  50: [5, 6, 3, 9, 8, 1],
+  51: [5, 6, 3, 9, 8, 1],
+  52: [5, 6, 3, 9, 9, 1],
+  53: [5, 6, 3, 9, 9, 1],
+  54: [5, 7, 3, 9, 9, 1],
+  55: [5, 7, 3, 9, 10, 1],
+  56: [6, 7, 3, 9, 10, 1],
+  57: [6, 7, 3, 10, 10, 1],
+  58: [6, 7, 3, 10, 10, 1],
+  59: [6, 7, 3, 10, 10, 1],
+  60: [6, 8, 3, 10, 10, 1],
+  61: [6, 8, 3, 10, 10, 1],
+  62: [6, 8, 3, 10, 11, 1],
+  63: [6, 8, 4, 10, 11, 1],
+  64: [6, 8, 4, 11, 11, 1],
+  65: [6, 8, 4, 11, 11, 1],
+  66: [6, 8, 4, 11, 11, 2],
+  67: [6, 8, 4, 11, 11, 2],
+  68: [6, 8, 4, 12, 11, 2],
+  69: [6, 9, 4, 12, 11, 2],
+  70: [6, 9, 4, 13, 11, 2],
+};
+
+export class Scholar extends Mage {
+  protected override CLASS_NAME = ClassName.Scholar;
+  protected override JobBonusTable = jobBonusTable;
+  protected override initialStatusPoint = 100;
+
+  protected readonly classNamesHi = [ClassName.Sage, ClassName.HiClass, ClassName.Scholar];
+  protected readonly atkSkillListHi: AtkSkillModel[] = [
+    // The two Bruxo-column skills the Sábio learns too — their client text carries a
+    // "Pré requisitos (Sábios)" line. Same definitions as the Bruxo's; see shared-skills.ts.
+    EARTH_SPIKE,
+    HEAVENS_DRIVE,
+  ];
+  protected readonly activeSkillListHi: ActiveSkillModel[] = [
+    {
+      inputType: 'selectButton',
+      label: 'Foresight',
+      name: 'Foresight',
+      dropdown: [
+        { label: 'Sim', isUse: true, value: 1 },
+        { label: 'Não', isUse: false, value: 0 },
+      ],
+    },
+    {
+      // Sage fire endow (Encantar com Chama); 'Flame Launcher' would collide with
+      // the Mechanic skill in the Skill Catalog, hence the renewal name.
+      inputType: 'dropdown',
+      label: 'Endow Blaze',
+      name: 'Endow Blaze',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1, bonus: { m_my_element_fire: 1 } },
+        { label: 'Nv 2', isUse: true, value: 2, bonus: { m_my_element_fire: 2 } },
+        { label: 'Nv 3', isUse: true, value: 3, bonus: { m_my_element_fire: 3 } },
+        { label: 'Nv 4', isUse: true, value: 4, bonus: { m_my_element_fire: 4 } },
+        { label: 'Nv 5', isUse: true, value: 5, bonus: { m_my_element_fire: 5 } },
+      ],
+    },
+    {
+      inputType: 'dropdown',
+      label: 'Lightning Loader',
+      name: 'Lightning Loader',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1, bonus: { m_my_element_wind: 1 } },
+        { label: 'Nv 2', isUse: true, value: 2, bonus: { m_my_element_wind: 2 } },
+        { label: 'Nv 3', isUse: true, value: 3, bonus: { m_my_element_wind: 3 } },
+        { label: 'Nv 4', isUse: true, value: 4, bonus: { m_my_element_wind: 4 } },
+        { label: 'Nv 5', isUse: true, value: 5, bonus: { m_my_element_wind: 5 } },
+      ],
+    },
+    {
+      inputType: 'dropdown',
+      label: 'Frost Weapon',
+      name: 'Frost Weapon',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1, bonus: { m_my_element_water: 1 } },
+        { label: 'Nv 2', isUse: true, value: 2, bonus: { m_my_element_water: 2 } },
+        { label: 'Nv 3', isUse: true, value: 3, bonus: { m_my_element_water: 3 } },
+        { label: 'Nv 4', isUse: true, value: 4, bonus: { m_my_element_water: 4 } },
+        { label: 'Nv 5', isUse: true, value: 5, bonus: { m_my_element_water: 5 } },
+      ],
+    },
+
+    {
+      inputType: 'dropdown',
+      label: 'Seismic Weapon',
+      name: 'Seismic Weapon',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1, bonus: { m_my_element_earth: 1 } },
+        { label: 'Nv 2', isUse: true, value: 2, bonus: { m_my_element_earth: 2 } },
+        { label: 'Nv 3', isUse: true, value: 3, bonus: { m_my_element_earth: 3 } },
+        { label: 'Nv 4', isUse: true, value: 4, bonus: { m_my_element_earth: 4 } },
+        { label: 'Nv 5', isUse: true, value: 5, bonus: { m_my_element_earth: 5 } },
+      ],
+    },
+  ];
+  protected readonly passiveSkillListHi: PassiveSkillModel[] = [
+    {
+      inputType: 'dropdown',
+      label: 'Adv Book',
+      name: 'Advanced Book',
+      isMasteryAtk: true,
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1, bonus: { book_atk: 3, book_aspdPercent: 0.5 } },
+        { label: 'Nv 2', isUse: true, value: 2, bonus: { book_atk: 6, book_aspdPercent: 1 } },
+        { label: 'Nv 3', isUse: true, value: 3, bonus: { book_atk: 9, book_aspdPercent: 1.5 } },
+        { label: 'Nv 4', isUse: true, value: 4, bonus: { book_atk: 12, book_aspdPercent: 2 } },
+        { label: 'Nv 5', isUse: true, value: 5, bonus: { book_atk: 15, book_aspdPercent: 2.5 } },
+        { label: 'Nv 6', isUse: true, value: 6, bonus: { book_atk: 18, book_aspdPercent: 3 } },
+        { label: 'Nv 7', isUse: true, value: 7, bonus: { book_atk: 21, book_aspdPercent: 3.5 } },
+        { label: 'Nv 8', isUse: true, value: 8, bonus: { book_atk: 24, book_aspdPercent: 4 } },
+        { label: 'Nv 9', isUse: true, value: 9, bonus: { book_atk: 27, book_aspdPercent: 4.5 } },
+        { label: 'Nv 10', isUse: true, value: 10, bonus: { book_atk: 30, book_aspdPercent: 5 } },
+      ],
+    },
+    {
+      inputType: 'dropdown',
+      label: 'Dragonology',
+      name: 'Dragonology',
+      isMasteryAtk: true,
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        {
+          label: 'Nv 1',
+          isUse: true,
+          value: 1,
+          bonus: { atkPercent_race_dragon: 4, matkPercent_race_dragon: 2, int: 1 },
+        },
+        {
+          label: 'Nv 2',
+          isUse: true,
+          value: 2,
+          bonus: { atkPercent_race_dragon: 8, matkPercent_race_dragon: 4, int: 1 },
+        },
+        {
+          label: 'Nv 3',
+          isUse: true,
+          value: 3,
+          bonus: { atkPercent_race_dragon: 12, matkPercent_race_dragon: 6, int: 2 },
+        },
+        {
+          label: 'Nv 4',
+          isUse: true,
+          value: 4,
+          bonus: { atkPercent_race_dragon: 16, matkPercent_race_dragon: 8, int: 2 },
+        },
+        {
+          label: 'Nv 5',
+          isUse: true,
+          value: 5,
+          bonus: { atkPercent_race_dragon: 20, matkPercent_race_dragon: 10, int: 3 },
+        },
+      ],
+    },
+    {
+      inputType: 'dropdown',
+      label: 'Indulge',
+      name: 'Indulge',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+    {
+      inputType: 'dropdown',
+      label: 'Auto Spell',
+      name: 'Auto Spell',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+        { label: 'Nv 6', isUse: true, value: 6 },
+        { label: 'Nv 7', isUse: true, value: 7 },
+        { label: 'Nv 8', isUse: true, value: 8 },
+        { label: 'Nv 9', isUse: true, value: 9 },
+        { label: 'Nv 10', isUse: true, value: 10 },
+      ],
+    },
+    {
+      inputType: 'dropdown',
+      label: 'Endow Blaze',
+      name: 'Endow Blaze',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+    {
+      inputType: 'dropdown',
+      label: 'Lightning Loader',
+      name: 'Lightning Loader',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+    {
+      inputType: 'dropdown',
+      label: 'Frost Weapon',
+      name: 'Frost Weapon',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+    {
+      inputType: 'dropdown',
+      label: 'Seismic Weapon',
+      name: 'Seismic Weapon',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+
+    {
+      inputType: 'dropdown',
+      label: 'Land Protector',
+      name: 'Land Protector',
+      dropdown: [
+        { label: '-', isUse: false, value: 0 },
+        { label: 'Nv 1', isUse: true, value: 1 },
+        { label: 'Nv 2', isUse: true, value: 2 },
+        { label: 'Nv 3', isUse: true, value: 3 },
+        { label: 'Nv 4', isUse: true, value: 4 },
+        { label: 'Nv 5', isUse: true, value: 5 },
+      ],
+    },
+  ];
+
+  constructor() {
+    super();
+
+    this.inheritSkills({
+      activeSkillList: this.activeSkillListHi,
+      atkSkillList: this.atkSkillListHi,
+      passiveSkillList: this.passiveSkillListHi,
+      classNames: this.classNamesHi,
+    });
+    this.inheritAutoCasts(SCHOLAR_AUTO_CASTS);
+  }
+
+  /**
+   * Estudo de Livros (Advanced Book) pays out only with a Book equipped, so both halves
+   * are stored prefixed with the weapon type and read back here: `book_atk` as mastery
+   * ATK, `book_aspdPercent` as ASPD%. The client table is +3 ATK and +0,5% per level,
+   * so Nv 10 with a Book is +30 and +5%.
+   *
+   * These live on Scholar rather than on Sorcerer because the skill belongs to the Sage
+   * line: Professor learns it too, and while the consumers sat one class lower the
+   * Professor got neither half. Tracker card weX1HzsAlZeMhsnRgSzJ.
+   */
+  override getMasteryAtk(params: InfoForClass): number {
+    if (!this.bonuses?.masteryAtks) return 0;
+
+    const { weapon } = params;
+    const typeName = weapon?.data?.typeName;
+
+    let atk = 0;
+    for (const [_skillName, bonus] of Object.entries(this.bonuses.masteryAtks)) {
+      atk += bonus[`${typeName}_atk`] || 0;
+    }
+
+    return atk;
+  }
+
+  override setAdditionalBonus(params: AdditionalBonusInput) {
+    const { totalBonus, weapon } = params;
+    if (!this.bonuses?.masteryAtks) return totalBonus;
+
+    const typeName = weapon?.data?.typeName;
+    const { masteryAtks, equipAtks } = this.bonuses;
+
+    let aspdPercent = 0;
+    for (const [_skillName, bonus] of Object.entries({ ...masteryAtks, ...equipAtks })) {
+      aspdPercent += bonus[`${typeName}_aspdPercent`] || 0;
+    }
+    totalBonus.aspdPercent = (totalBonus.aspdPercent || 0) + aspdPercent;
+
+    return totalBonus;
+  }
+}

@@ -4,6 +4,7 @@
 //   RES:    https://irowiki.org/wiki/RES        ordem: https://irowiki.org/wiki/Attacks
 //   talentos (POD, FEI, CON): https://irowiki.org/wiki/Stats
 // É uma implementação própria: nada aqui vem do código nem dos dados do simulador da latam-tools.
+// Vale para a simulação à mão; a da build da ficha usa o pacote `motor-latam` (D59).
 // O jogo não tem casas decimais, então cada etapa arredonda para baixo.
 import {
   bonusRefinoArma,
@@ -15,32 +16,38 @@ import {
   TIPOS_ARMA,
 } from "./tabelas.js";
 
-/** O que a simulação leva em conta. A tela mostra estas frases como estão. */
+/**
+ * O que a simulação leva em conta. A tela mostra estas frases como estão. Há dois modos: com a
+ * build da ficha, a conta é a do motor do simulador da latam-tools (D59, pacote `motor-latam`); à
+ * mão, é a deste arquivo.
+ */
 export const CONSIDERA: readonly string[] = [
-  "ATQ e ATQM de atributos (nível base, FOR, DES, INT, SOR, POD e FEI)",
-  "ATQ ou ATQM base da arma, variação por nível da arma e bônus de refino (fixo, acima do seguro e +16)",
-  "penalidade de tamanho da arma e tabela de propriedades contra o alvo",
-  "A.FÍS e A.MÁG de POD, FEI e CON, mais o que você informar",
-  "DEF, DEFM, RES e RESM do alvo, com a DEF e a DEFM de atributos dele",
-  "os bônus de equipamento que você digitar (ATQ, %, raça, tamanho, propriedade, classe, perfuração)",
+  "com a build da ficha: efeitos de equipamentos, cartas, encantamentos e conjuntos, com refino e grau, incluindo sombrios, visuais, mascote, munição e opções aleatórias do link importado",
+  "com a build da ficha: a fórmula da habilidade escolhida, as habilidades aprendidas, os buffs e os consumíveis marcados no link importado",
+  "com a build da ficha: o que o simulador sabe do monstro pelo ID (aura vermelha dos MVPs, redução de dano e DEF multiplicada em instâncias)",
+  "os bônus que você digitar: com a build, somam aos efeitos lidos dos itens; à mão, são os únicos",
+  "à mão: ATQ e ATQM de atributos e da arma, refino, penalidade de tamanho, tabela de propriedades, A.FÍS e A.MÁG, DEF, DEFM, RES e RESM do alvo",
 ];
 
 /** O que a simulação deixa de fora. A tela mostra estas frases como estão. */
 export const NAO_CONSIDERA: readonly string[] = [
-  "efeitos de equipamentos, cartas, encantamentos, conjuntos, sombrios e visuais: nada é lido dos itens, só o que você digitar",
-  "a fórmula de cada habilidade: informe a % da habilidade e o número de acertos",
-  "buffs, consumíveis, munição, mascote e habilidades passivas, a não ser que você some nos bônus",
-  "ajustes próprios do LATAM: as fórmulas são as públicas do Renewal",
-  "crítico, precisão, esquiva, velocidade de ataque, conjuração e pós-conjuração (não há DPS)",
-  "A.FÍS/A.MÁG do refino e bônus de grau das armas de nível 5",
-  "mecânicas do chefe na instância (cura, invulnerabilidade, Aliviar, HP diferente do banco de dados)",
+  "itens que o simulador da latam-tools ainda não tem: ficam de fora e aparecem na lista de ignorados do resultado",
+  "efeitos com chance de ativar (inclusive autoconjuração) e itens personalizados criados no simulador",
+  "o que só existe no link importado (sombrios, visuais, mascote, buffs, consumíveis) não muda quando você edita a ficha: importe o link de novo",
+  "rotação de habilidades, DPS e tempo de conjuração: o resultado é o dano de um uso",
+  "o nível de Aliviar do alvo e alvos jogadores (PvP)",
+  "ATQ de maestria digitado, quando a conta usa a build da ficha",
+  "à mão: efeitos de itens, fórmula da habilidade, buffs, consumíveis, crítico e precisão; só entra o que você digitar",
+  "mecânicas do chefe na instância (cura, invulnerabilidade, HP diferente do banco de dados)",
 ];
 
 /** Pontos que seguem uma leitura das fontes que não foi conferida no jogo. */
 export const NAO_CONFIRMADO: readonly string[] = [
-  "a perfuração de RES e RESM é aplicada como a de DEF (reduz o RES do alvo em %); a fonte não detalha a conta",
-  "o ATQ de atributos é tratado como Neutro e sofre a tabela de propriedades (pesa contra alvos Fantasma)",
-  "a ordem entre RES, % da habilidade e DEF segue a wiki; diferenças de arredondamento são de poucos pontos",
+  "com a build da ficha: o resultado é o do motor do simulador da latam-tools na versão copiada para o sistema; se o site mudar depois, os números podem diferir dos dele",
+  "com a build da ficha: bônus de evento com prazo valem pela data do servidor na hora da simulação",
+  "à mão: a perfuração de RES e RESM é aplicada como a de DEF (reduz o RES do alvo em %); a fonte não detalha a conta",
+  "à mão: o ATQ de atributos é tratado como Neutro e sofre a tabela de propriedades (pesa contra alvos Fantasma)",
+  "à mão: a ordem entre RES, % da habilidade e DEF segue a wiki; diferenças de arredondamento são de poucos pontos",
 ];
 
 export interface Alvo {

@@ -6,16 +6,18 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json .
 COPY packages/scoring/package.json packages/scoring/
 COPY packages/farm/package.json packages/farm/
 COPY packages/simulador/package.json packages/simulador/
+COPY packages/motor-latam/package.json packages/motor-latam/
 COPY backend/package.json backend/
 COPY bot/package.json bot/
 RUN pnpm install --frozen-lockfile --filter @betel/api...
 COPY packages/scoring packages/scoring
 COPY packages/farm packages/farm
 COPY packages/simulador packages/simulador
+COPY packages/motor-latam packages/motor-latam
 COPY backend backend
 COPY bot bot
 COPY database/prisma database/prisma
-RUN pnpm --filter @betel/api prisma:generate && pnpm --filter @betel/scoring build && pnpm --filter @betel/farm build && pnpm --filter @betel/simulador build && pnpm --filter @emptyvariable/discord build && pnpm --filter @betel/api build
+RUN pnpm --filter @betel/api prisma:generate && pnpm --filter @betel/scoring build && pnpm --filter @betel/farm build && pnpm --filter @betel/simulador build && pnpm --filter @betel/motor-latam build && pnpm --filter @emptyvariable/discord build && pnpm --filter @betel/api build
 
 FROM node:22-alpine
 ENV NODE_ENV=production
@@ -27,6 +29,10 @@ COPY --from=build /repo/packages/farm/package.json packages/farm/
 COPY --from=build /repo/packages/farm/dist packages/farm/dist
 COPY --from=build /repo/packages/simulador/package.json packages/simulador/
 COPY --from=build /repo/packages/simulador/dist packages/simulador/dist
+# D59: do motor de dano vão só o pacote compilado (um arquivo) e os dados compactados, lidos na primeira simulação.
+COPY --from=build /repo/packages/motor-latam/package.json packages/motor-latam/
+COPY --from=build /repo/packages/motor-latam/dist/index.js packages/motor-latam/dist/index.js
+COPY --from=build /repo/packages/motor-latam/dados packages/motor-latam/dados
 COPY --from=build /repo/backend/package.json backend/
 COPY --from=build /repo/backend/dist backend/dist
 COPY --from=build /repo/backend/node_modules backend/node_modules
