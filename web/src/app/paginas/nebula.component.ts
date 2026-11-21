@@ -17,8 +17,8 @@ import {
   type VitrineNebula,
 } from "../core/nebula";
 import { SaldoService } from "../core/saldo.service";
-import { tomDe } from "../core/visual";
-import { ImagemItemComponent } from "../core/imagem-item.component";
+import { tomDe } from "../shared/dominio/visual";
+import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 
 /**
  * US-17 / US-18 (T-45): as Nebulosas abertas, no layout de cartões da loja. Ao escolher uma, o painel

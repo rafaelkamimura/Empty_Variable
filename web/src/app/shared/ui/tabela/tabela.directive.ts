@@ -1,4 +1,12 @@
-import { type AfterViewInit, Directive, ElementRef, inject, type OnDestroy } from "@angular/core";
+import {
+  type AfterViewInit,
+  booleanAttribute,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  type OnDestroy,
+} from "@angular/core";
 
 /**
  * Tabela sem barra de rolagem (diretrizes §5 e §6.6). Em espaço largo, as células quebram linha;
@@ -7,15 +15,22 @@ import { type AfterViewInit, Directive, ElementRef, inject, type OnDestroy } fro
  * para o `data-label` das células da coluna, inclusive nas linhas que aparecem depois.
  *
  * É diretiva, e não componente, porque também vai em `<table mat-table>` (o MatTable já é o
- * componente do elemento). O estilo fica em `tabela.scss`, escopado em `table.ui-tabela`.
+ * componente do elemento). O estilo fica em `tabela.scss`, escopado em `table.ui-tabela`. Com
+ * `padrao`, a tabela também ganha a aparência das células (`<table uiTabela padrao>`).
  *
  * @nivel organismo
  */
 @Directive({
   selector: "table[uiTabela]",
-  host: { class: "ui-tabela" },
+  host: { class: "ui-tabela", "[class.ui-tabela-padrao]": "padrao()" },
 })
 export class TabelaDirective implements AfterViewInit, OnDestroy {
+  /**
+   * Aparência padrão das células (espaçamento, linha, cabeçalho e `class="numero"`). Opcional para
+   * não mudar as tabelas antigas, que têm estilo próprio; toda tabela nova usa.
+   */
+  readonly padrao = input(false, { transform: booleanAttribute });
+
   private readonly tabela = inject<ElementRef<HTMLTableElement>>(ElementRef).nativeElement;
   private observador: MutationObserver | null = null;
 

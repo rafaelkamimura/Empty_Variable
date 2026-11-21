@@ -1,4 +1,4 @@
-import { Component, computed, input } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, input } from "@angular/core";
 
 /** Forma de um ícone: um caminho ou um círculo (cx, cy, r), no quadro 24 × 24. */
 type Forma = { d: string } | { c: readonly [number, number, number] };
@@ -84,6 +84,7 @@ export type NomeIcone = keyof typeof ICONES;
 
 @Component({
   selector: "app-icone",
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <svg
       [attr.width]="tamanho()"

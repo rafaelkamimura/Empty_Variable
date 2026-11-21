@@ -2,7 +2,7 @@ import { HttpClient } from "@angular/common/http";
 import { Component, inject, type OnInit, signal } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { firstValueFrom } from "rxjs";
-import { IconeComponent } from "../core/icone.component";
+import { IconeComponent } from "../shared/dominio/icone.component";
 import { mensagemDeErro } from "../core/modelos";
 import { atrasada, esperaDe, type ResumoGestao } from "../core/painel";
 

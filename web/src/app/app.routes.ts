@@ -9,6 +9,7 @@ import {
 } from "./core/guardas";
 import { TELAS_LIBERADAS } from "./core/telas-liberadas";
 import { ROTAS_DEV } from "./dev/dev.routes";
+import { ROTAS_LOJA } from "./features/loja/loja.routes";
 
 /** paineis §4: o painel vem da URL — /me, /loja e /nebula (Cliente), /gestao (Gestão), /admin (Administração). */
 const rotasCompletas: Routes = [
@@ -38,17 +39,12 @@ const rotasCompletas: Routes = [
   },
 
   // ---- Cliente ----
+  ...ROTAS_LOJA,
   {
     path: "me",
     canActivate: [vinculadoGuard],
     title: "Minha área · Empty Variable",
     loadComponent: () => import("./paginas/me.component").then((m) => m.MeComponent),
-  },
-  {
-    path: "loja",
-    canActivate: [autenticadoGuard],
-    title: "Loja · Empty Variable",
-    loadComponent: () => import("./paginas/loja-catalogo.component").then((m) => m.LojaCatalogoComponent),
   },
   {
     path: "carteira",
@@ -73,18 +69,6 @@ const rotasCompletas: Routes = [
     canActivate: [autenticadoGuard],
     title: "Estimativa de dano · Empty Variable",
     loadComponent: () => import("./paginas/simulador.component").then((m) => m.SimuladorComponent),
-  },
-  {
-    path: "loja/compras",
-    canActivate: [vinculadoGuard],
-    title: "Minhas compras · Empty Variable",
-    loadComponent: () => import("./paginas/loja-compras.component").then((m) => m.LojaComprasComponent),
-  },
-  {
-    path: "loja/ofertas",
-    canActivate: [vinculadoGuard],
-    title: "Minhas ofertas · Empty Variable",
-    loadComponent: () => import("./paginas/loja-ofertas.component").then((m) => m.LojaOfertasComponent),
   },
   {
     path: "nebula",

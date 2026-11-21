@@ -9,7 +9,7 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { Router, RouterLink } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
-import { IconeComponent } from "../core/icone.component";
+import { IconeComponent } from "../shared/dominio/icone.component";
 import {
   type DificuldadeInstancia,
   type EncontroEditavel,
@@ -26,7 +26,7 @@ import {
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 import { mensagemDeErro } from "../core/modelos";
-import { tomDe } from "../core/visual";
+import { tomDe } from "../shared/dominio/visual";
 
 export interface NovaInstancia {
   nome: string;

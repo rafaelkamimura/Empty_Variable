@@ -114,4 +114,26 @@ export const ENTRADAS_CATALOGO: readonly EntradaCatalogo[] = [
     descricao: "A marca {∅_}: chaves no degradê, ∅ lavanda e o cursor piscando.",
     carregar: () => import("../../shared/ui/marca/marca.catalogo").then((m) => m.MarcaCatalogoComponent),
   },
+  {
+    id: "badge",
+    nome: "ui-badge",
+    nivel: "atomo",
+    descricao: "Rótulo de status com tom semântico.",
+    carregar: () => import("../../shared/ui/badge/badge.catalogo").then((m) => m.BadgeCatalogoComponent),
+  },
+  {
+    id: "campo",
+    nome: "ui-campo",
+    nivel: "molecula",
+    descricao: "Rótulo, controle, dica e erro ligados por aria-describedby.",
+    carregar: () => import("../../shared/ui/campo/campo.catalogo").then((m) => m.CampoCatalogoComponent),
+  },
+  {
+    id: "confirmacao",
+    nome: "ui-confirmacao",
+    nivel: "organismo",
+    descricao: "Diálogo de confirmação para ações destrutivas, com o efeito e o verbo.",
+    carregar: () =>
+      import("../../shared/ui/confirmacao/confirmacao.catalogo").then((m) => m.ConfirmacaoCatalogoComponent),
+  },
 ];

@@ -13,6 +13,28 @@ table.ui-tabela {
   }
 }
 
+// Aparência padrão das células, só nas tabelas que pedem (`<table uiTabela padrao>`). As tabelas
+// antigas e o mat-table têm estilo próprio e não recebem nada daqui. A especificidade fica baixa
+// (:where) para a página ainda poder ajustar uma coluna.
+:where(table.ui-tabela-padrao) :where(th, td) {
+  padding: var(--esp-2) var(--esp-3);
+  border-bottom: 1px solid var(--borda);
+  text-align: left;
+  vertical-align: middle;
+}
+
+:where(table.ui-tabela-padrao) :where(th) {
+  font-size: var(--fs-s);
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+// Números alinhados à direita e em colunas (diretrizes §6.5).
+:where(table.ui-tabela-padrao) :where(th, td).numero {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 @container conteudo (max-width: 760px) {
   table.ui-tabela {
     thead {

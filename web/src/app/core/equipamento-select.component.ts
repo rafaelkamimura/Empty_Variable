@@ -3,7 +3,7 @@ import { Component, computed, inject, Injectable, input, output, signal } from "
 import { FormsModule } from "@angular/forms";
 import { firstValueFrom } from "rxjs";
 import type { EquipamentoFicha, ItemEquipamento } from "./modelos";
-import { ImagemItemComponent } from "./imagem-item.component";
+import { ImagemItemComponent } from "../shared/dominio/imagem-item.component";
 
 interface CatalogoEquipamentos {
   slots: Record<string, ItemEquipamento[]>;
