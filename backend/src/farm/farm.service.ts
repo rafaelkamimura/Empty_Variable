@@ -310,6 +310,33 @@ export class FarmService {
     });
   }
 
+  /**
+   * D60: adiciona vários itens aos drops de uma vez (a lista de loot dos chefes da instância).
+   * Item que já está nos drops fica como está.
+   * @param itens Itens a adicionar, na ordem em que devem aparecer
+   */
+  async adicionarDrops(usuario: Usuario, instanciaId: string, itens: readonly EntradaItem[]) {
+    await this.minhaInstancia(usuario.id, instanciaId);
+    return this.prisma.$transaction(async (tx) => {
+      const ultima = await tx.farmInstanciaDrop.aggregate({
+        where: { farmInstanciaId: instanciaId },
+        _max: { ordem: true },
+      });
+      let ordem = ultima._max.ordem ?? 0;
+      const criados = [];
+      for (const item of itens) {
+        const criado = await this.obterOuCriarItem(tx, usuario.id, item);
+        await tx.farmInstanciaDrop.upsert({
+          where: { farmInstanciaId_farmItemId: { farmInstanciaId: instanciaId, farmItemId: criado.id } },
+          create: { farmInstanciaId: instanciaId, farmItemId: criado.id, ordem: ++ordem },
+          update: {},
+        });
+        criados.push(criado);
+      }
+      return criados;
+    });
+  }
+
   async removerDrop(usuario: Usuario, instanciaId: string, farmItemId: string): Promise<void> {
     await this.minhaInstancia(usuario.id, instanciaId);
     await this.prisma.farmInstanciaDrop.deleteMany({ where: { farmInstanciaId: instanciaId, farmItemId } });

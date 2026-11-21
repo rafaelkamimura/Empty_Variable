@@ -104,4 +104,16 @@ test("membro cadastra, faz o check-in, vê os totais e importa o backup do artef
     await page.getByRole("button", { name: "Ver o dia" }).click();
     await expect(page.getByTestId("inst-Torre")).toBeVisible();
   });
+
+  await test.step("Instância do catálogo mostra o loot dos chefes (sem a chave, só o aviso)", async () => {
+    await page.getByRole("tab", { name: "Cadastro" }).click();
+    await page
+      .getByRole("combobox", { name: "Partir do catálogo do grupo" })
+      .selectOption({ label: "Torre da Constelação" });
+    await page.getByRole("button", { name: "Adicionar instância" }).click();
+    const loot = page.getByTestId("loot-Torre da Constelação");
+    await loot.getByRole("button", { name: "Ver loot dos chefes" }).click();
+    await expect(loot).toContainText("0 item(ns) de 0 de 27 chefe(s).");
+    await expect(loot).toContainText("A busca na Divine Pride está desligada neste servidor.");
+  });
 });

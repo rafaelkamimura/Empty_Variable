@@ -58,6 +58,24 @@ export interface ResultadoBuscaItem {
   farmItemId: string | null;
 }
 
+/** D60: item da lista de loot de uma instância do catálogo, pelos drops dos chefes dela. */
+export interface ItemLoot {
+  idJogo: number;
+  nome: string | null;
+  /** Maior chance entre os chefes que dropam o item, de 0 a 1. */
+  chance: number | null;
+  origens: { idMonstro: number; monstro: string; tipo: "COMUM" | "MVP" | "MAPA"; chance: number | null }[];
+}
+
+export interface LootInstancia {
+  instancia: { id: string; nome: string };
+  chefes: number;
+  /** Chefes cujos drops ainda não foram buscados na Divine Pride. */
+  pendentes: number;
+  divinePride: boolean;
+  itens: ItemLoot[];
+}
+
 export interface InstanciaCatalogo {
   id: string;
   nome: string;
@@ -165,6 +183,15 @@ export class FarmStore {
     item: { nome: string; idJogo?: number | null; precoZeny?: number | null },
   ) {
     return this.e(firstValueFrom(this.http.post<ItemFarm>(`${API}/instancias/${instanciaId}/drops`, item)));
+  }
+  adicionarDrops(instanciaId: string, itens: { nome: string; idJogo: number }[]) {
+    return this.e(
+      firstValueFrom(this.http.post<ItemFarm[]>(`${API}/instancias/${instanciaId}/drops/lote`, { itens })),
+    );
+  }
+  /** D60: loot da instância do catálogo, pelos drops dos chefes cadastrados nela. */
+  lootDaInstancia(instanciaId: string): Promise<LootInstancia> {
+    return firstValueFrom(this.http.get<LootInstancia>(`/api/simulador/instancias/${instanciaId}/loot`));
   }
   removerDrop(instanciaId: string, itemId: string) {
     return this.e(firstValueFrom(this.http.delete<void>(`${API}/instancias/${instanciaId}/drops/${itemId}`)));

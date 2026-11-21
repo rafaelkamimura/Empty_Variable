@@ -140,6 +140,20 @@ export class FarmController {
     return this.farm.adicionarDrop(u, uuid(id, "Instância"), entradaItem(objeto(corpo)));
   }
 
+  /** D60: vários drops de uma vez, para a lista de loot dos chefes da instância. */
+  @Post("instancias/:id/drops/lote")
+  adicionarDrops(@UsuarioAtual() u: Usuario, @Param("id") id: string, @Body() corpo: unknown) {
+    const itens = objeto(corpo)["itens"];
+    if (!Array.isArray(itens) || itens.length < 1 || itens.length > 300) {
+      throw new BadRequestException("Itens deve ser uma lista com 1 a 300 itens.");
+    }
+    return this.farm.adicionarDrops(
+      u,
+      uuid(id, "Instância"),
+      itens.map((item) => entradaItem(objeto(item))),
+    );
+  }
+
   @Delete("instancias/:id/drops/:itemId")
   @HttpCode(204)
   removerDrop(@UsuarioAtual() u: Usuario, @Param("id") id: string, @Param("itemId") itemId: string) {
