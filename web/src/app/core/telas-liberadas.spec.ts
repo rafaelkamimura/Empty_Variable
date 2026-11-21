@@ -18,6 +18,11 @@ describe("Telas liberadas", () => {
     );
   });
 
+  it("libera o Diário de farm (D48)", () => {
+    expect(liberadas).toContain("farm");
+    expect(telaLiberada("/farm")).toBeTrue();
+  });
+
   it("mantém de fora a correção de run e as demais telas de gestão", () => {
     for (const path of [
       "gestao",

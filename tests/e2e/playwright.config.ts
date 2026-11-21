@@ -10,8 +10,8 @@ export const ORIGEM = `http://127.0.0.1:${PORTA}`;
  */
 export default defineConfig({
   testDir: "testes",
-  // Só as telas liberadas nesta etapa: estoque e a revisão dos rascunhos de run do nag4eyes.
-  testMatch: ["estoque.spec.ts", "rascunho-run.spec.ts"],
+  // Só as telas liberadas nesta etapa: estoque, a revisão dos rascunhos de run do nag4eyes e o Diário de farm.
+  testMatch: ["estoque.spec.ts", "rascunho-run.spec.ts", "farm.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,

@@ -14,6 +14,7 @@
     "sso:verificar": "node --env-file-if-exists=../.env dist/verificar-sso.js"
   },
   "dependencies": {
+    "@betel/farm": "workspace:*",
     "@betel/scoring": "workspace:*",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",

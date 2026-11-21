@@ -1,0 +1,26 @@
+{
+  "name": "@betel/farm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Regras puras do Diário de farm: recarga das instâncias (reset 04:00, UTC-3), períodos e totais.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}

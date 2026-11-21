@@ -25,3 +25,8 @@
 | US-20 | Histórico de solicitações | III | Implementada (M11) | — |
 | — | Verificar no RO Latam a negociabilidade dos materiais, o vínculo do item fabricado e o acesso às máquinas | III | Pesquisa documental concluída; pendente no jogo | [Conferência RO Latam](analise/catalogo-ro-latam.md) |
 | — | Login SSO Discord (só membros do servidor) | Transversal | Implementado (T-08); login real confirmado pelo responsável em 2026-11-18 | — |
+| US-21 | Cadastrar o meu farm: instâncias, recarga, quem faz e drops (com preço opcional) | V | Implementada (Diário de farm) | — |
+| US-22 | Fazer o check-in do dia por personagem, com os drops da run | V | Implementada (Diário de farm) | — |
+| US-23 | Ver os totais farmados por dia, semana e mês | V | Implementada (Diário de farm) | — |
+| US-24 | Buscar itens pelo nome ou pelo ID da Divine Pride | V | Implementada (Diário de farm) | — |
+| US-25 | Importar o backup do artefato Diário de Instâncias | V | Implementada (Diário de farm) | — |

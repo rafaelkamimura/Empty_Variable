@@ -20,6 +20,12 @@ export interface Configuracao {
   tokenIntegracao: string | null;
   /** Servidor do Discord do grupo, mesmo sem o OAuth configurado: delimita o que a integração enxerga. */
   guildId: string | null;
+  /**
+   * D53: chave da API da Divine Pride (DIVINE_PRIDE_API_KEY) e o servidor dos nomes
+   * (DIVINE_PRIDE_SERVER, padrão bRO, com nomes em português). null deixa a busca de nomes por ID desligada; as imagens
+   * pelo ID (D41) não precisam de chave.
+   */
+  divinePride: { chave: string; servidor: string } | null;
 }
 
 export const CONFIGURACAO = Symbol("CONFIGURACAO");
@@ -51,6 +57,11 @@ export function carregarConfiguracao(env: NodeJS.ProcessEnv = process.env): Conf
   const redirectUri = env["DISCORD_REDIRECT_URI"] || `${appOrigin}${caminhoBase}/api/auth/discord/callback`;
   const discordCompleto = clientId !== "" && clientSecret !== "" && guildId !== "";
   const tokenIntegracao = env["INTEGRACAO_TOKEN"] ?? "";
+  const chaveDivinePride = (env["DIVINE_PRIDE_API_KEY"] ?? "").trim();
+  const servidorDivinePride = (env["DIVINE_PRIDE_SERVER"] ?? "").trim() || "bRO";
+  if (!/^[A-Za-z]{2,10}$/.test(servidorDivinePride)) {
+    throw new Error("DIVINE_PRIDE_SERVER precisa ser o código de um servidor da Divine Pride (ex.: bRO).");
+  }
   if (tokenIntegracao !== "" && tokenIntegracao.length < MIN_SEGREDO) {
     throw new Error(`INTEGRACAO_TOKEN precisa ter pelo menos ${MIN_SEGREDO} caracteres.`);
   }
@@ -70,5 +81,6 @@ export function carregarConfiguracao(env: NodeJS.ProcessEnv = process.env): Conf
     devLogin: env["AUTH_DEV_LOGIN"] === "true" && env["NODE_ENV"] !== "production",
     tokenIntegracao: tokenIntegracao === "" ? null : tokenIntegracao,
     guildId: guildId === "" ? null : guildId,
+    divinePride: chaveDivinePride === "" ? null : { chave: chaveDivinePride, servidor: servidorDivinePride },
   };
 }

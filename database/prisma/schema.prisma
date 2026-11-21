@@ -90,6 +90,10 @@ model Usuario {
 
   rascunhosRunDecididos RascunhoRun[]
 
+  farmInstancias FarmInstancia[]
+  farmItens      FarmItem[]
+  farmCheckins   FarmCheckin[]
+
   @@map("usuario")
 }
 
@@ -148,6 +152,9 @@ model Personagem {
   participacoes Participacao[]
 
   participantesRascunho RascunhoRunParticipante[]
+
+  farmInstancias FarmInstanciaPersonagem[]
+  farmCheckins   FarmCheckin[]
 
   @@index([jogadorId])
   @@map("personagem")
@@ -790,7 +797,8 @@ model Instancia {
   versoes VersaoInstancia[]
   grupos  GrupoInstancia[]
 
-  rascunhosRun RascunhoRun[]
+  rascunhosRun   RascunhoRun[]
+  farmInstancias FarmInstancia[]
 
   @@map("instancia")
 }
@@ -937,4 +945,129 @@ model Notificacao {
 
   @@index([status, confirmadaEm])
   @@map("notificacao")
+}
+
+// ---------------------------------------------------------------------------
+// Diário de farm (D48–D54): o farm pessoal de cada membro vinculado.
+// Ninguém além do próprio usuário lê ou altera estes dados.
+// SQL manual: nomes únicos por usuário sem diferenciar maiúsculas e CHECKs.
+// ---------------------------------------------------------------------------
+
+/// D51: quando a instância libera de novo (reset às 04:00 de Brasília).
+enum RecargaFarm {
+  DIARIA
+  TRES_DIAS
+  SEMANAL
+  MENSAL
+}
+
+/// D50: instância da lista pessoal do membro; pode partir de uma instância do catálogo do grupo.
+/// Com check-ins, excluir só desativa, para o histórico continuar inteiro.
+model FarmInstancia {
+  id          String      @id @default(uuid()) @db.Uuid
+  usuarioId   String      @map("usuario_id") @db.Uuid
+  nome        String
+  recarga     RecargaFarm
+  instanciaId String?     @map("instancia_id") @db.Uuid
+  ativa       Boolean     @default(true)
+  criadaEm    DateTime    @default(now()) @map("criada_em") @db.Timestamptz(3)
+
+  usuario     Usuario                   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  instancia   Instancia?                @relation(fields: [instanciaId], references: [id], onDelete: SetNull)
+  personagens FarmInstanciaPersonagem[]
+  drops       FarmInstanciaDrop[]
+  checkins    FarmCheckin[]
+
+  @@index([usuarioId])
+  @@map("farm_instancia")
+}
+
+/// D49: quais personagens do vínculo fazem a instância.
+model FarmInstanciaPersonagem {
+  farmInstanciaId String @map("farm_instancia_id") @db.Uuid
+  personagemId    String @map("personagem_id") @db.Uuid
+
+  farmInstancia FarmInstancia @relation(fields: [farmInstanciaId], references: [id], onDelete: Cascade)
+  personagem    Personagem    @relation(fields: [personagemId], references: [id], onDelete: Cascade)
+
+  @@id([farmInstanciaId, personagemId])
+  @@index([personagemId])
+  @@map("farm_instancia_personagem")
+}
+
+/// D52/D53: item do farm do membro, com o preço de venda em zeny (opcional) e o ID do jogo
+/// (imagem e nome pela Divine Pride).
+model FarmItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  usuarioId String   @map("usuario_id") @db.Uuid
+  nome      String
+  idJogo    Int?     @map("id_jogo")
+  precoZeny Int?     @map("preco_zeny")
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  usuario      Usuario             @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  drops        FarmInstanciaDrop[]
+  checkinDrops FarmCheckinDrop[]
+
+  @@index([usuarioId])
+  @@map("farm_item")
+}
+
+/// Itens que a instância costuma dropar (a quantidade de cada run vai no check-in).
+model FarmInstanciaDrop {
+  farmInstanciaId String @map("farm_instancia_id") @db.Uuid
+  farmItemId      String @map("farm_item_id") @db.Uuid
+  ordem           Int
+
+  farmInstancia FarmInstancia @relation(fields: [farmInstanciaId], references: [id], onDelete: Cascade)
+  farmItem      FarmItem      @relation(fields: [farmItemId], references: [id], onDelete: Cascade)
+
+  @@id([farmInstanciaId, farmItemId])
+  @@map("farm_instancia_drop")
+}
+
+/// Uma run feita por um personagem. `idExterno` guarda o id do check-in no artefato (D54), para
+/// a importação poder ser repetida sem duplicar.
+model FarmCheckin {
+  id              String   @id @default(uuid()) @db.Uuid
+  usuarioId       String   @map("usuario_id") @db.Uuid
+  personagemId    String   @map("personagem_id") @db.Uuid
+  farmInstanciaId String   @map("farm_instancia_id") @db.Uuid
+  feitoEm         DateTime @map("feito_em") @db.Timestamptz(3)
+  idExterno       String?  @map("id_externo")
+  criadoEm        DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  usuario       Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  personagem    Personagem        @relation(fields: [personagemId], references: [id], onDelete: Restrict)
+  farmInstancia FarmInstancia     @relation(fields: [farmInstanciaId], references: [id], onDelete: Restrict)
+  drops         FarmCheckinDrop[]
+
+  @@unique([usuarioId, idExterno])
+  @@index([usuarioId, feitoEm])
+  @@index([personagemId, farmInstanciaId, feitoEm])
+  @@map("farm_checkin")
+}
+
+model FarmCheckinDrop {
+  checkinId  String @map("checkin_id") @db.Uuid
+  farmItemId String @map("farm_item_id") @db.Uuid
+  quantidade Int
+
+  checkin  FarmCheckin @relation(fields: [checkinId], references: [id], onDelete: Cascade)
+  farmItem FarmItem    @relation(fields: [farmItemId], references: [id], onDelete: Restrict)
+
+  @@id([checkinId, farmItemId])
+  @@index([farmItemId])
+  @@map("farm_checkin_drop")
+}
+
+/// D53: nome do item na Divine Pride, buscado uma vez por ID (com a chave da API) e guardado.
+/// `existe = false` marca um ID que a Divine Pride não conhece; é revisto depois de uma semana.
+model NomeItemDivinePride {
+  idJogo    Int      @id @map("id_jogo")
+  nome      String?
+  existe    Boolean
+  buscadoEm DateTime @map("buscado_em") @db.Timestamptz(3)
+
+  @@map("nome_item_divine_pride")
 }

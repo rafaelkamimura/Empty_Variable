@@ -9,6 +9,7 @@ import { CONFIGURACAO, type Configuracao } from "../../src/configuracao.js";
 import { configurarApp } from "../../src/configurar-app.js";
 import { PrismaService } from "../../src/prisma/prisma.service.js";
 import { BUSCADOR_IMAGEM } from "../../src/imagens/imagens.service.js";
+import { BUSCADOR_DIVINE_PRIDE } from "../../src/farm/divine-pride.service.js";
 
 process.env["DATABASE_URL"] = inject("databaseUrl");
 
@@ -30,6 +31,7 @@ export const CONFIG_TESTE: Configuracao = {
   devLogin: false,
   tokenIntegracao: null,
   guildId: "guild-1",
+  divinePride: null,
 };
 
 /** Token de serviço usado nos testes das rotas /api/integracao. */
@@ -82,11 +84,28 @@ export class BuscadorImagemFalso {
   };
 }
 
+/** Dublê da API da Divine Pride (D53): respostas por ID; sem resposta configurada, 404. */
+export class DivinePrideFalso {
+  readonly chamadas: string[] = [];
+  readonly servidores: (string | undefined)[] = [];
+  readonly respostas = new Map<number, { status: number; corpo?: unknown } | "falha">();
+
+  readonly buscar = async (url: string, init?: RequestInit) => {
+    this.chamadas.push(url);
+    this.servidores.push((init?.headers as Record<string, string> | undefined)?.["x-server"]);
+    const id = Number(/\/Item\/(\d+)/.exec(url)?.[1]);
+    const r = this.respostas.get(id) ?? { status: 404 };
+    if (r === "falha") throw new Error("rede indisponível");
+    return { status: r.status, json: async () => r.corpo ?? null };
+  };
+}
+
 export interface Contexto {
   app: INestApplication;
   prisma: PrismaService;
   discord: DiscordFalso;
   imagens: BuscadorImagemFalso;
+  divinePride: DivinePrideFalso;
   http: () => ReturnType<typeof request>;
   /** Faz o fluxo OAuth completo com o dublê e devolve o cookie de sessão. */
   login: (discordId: string, username?: string) => Promise<string>;
@@ -97,9 +116,12 @@ export interface Contexto {
 export async function criarApp(config: Partial<Configuracao> = {}): Promise<Contexto> {
   const discord = new DiscordFalso();
   const imagens = new BuscadorImagemFalso();
+  const divinePride = new DivinePrideFalso();
   const modulo = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(BUSCADOR_IMAGEM)
     .useValue(imagens.buscar)
+    .overrideProvider(BUSCADOR_DIVINE_PRIDE)
+    .useValue(divinePride.buscar)
     .overrideProvider(CONFIGURACAO)
     .useValue({ ...CONFIG_TESTE, ...config })
     .overrideProvider(DISCORD_CLIENTE)
@@ -131,7 +153,7 @@ export async function criarApp(config: Partial<Configuracao> = {}): Promise<Cont
     await prisma.$transaction([
       prisma.$executeRawUnsafe("SET LOCAL session_replication_role = replica"),
       prisma.$executeRawUnsafe(
-        `TRUNCATE notificacao, rascunho_run_participante, rascunho_run, transferencia_pontos, imagem_cache, receita_peca, receita_componente, preco_receita, solicitacao_nebula, receita,
+        `TRUNCATE farm_checkin_drop, farm_checkin, farm_instancia_drop, farm_instancia_personagem, farm_instancia, farm_item, nome_item_divine_pride, notificacao, rascunho_run_participante, rascunho_run, transferencia_pontos, imagem_cache, receita_peca, receita_componente, preco_receita, solicitacao_nebula, receita,
          movimento_estoque, compra_lote, compra, lote_estoque, oferta_venda, preco_item, config_loja,
          lancamento_pontos, emprestimo, drop_run, participacao, run, config_pontuacao, funcao_classe, encontro, versao_instancia, instancia, classe,
          item_catalogo, solicitacao_vinculo, personagem, jogador, sessao, auditoria, usuario CASCADE`,
@@ -144,6 +166,7 @@ export async function criarApp(config: Partial<Configuracao> = {}): Promise<Cont
     prisma,
     discord,
     imagens,
+    divinePride,
     http,
     login,
     limparBanco,

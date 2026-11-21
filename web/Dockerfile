@@ -5,13 +5,15 @@ ENV NG_CLI_ANALYTICS=false
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
 COPY packages/scoring/package.json packages/scoring/
+COPY packages/farm/package.json packages/farm/
 COPY web/package.json web/
 RUN pnpm install --frozen-lockfile --filter @betel/web...
 COPY packages/scoring packages/scoring
+COPY packages/farm packages/farm
 COPY web web
 # Sub-rota (ex.: /emptyvariable/) quando o sistema divide o domínio com outro. Padrão: raiz.
 ARG BASE_HREF=/
-RUN pnpm --filter @betel/scoring build && pnpm --filter @betel/web build --base-href "$BASE_HREF"
+RUN pnpm --filter @betel/scoring build && pnpm --filter @betel/farm build && pnpm --filter @betel/web build --base-href "$BASE_HREF"
 
 FROM nginx:1.27-alpine
 COPY infra/nginx/default.conf /etc/nginx/conf.d/default.conf
