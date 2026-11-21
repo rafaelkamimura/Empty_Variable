@@ -77,8 +77,8 @@ test.describe.serial("Nebula", () => {
     await expect(page.getByTestId("saldo-topo")).toContainText("600 pts");
     const cartao = page.getByRole("button", { name: `Ver ${POD}` });
     await expect(cartao).toContainText("Pode solicitar");
-    await cartao.hover();
-    await expect(page.getByRole("tooltip")).toContainText("300 pts · 2 disponível(is)");
+    // O cartão já traz preço e disponibilidade de cada modalidade (antes ficava numa dica no hover).
+    await expect(cartao).toContainText("300 pts · 2 disponível(is)");
     await cartao.click();
     // Sem Armadura Astral no estoque, a tela já começa em "trago minha peça".
     await expect(page.getByRole("switch", { name: /Trago minha Armadura Astral/ })).toBeChecked();
@@ -108,8 +108,10 @@ test.describe.serial("Nebula", () => {
 
     await entrar(page, ADMIN);
     await page.goto("/admin/nebula");
-    page.once("dialog", (d) => void d.accept("Guardião ausente esta semana"));
+    // O motivo é pedido no próprio cartão (antes era um window.prompt).
     await page.getByRole("button", { name: "Rejeitar" }).click();
+    await page.getByRole("textbox", { name: "Motivo da rejeição" }).fill("Guardião ausente esta semana");
+    await page.getByRole("button", { name: "Confirmar rejeição" }).click();
     await expect(page.getByText("Solicitação rejeitada")).toBeVisible();
 
     await entrar(page, EVA);

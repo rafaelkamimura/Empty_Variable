@@ -1,4 +1,5 @@
-import { pendenciasComponentes, type Receita, situacaoReceita } from "./nebula";
+import type { Receita } from "./nebula.modelos";
+import { pendenciasComponentes, situacaoReceita } from "./receitas.modelos";
 
 const receita = (parcial: Partial<Receita>): Receita => ({
   id: "r1",
