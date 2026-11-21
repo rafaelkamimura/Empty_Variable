@@ -1,4 +1,5 @@
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -15,6 +16,10 @@ let proximoId = 0;
  * ligados por `for`/`id` e `aria-describedby`. O controle leva a diretiva `uiCampo`:
  * `<ui-campo rotulo="Quantidade"><input uiCampo type="number" inputmode="numeric" /></ui-campo>`.
  *
+ * Em célula de tabela, onde o cabeçalho da coluna é o rótulo visível, `rotuloOculto` tira o rótulo
+ * da tela e o mantém para o leitor de tela (continua sendo o nome acessível do controle, com o
+ * contexto da linha: "Preço de Oridecon"). Fora de tabela, o rótulo fica visível (§6.4).
+ *
  * Usa `ViewEncapsulation.None` com as regras escopadas em `.ui-campo`, para estilizar o controle
  * projetado sem `::ng-deep` (§2.5).
  *
@@ -26,7 +31,9 @@ let proximoId = 0;
   encapsulation: ViewEncapsulation.None,
   host: { class: "ui-campo", "[class.com-erro]": "!!erro()" },
   template: `
-    <label class="ui-campo-rotulo" [attr.for]="idControle">{{ rotulo() }}</label>
+    <label class="ui-campo-rotulo" [class.ui-campo-rotulo-oculto]="rotuloOculto()" [attr.for]="idControle">{{
+      rotulo()
+    }}</label>
     <ng-content />
     @if (dica()) {
       <span class="ui-campo-dica" [id]="idDica">{{ dica() }}</span>
@@ -45,6 +52,17 @@ let proximoId = 0;
       font-size: var(--fs-s);
       font-weight: 600;
       color: var(--texto-suave);
+    }
+    .ui-campo-rotulo-oculto {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
     }
     .ui-campo :is(input, select, textarea) {
       box-sizing: border-box;
@@ -81,6 +99,8 @@ let proximoId = 0;
 export class CampoComponent {
   /** Rótulo visível (o placeholder não substitui o rótulo). */
   readonly rotulo = input.required<string>();
+  /** Esconde o rótulo da tela, mantendo-o para o leitor de tela. Só em célula de tabela (§6.4). */
+  readonly rotuloOculto = input(false, { transform: booleanAttribute });
   /** Dica curta abaixo do controle. */
   readonly dica = input<string>();
   /** Mensagem de erro que diz como corrigir. Vazia, o campo está válido. */

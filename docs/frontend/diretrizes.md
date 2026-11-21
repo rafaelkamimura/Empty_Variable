@@ -297,7 +297,7 @@ O projeto usa o vocabulário do Atomic Design para decidir **o que um componente
 
 O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no código atual.
 
-**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Na etapa 4 entraram `ui-marca` e o pipe `pontos` (`shared/pipes/pontos.pipe.ts`). Com a loja: `ui-badge`, `ui-campo` (com a diretiva `uiCampo` no controle) e `ui-confirmacao` (aberto pelo serviço `Confirmacao`, em `core/confirmacao.ts`). `app-icone`, `app-imagem-item` e `visual.ts` já estão em `shared/dominio/`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
+**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Na etapa 4 entraram `ui-marca` e o pipe `pontos` (`shared/pipes/pontos.pipe.ts`). Com a loja: `ui-badge`, `ui-campo` (com a diretiva `uiCampo` no controle; `rotuloOculto` entrou com o farm, só para célula de tabela) e `ui-confirmacao` (aberto pelo serviço `Confirmacao`, em `core/confirmacao.ts`). `app-icone`, `app-imagem-item` e `visual.ts` já estão em `shared/dominio/`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
 
 | Componente                | Nível | Responsabilidade                                                                  | Substitui hoje                                       |
 | ------------------------- | --------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
@@ -373,6 +373,7 @@ Toda área que carrega dados trata os quatro estados abaixo. Um PR sem eles não
 ### 6.4 Formulários
 
 - **Todo campo** fica dentro de `ui-campo`, com rótulo visível (o placeholder não substitui o rótulo).
+  - **Exceção:** campo editável dentro de célula de tabela. O cabeçalho da coluna é o rótulo visível, e o `ui-campo` usa `rotuloOculto` com o rótulo completo para o leitor de tela (ex.: coluna "Preço de venda", rótulo "Preço de Oridecon").
 - **A validação aparece** ao sair do campo ou ao tentar enviar. A mensagem diz como corrigir.
 - **O teclado certo:** campos numéricos usam `inputmode="numeric"`, e Enter envia formulários curtos.
 - **O foco vai ao primeiro campo** quando o painel abre e volta ao botão de origem quando ele fecha.
@@ -489,7 +490,7 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 3. **Casca.** *(feita: `layout/casca`, `layout/topo`, `layout/menu-lateral` e `features/acesso/paginas/login.page.ts`)* Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
 4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
    - loja *(feita: `features/loja`)* e carteira *(feita: `features/carteira`)*;
-   - farm *(em andamento: `features/farm` com a camada de dados, a página e a aba Hoje; Totais, Cadastro e Importar ainda são as antigas, em `paginas/farm-*.component.ts`)*;
+   - farm *(feita: `features/farm`)*;
    - Nebula;
    - instâncias e gestão;
    - admin;

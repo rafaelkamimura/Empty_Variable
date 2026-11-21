@@ -11,9 +11,6 @@ import { MatTabsModule } from "@angular/material/tabs";
 import { RouterLink } from "@angular/router";
 import { DIAS_SEMANA, dataDoDia, diaDoJogo, diaMes, horaDoServidor, inicioDoDia } from "@betel/farm";
 import { mensagemDeErro } from "../../../core/modelos";
-import { FarmCadastroComponent } from "../../../paginas/farm-cadastro.component";
-import { FarmImportarComponent } from "../../../paginas/farm-importar.component";
-import { FarmTotaisComponent } from "../../../paginas/farm-totais.component";
 import { type Carregavel, carregando, comErro, pronto } from "../../../shared/utils/carregavel";
 import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
@@ -21,8 +18,11 @@ import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estad
 import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
 import type { EstadoFarm } from "../data/farm.modelos";
 import { FarmStore } from "../data/farm.store";
+import { CadastroAbaComponent } from "./cadastro.aba";
 import { HojeAbaComponent } from "./hoje.aba";
+import { ImportarAbaComponent } from "./importar.aba";
 import { RascunhoHoje } from "./rascunho-hoje";
+import { TotaisAbaComponent } from "./totais.aba";
 
 const ABAS = ["hoje", "totais", "cadastro", "importar"] as const;
 type Aba = (typeof ABAS)[number];
@@ -30,7 +30,6 @@ type Aba = (typeof ABAS)[number];
 /**
  * Diário de farm (/farm, D48–D54): check-in das instâncias do dia por personagem do vínculo, com a
  * recarga de cada uma (reset às 04:00 de Brasília), totais, cadastro e a importação do artefato.
- * As abas Totais, Cadastro e Importar ainda são as antigas (migram no próximo PR).
  */
 @Component({
   selector: "app-farm-page",
@@ -45,9 +44,9 @@ type Aba = (typeof ABAS)[number];
     EstadoProntoDirective,
     PaginaComponent,
     HojeAbaComponent,
-    FarmTotaisComponent,
-    FarmCadastroComponent,
-    FarmImportarComponent,
+    TotaisAbaComponent,
+    CadastroAbaComponent,
+    ImportarAbaComponent,
   ],
   template: `
     <ui-pagina titulo="Diário de farm" [subtitulo]="'Servidor: ' + relogio() + ' · reset em ' + resetEm()">

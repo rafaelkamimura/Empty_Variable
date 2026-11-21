@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core";
 import { CampoComponent, CampoControleDirective } from "./campo.component";
 
-/** Exemplos do catálogo: ui-campo com input, select, dica, erro e desabilitado. */
+/** Exemplos do catálogo: ui-campo com input, select, dica, erro, desabilitado e rótulo oculto. */
 @Component({
   selector: "ui-campo-catalogo",
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,6 +21,9 @@ import { CampoComponent, CampoControleDirective } from "./campo.component";
       <input uiCampo type="number" inputmode="numeric" value="0" />
     </ui-campo>
     <ui-campo rotulo="Observação"><input uiCampo disabled value="Campo desabilitado" /></ui-campo>
+    <ui-campo rotulo="Preço de Oridecon" rotuloOculto
+      ><input uiCampo placeholder="Rótulo oculto: só em célula de tabela"
+    /></ui-campo>
   `,
   styles: `
     :host {
