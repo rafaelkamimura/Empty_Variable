@@ -23,8 +23,10 @@ export interface ItemEditor {
     <span class="titulo">Quanto dropou nesta run</span>
     @for (item of itens(); track item.id) {
       <div class="linha">
-        <app-imagem-item [idJogo]="item.idJogo" [nome]="item.nome" [tamanho]="24" />
-        <label [for]="prefixo() + item.id">{{ item.nome }}</label>
+        <span class="nome">
+          <app-imagem-item [idJogo]="item.idJogo" [nome]="item.nome" [tamanho]="24" />
+          <label [for]="prefixo() + item.id">{{ item.nome }}</label>
+        </span>
         <span class="passo">
           <button
             uiBotao
@@ -62,7 +64,7 @@ export interface ItemEditor {
       [buscar]="buscar()"
       [idCampo]="prefixo() + 'extra'"
       rotulo="Outro item dropado"
-      dica="Dropou outro item? Nome ou ID"
+      dica="Outro item ou ID"
       (escolher)="extra.emit($event)"
     />
     <label class="marcar">
@@ -70,61 +72,90 @@ export interface ItemEditor {
       Lembrar itens novos nesta instância
     </label>
     <div class="acoes">
-      <button uiBotao variante="principal" [carregando]="enviando()" (click)="confirmar.emit()">
+      <button
+        uiBotao
+        class="confirmar"
+        variante="principal"
+        [carregando]="enviando()"
+        (click)="confirmar.emit()"
+      >
         {{ editando() ? "Salvar drops" : "Confirmar check-in" }}
       </button>
       <button uiBotao variante="fantasma" [disabled]="enviando()" (click)="cancelar.emit()">Cancelar</button>
     </div>
   `,
   styles: `
+    /* Uma coluna só, que nunca passa da largura do cartão (minmax(0, …) segura o conteúdo largo). */
     :host {
       display: grid;
-      gap: var(--esp-2);
-      padding: var(--esp-3);
-      border: 1px solid var(--borda);
-      border-radius: var(--raio-m);
-      background: var(--superficie);
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--esp-3);
+      padding-top: var(--esp-3);
+      border-top: 1px solid var(--borda);
     }
     .titulo {
       font-size: var(--fs-s);
       font-weight: 600;
       color: var(--texto-suave);
     }
-    /* O nome nunca é espremido: se ele não cabe ao lado do − [n] +, o controle desce para a linha de baixo. */
+    /* O nome quebra por palavra ao lado do − [n] +. Sem 120 px para ele, o controle desce. */
     .linha {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--esp-1) var(--esp-2);
     }
-    .linha app-imagem-item {
+    .nome {
+      flex: 1 1 0%;
+      display: flex;
+      align-items: center;
+      gap: var(--esp-2);
+      min-width: 120px;
+    }
+    .nome app-imagem-item {
       flex: none;
     }
-    .linha label {
-      flex: 1 1 auto;
+    .nome label {
       min-width: 0;
       overflow-wrap: anywhere;
+      font-size: var(--fs-m);
+      line-height: 1.3;
       color: var(--texto);
     }
+    /* − [n] + como um controle só: um contorno em volta dos três. */
     .passo {
       flex: none;
       display: inline-flex;
       align-items: center;
-      gap: var(--esp-1);
       margin-left: auto;
+      border: 1px solid var(--borda-campo);
+      border-radius: var(--raio-m);
+      background: var(--fundo);
     }
     .passo input {
       box-sizing: border-box;
-      width: 64px;
+      width: 48px;
       min-height: 40px;
-      padding: 0 var(--esp-2);
-      border: 1px solid var(--borda-campo);
+      padding: 0;
+      border: 0;
       border-radius: var(--raio-p);
-      background: var(--fundo);
-      color: var(--texto);
+      background: transparent;
+      color: var(--texto-forte);
       font: inherit;
       text-align: center;
       font-variant-numeric: tabular-nums;
+      appearance: textfield;
+    }
+    .passo input:focus-visible {
+      outline-offset: -2px;
+    }
+    .passo input::-webkit-outer-spin-button,
+    .passo input::-webkit-inner-spin-button {
+      margin: 0;
+      appearance: none;
+    }
+    .passo input::placeholder {
+      color: var(--texto-apagado);
     }
     .dica {
       margin: 0;
@@ -140,6 +171,7 @@ export interface ItemEditor {
       color: var(--texto);
     }
     .marcar input {
+      flex: none;
       width: 18px;
       height: 18px;
       accent-color: var(--acento);
@@ -148,6 +180,9 @@ export interface ItemEditor {
       display: flex;
       flex-wrap: wrap;
       gap: var(--esp-2);
+    }
+    .acoes .confirmar {
+      flex: 1 1 auto;
     }
   `,
 })

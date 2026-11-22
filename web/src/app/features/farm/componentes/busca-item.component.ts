@@ -73,7 +73,7 @@ const ROTULO_ORIGEM: Record<ResultadoBuscaItem["origem"], string> = {
     }
     input {
       box-sizing: border-box;
-      flex: 1 1 180px;
+      flex: 1 1 160px;
       min-width: 0;
       min-height: 40px;
       padding: var(--esp-2) var(--esp-3);
