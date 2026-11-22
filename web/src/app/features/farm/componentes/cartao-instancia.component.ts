@@ -34,7 +34,9 @@ import { type InstanciaFarm, type SituacaoCard, textoDosDrops } from "../data/fa
         </p>
         <p class="dica">Libera {{ libera() }} às 04:00</p>
       } @else {
-        <p class="drops">{{ nomesDrops() }}</p>
+        @if (!aberto()) {
+          <p class="drops">{{ nomesDrops() }}</p>
+        }
         @if (situacao().diaFeita !== null) {
           <p class="dica">Última vez: {{ ultimaVez() }}</p>
         }

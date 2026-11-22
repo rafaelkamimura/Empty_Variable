@@ -177,7 +177,7 @@ import { RascunhoHoje } from "./rascunho-hoje";
     }
     .grade {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
       gap: var(--esp-3);
     }
     .secao {
