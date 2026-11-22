@@ -7,7 +7,7 @@ import { formatarPontos } from "../shared/pipes/pontos.pipe";
 import { MarcaComponent } from "../shared/ui/marca/marca.component";
 
 /**
- * Topo da casca (diretrizes §2.4): a marca {∅_} animada, o saldo com o brilho da aurora atrás e o menu
+ * Topo da casca (diretrizes §2.4): a marca {∅_} animada sobre o nome, na coluna do menu, o saldo com o brilho da aurora atrás e o menu
  * do perfil. A faixa fina da aurora fica na borda de baixo.
  */
 @Component({
@@ -17,7 +17,7 @@ import { MarcaComponent } from "../shared/ui/marca/marca.component";
   template: `
     <header class="topo">
       <a routerLink="/" class="inicio" aria-label="Empty Variable, início">
-        <ui-marca variante="animada" />
+        <ui-marca variante="animada" tamanho="p" />
         <span class="nome">Empty Variable</span>
       </a>
       <span class="espaco"></span>
@@ -70,8 +70,9 @@ import { MarcaComponent } from "../shared/ui/marca/marca.component";
       display: flex;
       align-items: center;
       gap: var(--esp-4);
+      box-sizing: border-box;
       height: 64px;
-      padding: 0 var(--esp-5);
+      padding: 0 max(var(--esp-5), (100% - var(--casca-largura, 100%)) / 2 + var(--esp-5));
       background: color-mix(in srgb, var(--superficie) 82%, transparent);
       backdrop-filter: blur(var(--esp-3));
     }
@@ -87,16 +88,20 @@ import { MarcaComponent } from "../shared/ui/marca/marca.component";
     }
     .inicio {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: var(--esp-3);
+      justify-content: center;
+      width: var(--casca-menu, auto);
       min-height: 44px;
       color: var(--texto-forte);
       text-decoration: none;
       border-radius: var(--raio-m);
     }
     .nome {
-      font-size: var(--fs-l);
+      font-size: var(--fs-xs);
       font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
     }
     .espaco {
       flex: 1;
@@ -165,10 +170,8 @@ import { MarcaComponent } from "../shared/ui/marca/marca.component";
         gap: var(--esp-2);
         padding: 0 var(--esp-3);
       }
-    }
-    @media (max-width: 420px) {
-      .nome {
-        display: none;
+      .inicio {
+        width: auto;
       }
     }
   `,
