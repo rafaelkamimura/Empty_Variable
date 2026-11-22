@@ -76,7 +76,7 @@ test.describe.serial("Fluxo completo de uma run", () => {
     await proximo(page);
 
     // 5. Revisão com a prévia calculada pelo motor
-    const ganho = page.getByTestId("ganho-por-jogador");
+    const ganho = page.getByTestId("runs-ganho-por-jogador");
     await expect(ganho).toContainText("Ana: 300");
     await expect(ganho).toContainText("Beto: 160");
     await expect(ganho).toContainText("Xavi: 40");
@@ -84,7 +84,7 @@ test.describe.serial("Fluxo completo de uma run", () => {
 
     await expect(page).toHaveURL(/\/gestao\/runs\/[0-9a-f-]{36}$/);
     runId = page.url().split("/").pop() ?? "";
-    await expect(page.getByTestId("participacoes")).toContainText("Ana-MTK");
+    await expect(page.getByTestId("runs-participacoes")).toContainText("Ana-MTK");
     await expect(page.getByText("Soma: 500")).toBeVisible();
   });
 
@@ -114,7 +114,7 @@ test.describe.serial("Fluxo completo de uma run", () => {
     await proximo(page);
     await escolher(page, "Classe", "Cardeal", 0);
     for (let i = 0; i < 3; i++) await proximo(page);
-    await expect(page.getByTestId("ganho-por-jogador")).toContainText("Ana: 200");
+    await expect(page.getByTestId("runs-ganho-por-jogador")).toContainText("Ana: 200");
     await page.getByRole("button", { name: "Registrar correção" }).click();
 
     await expect(page).toHaveURL(/\/gestao\/runs\/[0-9a-f-]{36}$/);
@@ -122,7 +122,7 @@ test.describe.serial("Fluxo completo de uma run", () => {
     await expect(page.getByText("Esta run corrige")).toBeVisible();
 
     await page.goto(`/gestao/runs/${runId}`);
-    await expect(page.getByTestId("resumo")).toContainText("Estornada");
+    await expect(page.getByTestId("runs-resumo")).toContainText("Estornada");
     await expect(page.getByRole("link", { name: "Corrigir" })).toHaveCount(0);
 
     await page.context().clearCookies();

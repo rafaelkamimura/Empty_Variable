@@ -16,7 +16,7 @@ import {
   type ParametrosFormulario,
   paraConfigMotor,
   type VersaoParametros,
-} from "../core/cadastros";
+} from "../shared/dominio/cadastros";
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";

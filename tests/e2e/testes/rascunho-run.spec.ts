@@ -90,24 +90,24 @@ test("gestor revisa rascunhos do nag4eyes: confirma um pelo assistente e descart
   await page.getByRole("button", { name: "Menu do perfil" }).click();
   await page.getByRole("menuitem", { name: "Runs" }).click();
   await expect(page).toHaveURL(/\/gestao\/runs$/);
-  const rascunhos = page.getByTestId("rascunhos");
+  const rascunhos = page.getByTestId("runs-rascunhos");
   await expect(rascunhos.getByRole("row")).toHaveCount(3);
   await expect(rascunhos).toContainText("1 sem correspondência");
 
-  // Descarta o segundo (a confirmação é um diálogo do navegador).
-  page.once("dialog", (d) => void d.accept());
+  // Descarta o segundo, confirmando no diálogo.
   await rascunhos
     .getByRole("row")
     .filter({ hasNotText: "sem correspondência" })
     .getByRole("button", { name: "Descartar" })
     .click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Descartar rascunho" }).click();
   await expect(page.getByText("Rascunho descartado.")).toBeVisible();
   await expect(rascunhos.getByRole("row")).toHaveCount(2);
 
   // Revisa o primeiro: o assistente abre com a data e a Ana; quem não casou aparece à parte.
   await rascunhos.getByRole("link", { name: "Revisar" }).click();
   await expect(page).toHaveURL(/\/gestao\/runs\/nova\?rascunho=/);
-  const origem = page.getByTestId("origem-rascunho");
+  const origem = page.getByTestId("runs-origem-rascunho");
   await expect(origem).toContainText(`Rascunho do nag4eyes (grupo ${N}1)`);
   await expect(origem).toContainText("Ninguem");
   await expect(origem).toContainText("Discord sem usuário neste sistema");
@@ -122,16 +122,16 @@ test("gestor revisa rascunhos do nag4eyes: confirma um pelo assistente e descart
     await page.getByRole("tabpanel", { name: passo }).getByRole("button", { name: "Próximo" }).click();
     await expect(page.getByRole("tab", { selected: true })).toContainText(seguinte);
   }
-  await expect(page.getByTestId("ganho-por-jogador")).toContainText(`AnaR${N}`);
+  await expect(page.getByTestId("runs-ganho-por-jogador")).toContainText(`AnaR${N}`);
   await page.getByRole("button", { name: "Registrar run" }).click();
 
   // A run foi registrada, com o detalhe liberado e sem o botão da correção (tela não liberada).
   await expect(page).toHaveURL(/\/gestao\/runs\/[0-9a-f-]{36}$/);
   const runId = page.url().split("/").pop() ?? "";
-  await expect(page.getByTestId("participacoes")).toContainText(PERSONAGEM);
+  await expect(page.getByTestId("runs-participacoes")).toContainText(PERSONAGEM);
   await expect(page.getByRole("link", { name: "Corrigir" })).toHaveCount(0);
   await page.getByRole("link", { name: "Voltar à lista" }).click();
-  await expect(page.getByTestId("rascunhos")).toHaveCount(0);
+  await expect(page.getByTestId("runs-rascunhos")).toHaveCount(0);
 
   const confirmado = await ok<{ status: string; runId: string }>(
     page.request.get(`/api/rascunhos-run/${aConfirmar.id}`),

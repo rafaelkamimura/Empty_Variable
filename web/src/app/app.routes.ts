@@ -6,6 +6,7 @@ import { ROTAS_CARTEIRA } from "./features/carteira/carteira.routes";
 import { ROTAS_FARM } from "./features/farm/farm.routes";
 import { ROTAS_LOJA } from "./features/loja/loja.routes";
 import { ROTAS_NEBULA } from "./features/nebula/nebula.routes";
+import { ROTAS_RUNS } from "./features/runs/runs.routes";
 import { ROTAS_VINCULO } from "./features/vinculo/vinculo.routes";
 
 /** paineis §4: o painel vem da URL — /me, /loja e /nebula (Cliente), /gestao (Gestão), /admin (Administração). */
@@ -61,33 +62,7 @@ const rotasCompletas: Routes = [
     canActivate: [gestorGuard],
     loadComponent: () => import("./paginas/gestao-grupos.component").then((m) => m.GestaoGruposComponent),
   },
-  {
-    path: "gestao/runs",
-    canActivate: [gestorGuard],
-    title: "Runs · Empty Variable",
-    loadComponent: () => import("./paginas/admin-runs.component").then((m) => m.AdminRunsComponent),
-  },
-  {
-    path: "gestao/runs/nova",
-    canActivate: [gestorGuard],
-    title: "Nova run · Empty Variable",
-    loadComponent: () =>
-      import("./paginas/admin-run-assistente.component").then((m) => m.AdminRunAssistenteComponent),
-  },
-  {
-    path: "gestao/runs/:id/corrigir",
-    canActivate: [gestorGuard],
-    title: "Corrigir run · Empty Variable",
-    loadComponent: () =>
-      import("./paginas/admin-run-assistente.component").then((m) => m.AdminRunAssistenteComponent),
-  },
-  {
-    path: "gestao/runs/:id",
-    canActivate: [gestorGuard],
-    title: "Run · Empty Variable",
-    loadComponent: () =>
-      import("./paginas/admin-run-detalhe.component").then((m) => m.AdminRunDetalheComponent),
-  },
+  ...ROTAS_RUNS,
   {
     path: "gestao/saldos",
     canActivate: [gestorGuard],

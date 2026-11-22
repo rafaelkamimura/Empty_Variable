@@ -1,7 +1,7 @@
 import { painelDaUrl } from "../layout/painel";
 import { taxaParaBp } from "../paginas/admin-taxa.component";
 import { itemAConferir } from "../paginas/admin-itens.component";
-import type { ItemCatalogo } from "./cadastros";
+import type { ItemCatalogo } from "../shared/dominio/cadastros";
 import { atrasada, esperaDe } from "./painel";
 
 const DIA = 86_400_000;

@@ -9,7 +9,7 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
-import { type ItemCatalogo, TIPOS_ITEM, type TipoItem } from "../core/cadastros";
+import { type ItemCatalogo, TIPOS_ITEM, type TipoItem } from "../shared/dominio/cadastros";
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";

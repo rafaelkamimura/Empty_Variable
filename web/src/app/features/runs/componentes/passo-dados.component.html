@@ -1,0 +1,53 @@
+@let r = rascunho();
+<div class="grade">
+  <ui-campo rotulo="Data">
+    <input uiCampo type="date" required [value]="r.data" (input)="mudar.emit({ data: texto($event) })" />
+  </ui-campo>
+  <ui-campo
+    rotulo="Instância"
+    [dica]="correcao() ? 'A correção fica na mesma instância, na versão vigente' : ''"
+  >
+    <select uiCampo [disabled]="correcao()" (change)="instancia.emit(texto($event))">
+      @for (i of instancias(); track i.id) {
+        <option [value]="i.id" [selected]="r.instanciaId === i.id">{{ i.nome }}</option>
+      }
+    </select>
+  </ui-campo>
+  <ui-campo rotulo="Encontro">
+    <select uiCampo (change)="mudar.emit({ encontroId: texto($event) || null })">
+      <option value="" [selected]="r.encontroId === null">Escolha</option>
+      @for (e of encontros(); track e.id) {
+        <option [value]="e.id" [selected]="r.encontroId === e.id">
+          {{ e.nome }} ({{ multiplicador(e.multiplicadorCentesimos) }})
+        </option>
+      }
+    </select>
+  </ui-campo>
+  <ui-campo rotulo="Resultado">
+    <select uiCampo (change)="mudar.emit({ status: status(texto($event)) })">
+      @for (s of statusRun; track s) {
+        <option [value]="s" [selected]="r.status === s">{{ rotuloStatus[s] }}</option>
+      }
+    </select>
+  </ui-campo>
+  @if (ehBetelgeuse()) {
+    <ui-campo rotulo="Pontuação do Betelgeuse (opcional)" dica="Só informativa: não entra no cálculo">
+      <input
+        uiCampo
+        type="number"
+        min="0"
+        inputmode="numeric"
+        [value]="r.pontuacaoBetelgeuse ?? ''"
+        (input)="mudar.emit({ pontuacaoBetelgeuse: numero(texto($event)) })"
+      />
+    </ui-campo>
+  }
+</div>
+<ui-campo rotulo="Observação (opcional)">
+  <input uiCampo maxlength="500" [value]="r.observacao" (input)="mudar.emit({ observacao: texto($event) })" />
+</ui-campo>
+@if (correcao()) {
+  <ui-campo rotulo="Motivo da correção" dica="Fica registrado junto com a correção.">
+    <input uiCampo maxlength="500" required [value]="motivo()" (input)="motivoChange.emit(texto($event))" />
+  </ui-campo>
+}

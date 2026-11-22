@@ -8,7 +8,7 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { RouterLink } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
-import type { Classe } from "../core/cadastros";
+import type { Classe } from "../shared/dominio/cadastros";
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";

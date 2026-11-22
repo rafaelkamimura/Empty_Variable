@@ -1,5 +1,5 @@
-import { pontosPrevia } from "../paginas/gestao-instancia.component";
-import { deReferencia } from "../paginas/gestao-instancias.component";
+import { pontosPrevia } from "./gestao-instancia.component";
+import { deReferencia } from "./gestao-instancias.component";
 import {
   corpoVersao,
   type Instancia,
@@ -7,7 +7,7 @@ import {
   recebeRun,
   situacaoInstancia,
   textoMultiplicador,
-} from "./instancias";
+} from "../shared/dominio/instancias";
 
 const instancia = (ativa: boolean, funcoes: number): Instancia => ({
   id: "i1",

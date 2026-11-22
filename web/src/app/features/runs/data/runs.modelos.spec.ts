@@ -1,23 +1,19 @@
 import { CONFIG_V1 } from "@betel/scoring";
-import type { Classe } from "./cadastros";
-import type { Instancia } from "./instancias";
+import type { Classe } from "../../../shared/dominio/cadastros";
+import type { Instancia } from "../../../shared/dominio/instancias";
+import { type DetalheRun, rascunhoDeRun } from "./detalhe-run.modelos";
+import { pendentesDoRascunho, type RascunhoNag4eyes, rascunhoDeNag4eyes } from "./nag4eyes.modelos";
+import { calcularPrevia, montarCorpo } from "./previa-run";
 import {
   ajustarAVersaoVigente,
-  calcularPrevia,
   type Catalogos,
-  type DetalheRun,
-  montarCorpo,
   novoEmprestimo,
   novoRascunho,
   pendencias,
-  pendentesDoRascunho,
-  type RascunhoNag4eyes,
   type RascunhoRun,
-  rascunhoDeNag4eyes,
-  rascunhoDeRun,
-} from "./runs";
+} from "./runs.modelos";
 
-const classes: Classe[] = [
+export const classes: Classe[] = [
   {
     id: "c-mtk",
     nomeOficial: "Mestre Celestial",
@@ -45,7 +41,7 @@ const classes: Classe[] = [
 ];
 
 /** A Torre, com dois dos encontros (os multiplicadores vêm da instância, D44). */
-const torre: Instancia = {
+export const torre: Instancia = {
   id: "i-torre",
   nome: "Torre da Constelação",
   codigo: "TORRE_CONSTELACAO",
@@ -69,7 +65,7 @@ const torre: Instancia = {
   },
 };
 
-const cat: Catalogos = {
+export const cat: Catalogos = {
   jogadores: [
     {
       id: "j-ana",

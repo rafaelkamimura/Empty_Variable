@@ -11,7 +11,7 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatTableModule } from "@angular/material/table";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
-import type { ItemCatalogo } from "../core/cadastros";
+import type { ItemCatalogo } from "../shared/dominio/cadastros";
 import {
   descreverLote,
   type LoteEstoque,
