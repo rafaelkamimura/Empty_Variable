@@ -77,7 +77,7 @@ type Exemplos =
     :host {
       display: grid;
       gap: var(--esp-5);
-      max-width: 1100px;
+      max-width: var(--largura-conteudo);
       margin: 0 auto;
     }
     .topo h1 {

@@ -3,7 +3,7 @@
 // ficarem sem uso. Sai inteiro na etapa 5.
 
 .pagina {
-  max-width: 1100px;
+  max-width: var(--largura-conteudo);
   margin: 0 auto;
   padding: 0;
   display: flex;

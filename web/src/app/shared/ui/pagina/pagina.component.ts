@@ -32,7 +32,7 @@ import { ChangeDetectionStrategy, Component, input } from "@angular/core";
       display: flex;
       flex-direction: column;
       gap: var(--esp-4);
-      max-width: 1100px;
+      max-width: var(--largura-conteudo);
       margin: 0 auto;
     }
     .cabeca {
@@ -55,6 +55,7 @@ import { ChangeDetectionStrategy, Component, input } from "@angular/core";
     }
     p {
       margin: 0;
+      max-width: 80ch;
       color: var(--texto-suave);
     }
     .acao {
