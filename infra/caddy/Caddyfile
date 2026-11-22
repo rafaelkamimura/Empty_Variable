@@ -25,8 +25,9 @@
 	}
 	header @simulador {
 		X-Frame-Options "SAMEORIGIN"
-		# Mesma política, trocando só quem pode emoldurar. O simulador não pede nada a outro servidor.
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+		# Mesma política, trocando quem pode emoldurar e as imagens. D61: as únicas origens externas do
+		# simulador são as das imagens (ícones e sprites da latam-tools e a figura do item na Divine Pride).
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://assets.latam-tools.com.br https://www.divine-pride.net; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 	}
 
 	handle /api/* {

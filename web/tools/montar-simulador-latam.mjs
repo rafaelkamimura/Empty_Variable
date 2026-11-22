@@ -16,7 +16,8 @@
 //   node web/tools/montar-simulador-latam.mjs /caminho/do/clone/latam-ro-calc [--imagens <url>]
 //
 // `--imagens <url>`: servidor de onde vêm os ícones e sprites (formato do ragassets do projeto de
-// origem). Precisa entrar também em `img-src` na política de segurança (Caddyfile e nginx).
+// origem). Precisa entrar também em `img-src` na política de segurança (Caddyfile e nginx), junto
+// com `https://www.divine-pride.net`, de onde a busca de itens traz a figura do item.
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
