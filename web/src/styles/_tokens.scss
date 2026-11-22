@@ -101,6 +101,9 @@ html {
   --esp-6: 32px;
   --esp-7: 48px;
 
+  /* Largura máxima do conteúdo (§6.6): a página ocupa a tela até aqui e só então centraliza. */
+  --largura-conteudo: 1600px;
+
   --raio-p: 6px;
   --raio-m: 10px;
   --raio-g: 14px;

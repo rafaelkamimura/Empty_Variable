@@ -172,12 +172,14 @@ import { RascunhoHoje } from "./rascunho-hoje";
     }
     .resumos {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
       gap: var(--esp-3);
     }
     .grade {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+      /* Cada cartão com a sua altura: um editor aberto não estica os vizinhos da linha. */
+      align-items: start;
       gap: var(--esp-3);
     }
     .secao {

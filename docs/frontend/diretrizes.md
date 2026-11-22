@@ -402,7 +402,7 @@ Toda área que carrega dados trata os quatro estados abaixo. Um PR sem eles não
 ### 6.6 Responsividade
 
 - O layout é pensado primeiro para o celular e para as **container queries** (`@container conteudo`). As media queries ficam só para a casca.
-- **Pontos de quebra:** 600 px (celular), 760 px (tabela vira cartão, como hoje) e 1100 px (largura máxima do conteúdo).
+- **Pontos de quebra:** 600 px (celular), 760 px (tabela vira cartão, como hoje) e 1600 px (largura máxima do conteúdo, no token `--largura-conteudo`). Até esse limite, a página ocupa a largura da tela; texto corrido fica limitado a 80 caracteres por linha.
 - **Alvos de toque** têm no mínimo 40×40 px, e não há rolagem horizontal na página.
 
 ---

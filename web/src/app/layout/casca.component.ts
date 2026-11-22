@@ -48,11 +48,11 @@ const ITENS_MENU: readonly ItemMenu[] = [
     <ng-template #conteudo><ng-content /></ng-template>
   `,
   styles: `
-    /* --casca-menu: largura do menu em trilho. --casca-largura: o menu, o vão, os 1100 px do
-     * conteúdo (§6.6) e as margens. O topo usa as duas, para a marca ficar sobre o menu. */
+    /* --casca-menu: largura do menu em trilho. --casca-largura: o menu, o vão, a largura
+     * máxima do conteúdo (§6.6) e as margens. O topo usa as duas, para a marca ficar sobre o menu. */
     :host {
       --casca-menu: 104px;
-      --casca-largura: calc(1100px + var(--casca-menu) + var(--esp-5) * 3);
+      --casca-largura: calc(var(--largura-conteudo) + var(--casca-menu) + var(--esp-5) * 3);
       display: block;
       min-height: 100%;
     }
