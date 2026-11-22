@@ -227,7 +227,7 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   await nivelBase.fill("251");
   await expect(salvarPersonagem).toBeDisabled();
   await nivelBase.fill("250");
-  await page.getByRole("button", { name: "Equipamentos", exact: true }).click();
+  await page.getByRole("tab", { name: "Equipamentos", exact: true }).click();
   await expect(ficha.getByRole("group", { name: "Slots de equipamento" }).getByRole("button")).toHaveCount(
     10,
   );
@@ -268,7 +268,7 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   const fichaEditavel = page.getByRole("dialog", { name: "Editar personagem" });
   const viewportAnterior = page.viewportSize();
   await page.setViewportSize({ width: 390, height: 650 });
-  const retrato = fichaEditavel.locator(".previa-personagem .avatar-personagem");
+  const retrato = fichaEditavel.getByTestId("retrato");
   await expect
     .poll(() =>
       retrato.evaluate(
@@ -276,18 +276,17 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
       ),
     )
     .toBeGreaterThan(0.8);
-  const corpoFicha = fichaEditavel.locator("mat-dialog-content");
-  const semRolagem = () =>
-    corpoFicha.evaluate((el) => el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight + 1);
-  await expect.poll(semRolagem).toBe(true);
-  await page.getByRole("button", { name: "Equipamentos", exact: true }).click();
+  // No celular, a ficha cabe na tela: o botão de salvar aparece sem rolar, em cada aba.
+  const salvarVisivel = fichaEditavel.getByRole("button", { name: "Salvar personagem" });
+  await expect(salvarVisivel).toBeInViewport();
+  await page.getByRole("tab", { name: "Equipamentos", exact: true }).click();
   await page.getByRole("button", { name: "Arma", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "Arma", exact: true })).toHaveValue("13083");
-  await expect.poll(semRolagem).toBe(true);
-  await page.getByRole("button", { name: "Build", exact: true }).click();
+  await expect(salvarVisivel).toBeInViewport();
+  await page.getByRole("tab", { name: "Build", exact: true }).click();
   await expect(fichaEditavel.getByRole("textbox", { name: "Importar do simulador" })).toBeVisible();
   await expect(fichaEditavel.getByRole("button", { name: "Importar build" })).toBeDisabled();
-  await expect.poll(semRolagem).toBe(true);
+  await expect(salvarVisivel).toBeInViewport();
   if (viewportAnterior) await page.setViewportSize(viewportAnterior);
   expect((await page.request.get("/api/gestao/grupos")).status()).toBe(403);
   await login(adminId);

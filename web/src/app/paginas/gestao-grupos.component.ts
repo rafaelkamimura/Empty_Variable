@@ -3,7 +3,7 @@ import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { firstValueFrom } from "rxjs";
-import { agruparClasses } from "../core/grupos-classes";
+import { agruparClasses } from "../shared/dominio/grupos-classes";
 import { mensagemDeErro } from "../core/modelos";
 
 type Tipo = "OBRIGATORIA" | "SECUNDARIA" | "LIVRE";
