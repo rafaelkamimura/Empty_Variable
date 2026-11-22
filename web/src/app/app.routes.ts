@@ -5,7 +5,6 @@ import {
   autenticadoGuard,
   gestorGuard,
   inicioGuard,
-  vinculadoGuard,
 } from "./core/guardas";
 import { TELAS_LIBERADAS } from "./core/telas-liberadas";
 import { ROTAS_DEV } from "./dev/dev.routes";

@@ -1,0 +1,96 @@
+<ui-pagina
+  titulo="Meus personagens"
+  subtitulo="As fichas dos seus personagens: classe, nível, equipamentos e build."
+>
+  <ui-estado
+    [valor]="estado()"
+    formatoCarregando="cartoes"
+    [quantidadeCarregando]="3"
+    (tentarNovamente)="carregar()"
+  >
+    <ng-template uiEstadoPronto [tipo]="estado()" let-dados>
+      @let s = dados.situacao; @let pedido = s.solicitacao?.status === "PENDENTE" ? s.solicitacao : null; @if
+      (s.jogador; as j) {
+      <div class="grade" data-testid="vinculo-personagens">
+        @for (p of j.personagens; track p.id) {
+        <app-cartao-personagem
+          [nome]="p.nome"
+          [classe]="p.classe?.nomeOficial ?? ''"
+          [nivel]="p.nivelBase"
+          (abrir)="abrirVinculado(p)"
+        />
+        }
+        <button uiCartao class="adicionar" (click)="abrirVinculado(null)">
+          <span aria-hidden="true">+</span> Adicionar personagem
+        </button>
+      </div>
+      } @else if (pedido) {
+      <ui-cartao data-testid="vinculo-pendente">
+        <h2>Solicitação em análise</h2>
+        <p class="dica">
+          Enviada em {{ pedido.criadaEm | date: "dd/MM/yyyy HH:mm" }}. Um administrador vai aprovar ou
+          rejeitar. Enquanto isso, você ainda não vê saldo.
+        </p>
+        <div class="grade">
+          @for (nome of pedido.personagensNovos; track nome) { @let ficha = fichaPendente(pedido, nome);
+          <app-cartao-personagem
+            [nome]="nome"
+            [classe]="nomeDaClasse(ficha.classeId)"
+            [nivel]="ficha.nivelBase"
+            (abrir)="abrirPendente(pedido, ficha)"
+          />
+          }
+          <button
+            uiCartao
+            class="adicionar"
+            [disabled]="pedido.personagensNovos.length >= maximoFichas"
+            (click)="abrir(novaFicha(), { tipo: 'solicitacao', id: pedido.id, nomeAnterior: null })"
+          >
+            <span aria-hidden="true">+</span> Adicionar personagem
+          </button>
+        </div>
+        @if (pedido.personagensNovos.length >= maximoFichas) {
+        <p class="dica">
+          Limite de {{ maximoFichas }} personagens por solicitação. Os outros entram depois da aprovação.
+        </p>
+        }
+      </ui-cartao>
+      } @else { @if (s.solicitacao?.status === "REJEITADA") {
+      <ui-aviso tom="erro" titulo="Sua solicitação anterior foi rejeitada" data-testid="vinculo-rejeitada">
+        Motivo: <strong>{{ s.solicitacao?.motivo }}</strong>. Corrija os dados e envie de novo.
+      </ui-aviso>
+      } @else {
+      <ui-aviso tom="info" titulo="Falta o vínculo com o seu jogador">
+        Cadastre o seu primeiro personagem: a ficha vira o pedido de vínculo, que um administrador aprova.
+      </ui-aviso>
+      }
+      <div class="grade">
+        <button uiCartao class="adicionar" (click)="abrir(novaFicha(), { tipo: 'nova-solicitacao' })">
+          <span aria-hidden="true">+</span> Adicionar personagem
+        </button>
+      </div>
+      }
+    </ng-template>
+  </ui-estado>
+
+  <ui-painel-lateral [titulo]="tituloFicha()" [aberto]="ficha() !== null" (fechar)="fechar()">
+    @if (ficha(); as f) {
+    <app-ficha-personagem
+      [ficha]="f"
+      (fichaChange)="ficha.set($event)"
+      [grupos]="grupos()"
+      [catalogo]="equipamentos.slots()"
+      [erroCatalogo]="equipamentos.erro()"
+      [personagemId]="personagemAberto()"
+      [importando]="importando()"
+      [avisoImportacao]="avisoImportacao()"
+      [erro]="erroFicha()"
+      [enviando]="enviando()"
+      (importar)="importar($event)"
+      (salvar)="salvar($event)"
+      (cancelar)="fechar()"
+      (recarregarCatalogo)="equipamentos.carregar()"
+    />
+    }
+  </ui-painel-lateral>
+</ui-pagina>

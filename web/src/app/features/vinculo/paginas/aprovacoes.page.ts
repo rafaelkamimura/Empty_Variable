@@ -87,8 +87,15 @@ export class AprovacoesVinculoPage {
     this.emAndamento.update((ids) => new Set([...ids, pedido.id]));
     const ok = await this.acao.executar(op, sucesso);
     this.emAndamento.update((ids) => new Set([...ids].filter((id) => id !== pedido.id)));
-    // A aprovação pode mudar o papel ou o vínculo de quem está logado (o menu depende disso).
-    if (ok) await this.auth.carregar(true);
+    // A aprovação pode mudar o papel ou o vínculo de quem está logado (o menu depende disso). Se essa
+    // consulta falhar, avisa, e a fila recarrega do mesmo jeito.
+    if (ok) {
+      try {
+        await this.auth.carregar(true);
+      } catch (e) {
+        this.acao.avisar(mensagemDeErro(e));
+      }
+    }
     await this.carregar();
   }
 

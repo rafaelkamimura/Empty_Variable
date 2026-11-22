@@ -48,110 +48,23 @@ import { EquipamentoSelectComponent } from "./equipamento-select.component";
     </div>
     @let slot = ativo();
     <div class="editor">
-      <app-equipamento-select
-        [rotulo]="slot[1]"
-        [valor]="equipamentos()[slot[0]]"
-        [itens]="itensDoSlot()"
-        [erro]="erroCatalogo()"
-        (mudou)="mudou.emit({ slot: slot[0], valor: $event })"
-        (tentarDeNovo)="tentarDeNovo.emit()"
-      />
+      <!-- Recriado a cada slot: a busca e o campo recomeçam vazios. -->
+      @for (atual of [slot]; track atual[0]) {
+        <app-equipamento-select
+          [rotulo]="atual[1]"
+          [valor]="equipamentos()[atual[0]]"
+          [itens]="itensDoSlot()"
+          [erro]="erroCatalogo()"
+          (mudou)="mudou.emit({ slot: atual[0], valor: $event })"
+          (tentarDeNovo)="tentarDeNovo.emit()"
+        />
+      }
       @for (linha of detalhes(); track linha) {
         <p class="detalhe">{{ linha }}</p>
       }
     </div>
   `,
-  styles: `
-    :host {
-      display: grid;
-      gap: var(--esp-3);
-    }
-    .slots {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: var(--esp-1);
-    }
-    .slot {
-      display: grid;
-      justify-items: center;
-      align-content: start;
-      gap: var(--esp-1);
-      min-width: 0;
-      min-height: 64px;
-      padding: var(--esp-1);
-      border: 1px solid var(--borda-forte);
-      border-radius: var(--raio-p);
-      background: var(--cartao);
-      color: var(--texto-suave);
-      font: inherit;
-      font-size: var(--fs-xs);
-      overflow-wrap: break-word;
-      hyphens: auto;
-      cursor: pointer;
-      transition:
-        border-color var(--duracao) var(--curva),
-        background var(--duracao) var(--curva);
-    }
-    .slot:hover {
-      border-color: var(--acento-suave);
-      color: var(--texto);
-    }
-    .slot[aria-pressed="true"] {
-      border-color: var(--acento);
-      background: var(--acento-fundo);
-      color: var(--texto-forte);
-    }
-    .slot:focus-visible {
-      outline: 2px solid var(--foco);
-      outline-offset: 2px;
-    }
-    .arte {
-      position: relative;
-      display: grid;
-      place-items: center;
-      width: 32px;
-      height: 32px;
-      border: 1px solid var(--borda-forte);
-      border-radius: var(--raio-p);
-      background: var(--superficie);
-    }
-    .marca {
-      width: 8px;
-      height: 8px;
-      border: 1px solid var(--texto-apagado);
-      transform: rotate(45deg);
-    }
-    .marca.preenchido {
-      background: var(--sucesso);
-      border-color: var(--sucesso);
-    }
-    .refino {
-      position: absolute;
-      right: -6px;
-      bottom: -6px;
-      padding: 0 var(--esp-1);
-      border-radius: var(--raio-p);
-      background: var(--elevado);
-      color: var(--alerta);
-      font-size: var(--fs-xs);
-      font-weight: 700;
-      line-height: 1.3;
-    }
-    .editor {
-      display: grid;
-      gap: var(--esp-1);
-      padding: var(--esp-3);
-      border: 1px solid var(--borda);
-      border-radius: var(--raio-m);
-      background: var(--cartao);
-    }
-    .detalhe {
-      margin: 0;
-      font-size: var(--fs-xs);
-      color: var(--texto-suave);
-      overflow-wrap: anywhere;
-    }
-  `,
+  styleUrl: "./equipamentos-ficha.component.scss",
 })
 export class EquipamentosFichaComponent {
   readonly equipamentos = input.required<Ficha["equipamentos"]>();

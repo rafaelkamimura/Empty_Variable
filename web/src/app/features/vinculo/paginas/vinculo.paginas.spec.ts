@@ -124,8 +124,12 @@ describe("VinculoPage", () => {
     http.expectOne("/api/vinculo/classes").flush(CLASSES);
     await esperar();
     expect(painel()).toBeNull();
-    expect(el.querySelector("[data-testid='pendente']")?.textContent).toContain("Solicitação em análise");
-    expect(el.querySelector("[data-testid='pendente']")?.textContent).toContain("Guardião Real · Nível 200");
+    expect(el.querySelector("[data-testid='vinculo-pendente']")?.textContent).toContain(
+      "Solicitação em análise",
+    );
+    expect(el.querySelector("[data-testid='vinculo-pendente']")?.textContent).toContain(
+      "Guardião Real · Nível 200",
+    );
   });
 
   it("rejeitada mostra o motivo e libera nova solicitação", async () => {
@@ -133,7 +137,7 @@ describe("VinculoPage", () => {
       jogador: null,
       solicitacao: { ...PEDIDO, status: "REJEITADA", motivo: "Personagem errado" },
     });
-    expect(el.querySelector("[data-testid='rejeitada']")?.textContent).toContain("Personagem errado");
+    expect(el.querySelector("[data-testid='vinculo-rejeitada']")?.textContent).toContain("Personagem errado");
     expect(botao(el, "+ Adicionar personagem")).toBeTruthy();
   });
 
@@ -168,7 +172,7 @@ describe("VinculoPage", () => {
     });
     await esperar();
     expect(p.textContent).toContain("Build importada: nível 250, 1 equipamento.");
-    expect(p.querySelector("[data-testid='atributos-build']")).not.toBeNull();
+    expect(p.querySelector("[data-testid='vinculo-atributos-build']")).not.toBeNull();
     expect(link.value).toBe("");
     expect(p.querySelector("a[href*='personagem=p-dk']")).not.toBeNull();
 
@@ -185,6 +189,44 @@ describe("VinculoPage", () => {
     await esperar();
     http.expectOne("/api/vinculo").flush(VINCULADO);
     http.expectOne("/api/vinculo/classes").flush(CLASSES);
+  });
+
+  it("a build importada não cai noutra ficha aberta enquanto o pedido estava no ar", async () => {
+    const { http, el } = await abrirVinculo(VINCULADO);
+    el.querySelector<HTMLButtonElement>("button[aria-label='Editar ficha de Ana-DK']")!.click();
+    await esperar();
+    http.expectOne("/equipamentos-latam.json").flush({ slots: {} });
+    await esperar();
+    (
+      Array.from(painel()!.querySelectorAll("[role='tab']")).find((t) =>
+        t.textContent?.includes("Build"),
+      ) as HTMLElement
+    ).click();
+    await esperar();
+    digitar(
+      painel()!.querySelector<HTMLInputElement>("input[type='url']")!,
+      "https://short.latam-tools.com.br/abc",
+    );
+    await esperar();
+    botao(painel()!, "Importar build").click();
+    const req = http.expectOne("/api/vinculo/build-simulador");
+    // Antes da resposta, o membro fecha a ficha da DK e abre uma nova.
+    painel()!.querySelector<HTMLButtonElement>("button[aria-label='Fechar']")?.click();
+    await esperar();
+    botao(el, "+ Adicionar personagem").click();
+    await esperar();
+    req.flush({ classeId: "dk", classeNome: "Cavaleiro Dracônico", nivelBase: 250, equipamentos: {} });
+    await esperar();
+    const p = painel()!;
+    expect(p.getAttribute("aria-label")).toBe("Adicionar personagem");
+    expect(p.textContent).not.toContain("Build importada");
+    (
+      Array.from(p.querySelectorAll("[role='tab']")).find((t) =>
+        t.textContent?.includes("Personagem"),
+      ) as HTMLElement
+    ).click();
+    await esperar();
+    expect(p.querySelector<HTMLInputElement>("input[type='number']")!.value).toBe("");
   });
 
   it("o erro da API aparece na ficha, que continua aberta", async () => {
@@ -222,6 +264,21 @@ describe("AprovacoesVinculoPage", () => {
     await esperar();
     http.expectOne("/api/auth/me").flush({ id: "admin" });
     await esperar();
+    http.expectOne("/api/vinculo/solicitacoes?status=PENDENTE").flush([]);
+    http.expectOne("/api/vinculo/classes").flush(CLASSES);
+    await esperar();
+    expect(el.textContent).toContain("Nenhuma solicitação pendente.");
+  });
+
+  it("se a consulta do usuário falhar depois de aprovar, avisa e recarrega a fila", async () => {
+    const { http, el } = abrir("admin");
+    await esperar();
+    botao(el, "Aprovar vínculo").click();
+    http.expectOne("/api/vinculo/solicitacoes/s1/aprovar").flush({});
+    await esperar();
+    http.expectOne("/api/auth/me").flush("falhou", { status: 500, statusText: "Erro" });
+    await esperar();
+    expect(TestBed.inject(Acao).avisar).toHaveBeenCalled();
     http.expectOne("/api/vinculo/solicitacoes?status=PENDENTE").flush([]);
     http.expectOne("/api/vinculo/classes").flush(CLASSES);
     await esperar();

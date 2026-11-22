@@ -30,10 +30,10 @@ describe("MinhaAreaPage", () => {
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector("h1")?.textContent).toContain("Ana");
     expect(el.querySelector('[data-testid="saldo"]')?.textContent).toBe("240");
-    expect(el.querySelector('[data-testid="personagens"]')?.textContent).toContain("Inativo");
-    const pontos = Array.from(el.querySelectorAll('[data-testid="pontos-por-rank"] tbody td:last-child')).map(
-      (td) => td.textContent?.trim(),
-    );
+    expect(el.querySelector('[data-testid="carteira-personagens"]')?.textContent).toContain("Inativo");
+    const pontos = Array.from(
+      el.querySelectorAll('[data-testid="carteira-pontos-por-rank"] tbody td:last-child'),
+    ).map((td) => td.textContent?.trim());
     expect(pontos).toEqual(["300", "250", "200", "150", "100"]);
   });
 });

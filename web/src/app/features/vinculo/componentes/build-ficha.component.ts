@@ -53,7 +53,7 @@ import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo
       <ui-aviso tom="sucesso">{{ aviso }}</ui-aviso>
     }
     @if (linhas().length > 0) {
-      <ul class="atributos" data-testid="atributos-build" aria-label="Atributos da build">
+      <ul class="atributos" data-testid="vinculo-atributos-build" aria-label="Atributos da build">
         @for (linha of linhas(); track linha) {
           <li>{{ linha }}</li>
         }

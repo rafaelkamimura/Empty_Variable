@@ -22,7 +22,13 @@ const normalizar = (nome: string) =>
   imports: [ImagemItemComponent, BotaoComponent, CampoComponent, CampoControleDirective],
   template: `
     <ui-campo [rotulo]="'Buscar ' + rotulo()" rotuloOculto>
-      <input uiCampo type="search" placeholder="Buscar equipamento" (input)="busca.set(texto($event))" />
+      <input
+        uiCampo
+        type="search"
+        placeholder="Buscar equipamento"
+        (input)="busca.set(texto($event))"
+        (keydown.enter)="$event.preventDefault()"
+      />
     </ui-campo>
     <ui-campo [rotulo]="rotulo()" [dica]="dica()">
       <select uiCampo [disabled]="itens() === null" (change)="escolher(texto($event))">

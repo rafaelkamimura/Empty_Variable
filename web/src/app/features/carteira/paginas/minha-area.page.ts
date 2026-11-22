@@ -47,7 +47,7 @@ interface DadosMinhaArea {
           <app-extrato [extrato]="dados.extrato" />
           <section aria-labelledby="titulo-personagens">
             <h2 id="titulo-personagens">Meus personagens</h2>
-            <div class="grade" data-testid="personagens">
+            <div class="grade" data-testid="carteira-personagens">
               @for (p of dados.situacao.jogador?.personagens ?? []; track p.id) {
                 <ui-cartao role="article" class="personagem" [class.inativo]="!p.ativo">
                   <span class="emblema" [style.color]="tom(p.nome)" aria-hidden="true">{{
@@ -65,7 +65,7 @@ interface DadosMinhaArea {
             <p>
               Pontos base de uma participação completa num encontro ×1 (como o Naght), com a run concluída:
             </p>
-            <table uiTabela padrao aria-label="Pontos por rank" data-testid="pontos-por-rank">
+            <table uiTabela padrao aria-label="Pontos por rank" data-testid="carteira-pontos-por-rank">
               <thead>
                 <tr>
                   <th scope="col">Rank</th>

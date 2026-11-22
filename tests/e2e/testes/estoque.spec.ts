@@ -238,8 +238,8 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   await expect(ficha).toHaveCount(0);
   await expect(page.getByText("Solicitação em análise")).toBeVisible();
   await page.reload();
-  await expect(page.getByTestId("pendente")).toContainText("Receb\u00eador-MTK");
-  const pendente = page.getByTestId("pendente");
+  await expect(page.getByTestId("vinculo-pendente")).toContainText("Receb\u00eador-MTK");
+  const pendente = page.getByTestId("vinculo-pendente");
   await pendente.getByRole("button", { name: "Editar ficha de Receb\u00eador-MTK" }).click();
   const edicao = page.getByRole("dialog", { name: "Editar personagem" });
   await edicao.locator('input[type="number"]').fill("249");
@@ -268,7 +268,7 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   const fichaEditavel = page.getByRole("dialog", { name: "Editar personagem" });
   const viewportAnterior = page.viewportSize();
   await page.setViewportSize({ width: 390, height: 650 });
-  const retrato = fichaEditavel.getByTestId("retrato");
+  const retrato = fichaEditavel.getByTestId("vinculo-retrato");
   await expect
     .poll(() =>
       retrato.evaluate(
