@@ -174,7 +174,7 @@ Números (pontos, zeny, quantidades) usam `font-variant-numeric: tabular-nums` p
 
 ### 2.6 Tema claro ("Alvorada")
 
-O tema escuro é a identidade e continua o padrão. O tema claro é uma **possibilidade planejada** (§10, etapa 7), e o código novo já nasce pronto para ele. A ideia é **o mesmo céu ao amanhecer**: lavanda clara no lugar do espaço, os mesmos violetas mais fundos para manter o contraste e a aurora como névoa de alvorada. Não é um tema neutro (cinza e branco), e não usa cores fora da paleta.
+O tema escuro é a identidade e continua o padrão. O tema claro está **decidido** e entra na etapa 7 da §10. Até lá, o código novo já nasce pronto para ele. A ideia é **o mesmo céu ao amanhecer**: lavanda clara no lugar do espaço, os mesmos violetas mais fundos para manter o contraste e a aurora como névoa de alvorada. Não é um tema neutro (cinza e branco), e não usa cores fora da paleta.
 
 **Como funciona**
 
@@ -530,7 +530,7 @@ O mínimo é o **WCAG 2.2 nível AA**. A acessibilidade é conferida em cada PR,
 - Os specs de componente conferem papéis, `aria-*` e o uso pelo teclado (Enter, Espaço, Esc, Tab).
 - Antes do PR, a tela é percorrida só com o teclado e com zoom de 200%.
 - Quando uma feature é liberada, alguém a percorre com um leitor de tela (NVDA no Windows ou VoiceOver no macOS ou iOS).
-- *(A decidir)* Varredura automática com axe nos e2e das telas liberadas (`@axe-core/playwright`), o que acrescenta uma dependência de teste.
+- **Sem varredura automática com axe:** decidido na validação, para não acrescentar dependência de teste. A conferência fica com o lint, os specs e a revisão manual acima.
 
 ---
 
@@ -644,7 +644,7 @@ A ordem é pelo uso: primeiro as telas **liberadas em produção** (`core/telas-
    - o link "Ir para o conteúdo";
    - o foco no `h1` e o anúncio do título ao trocar de rota;
    - o `scroll-padding-top` com a altura do topo;
-   - a revisão do menu no celular. Hoje ele vira uma grade no alto de toda página e ocupa espaço antes do conteúdo; uma barra fixa embaixo, ao alcance do polegar, é a alternativa a avaliar.
+   - o menu no celular continua no alto da página por enquanto. Se ele vira uma barra fixa embaixo, ao alcance do polegar, será decidido depois.
 6. **Limpeza.**
    - Remover o `_legado.scss` e as classes globais (`.botao-acao`, `.chip`, `.resumo-*`, `.cartao-*`, `.pagina`…) quando nenhuma tela usar mais.
    - Remover os apelidos dos tokens antigos.
