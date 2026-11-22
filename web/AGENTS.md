@@ -16,5 +16,7 @@ Resumo do que não pode ser esquecido (o texto completo está nas diretrizes):
 - Componente novo é `OnPush`, com `input()`/`output()` e `@if`/`@for`.
 - `HttpClient` só aparece em `features/*/data/*.api.ts` e em `core/`.
 - Toda área com dados trata os estados de carregando, vazio, erro e sem permissão (§6.2).
-- O mínimo é o WCAG AA: foco visível, teclado e contraste (§7).
+- O mínimo é o WCAG 2.2 AA: foco visível e não encoberto, teclado, contraste e nada que dependa só de hover ou de cor (§7).
+- A tela funciona a 320 px sem rolagem horizontal e com zoom de 200%. Componentes respondem ao contêiner (`@container conteudo`), não à janela (§6.6).
+- Nada de `white`, `black` ou `rgb(0 0 0 / …)` em componente: só tokens semânticos, para o tema claro funcionar sem mexer em componente (§2.6).
 - Se uma regra conflitar com o pedido, pergunte antes de descumprir. Não decida sozinho.
