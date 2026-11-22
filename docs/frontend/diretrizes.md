@@ -21,7 +21,7 @@ Se uma regra daqui conflitar com código existente, a regra vale para o código 
 2. **Token antes de valor.** Nenhuma cor, espaçamento, raio ou sombra fica escrito direto num componente. Tudo vem de variáveis CSS (§2).
 3. **Separar dados de apresentação.** Componentes visuais não falam com a API. Só serviços de dados falam (§4).
 4. **Um jeito de fazer cada coisa.** Há um só botão principal, um só estado de carregamento e um só padrão de formulário.
-5. **Acessível por padrão.** O mínimo é o WCAG 2.1 AA, e isso não é opcional (§7).
+5. **Acessível por padrão.** O mínimo é o WCAG 2.2 AA, e isso não é opcional (§7).
 6. **Calma visual.** O fundo é o espaço e a aurora é a moldura. O conteúdo fica limpo, e o brilho é reservado ao que é importante ou interativo.
 7. **Um propósito por componente.** Se a descrição do componente precisa de um "e", ele provavelmente são dois.
 8. **Composição em vez de configuração.** Um componente cresce por slots (`<ng-content select="…">`) e por variantes tipadas, não por uma pilha de inputs booleanos. A partir de 3 inputs `boolean` que mudam o layout, divida o componente ou use slots.
@@ -58,7 +58,7 @@ Os primitivos só aparecem em `styles/_tokens.scss`. Componentes **nunca** usam 
 
 ### 2.2 Tokens semânticos
 
-Estes são os tokens que os componentes usam. Os contrastes foram medidos contra `--fundo` (#040017).
+Estes são os tokens que os componentes usam. Os valores abaixo são os do **tema escuro**, o padrão, e os contrastes foram medidos contra `--fundo` (#040017). O tema claro troca os valores, nunca os nomes (§2.6). Por isso componente nenhum sabe em que tema está.
 
 **Superfícies.** São derivadas do fundo: mesmo matiz, mais luz em cada nível.
 
@@ -171,6 +171,53 @@ Números (pontos, zeny, quantidades) usam `font-variant-numeric: tabular-nums` p
 - O tema `azure-blue.css` pré-compilado deve sair do `angular.json` quando o mapeamento estiver completo.
 - `::ng-deep` é proibido em código novo. Se um componente do Material precisa de outro visual, o ajuste é feito por token `--mat-*` no componente `shared/ui` que o envolve.
 - Quando um componente de `shared/ui` precisa estilizar conteúdo projetado (ex.: os parágrafos do `ui-como-funciona`), ele usa `ViewEncapsulation.None` com **todas** as regras escopadas na classe do próprio host (`.ui-como-funciona …`), em vez de `::ng-deep`.
+
+### 2.6 Tema claro ("Alvorada")
+
+O tema escuro é a identidade e continua o padrão. O tema claro está **decidido** e entra na etapa 7 da §10. Até lá, o código novo já nasce pronto para ele. A ideia é **o mesmo céu ao amanhecer**: lavanda clara no lugar do espaço, os mesmos violetas mais fundos para manter o contraste e a aurora como névoa de alvorada. Não é um tema neutro (cinza e branco), e não usa cores fora da paleta.
+
+**Como funciona**
+
+- **Os mesmos tokens, com outros valores.** Os valores do tema claro ficam num bloco `:root[data-tema="claro"]` em `styles/_tokens.scss`, com `color-scheme: light`. Nenhum componente troca de estilo por tema.
+- **Escolha da pessoa.** No menu do perfil há três opções: Escuro (padrão), Claro e Automático (segue `prefers-color-scheme`). A escolha fica no navegador (`localStorage`) e é aplicada no `index.html` antes do Angular subir, para a tela não piscar.
+- **O topo continua noturno.** A faixa do topo é sempre uma janela para o espaço: ela fixa os tokens escuros só nela, e a marca animada (`empty-variable-header.gif`) e a navegação ficam como são. É o elo visual entre os dois temas.
+- **Céu e aurora.** No tema claro, o céu estrelado (`app-ceu`) não aparece. A aurora vira uma névoa suave no alto da página (`--aurora-brilho` com os mesmos três tons, em opacidade baixa). O login continua noturno, como o topo.
+- **Marca.** No meio do conteúdo, a marca `{∅_}` usa o degradê fundo (`--acento-degrade`) e o `∅` em `--texto-forte`, porque o lavanda some no fundo claro.
+
+**Valores propostos** (o contraste é o pior caso entre o `--fundo` claro, #F5F1FC, e as superfícies):
+
+| Token             | Escuro    | Claro     | Contraste no claro                |
+| ----------------- | --------- | --------- | --------------------------------- |
+| `--fundo`         | `#040017` | `#F5F1FC` | —                                 |
+| `--superficie`    | `#0C0628` | `#EDE6FA` | —                                 |
+| `--cartao`        | `#140B36` | `#FCFAFF` | —                                 |
+| `--elevado`       | `#1D1247` | `#FFFFFF` | — (no claro, mais alto é mais claro, com `--sombra-1`) |
+| `--borda`         | `#2A1D5C` | `#DCD1F1` | decorativa                        |
+| `--borda-forte`   | `#3A2A78` | `#BFAEE3` | decorativa                        |
+| `--borda-campo`   | `#6E5DB5` | `#7A68B4` | 3,9:1 (mínimo 3:1)                |
+| `--texto-forte`   | `#EED7FF` | `#170B3B` | 15,1:1                            |
+| `--texto`         | `#E0C9F8` | `#2B1E5A` | 12,1:1                            |
+| `--texto-suave`   | `#A99BC4` | `#544878` | 6,7:1                             |
+| `--texto-apagado` | `#8E80AD` | `#675C8A` | 5,0:1                             |
+| `--acento` e `--foco` | `#C65BFB` | `#7A2DD4` | 5,5:1                         |
+| `--acento-suave`  | `#9D52FB` | `#9155F6` | 3,6:1 (só indicador, nunca texto) |
+| `--acento-degrade` | `#9155F6 → #C65BFB` | `#6A2BD9 → #8F2FD8` | —            |
+| `--sobre-acento`  | `#040017` | `#FFFFFF` | 5,9:1 no pior ponto do degradê    |
+| `--destaque`      | `#CA24ED` | `#A11FC0` | 5,0:1                             |
+| `--sucesso`       | `#7EE0C3` | `#0A6E52` | 5,1:1                             |
+| `--alerta`        | `#F2C97D` | `#7C5200` | 5,7:1                             |
+| `--erro`          | `#FF8FAB` | `#B0244A` | 5,4:1                             |
+| `--info`          | `#8FB8FF` | `#2251B0` | 6,0:1                             |
+
+Os fundos de estado (`--sucesso-fundo` e afins) e o `--acento-fundo` continuam como mistura do tom com transparente (`color-mix`), em 10% a 12%. Os tons de identidade (`--tom-*`) usam os tons fundos da mesma família (orquídea `#9A2FD0`, violeta `#6A3FE0`, lavanda `#7E5BB8`, azul, menta e névoa iguais aos estados e ao `--texto-suave` claros), todos acima de 4,2:1 contra a `--superficie` clara. As sombras passam a ser violeta e mais leves (`rgb(23 11 59 / 8%)` a `/ 14%`), não pretas.
+
+**O que o código precisa respeitar desde já** (vale para todo código novo, mesmo antes de o tema existir):
+
+- **Só tokens semânticos.** Nada de `white`, `black`, `#fff` ou `rgb(0 0 0 / …)` em componente: sombra é `--sombra-*` e texto sobre o acento é `--sobre-acento`. O Stylelint já barra o hex; os nomes de cor e o `rgb()` solto ficam na revisão.
+- **Nada de "mais claro = mais alto" escrito à mão.** A ordem `--fundo` → `--superficie` → `--cartao` → `--elevado` é semântica, não de luminosidade.
+- **Misturas com `color-mix`** usam um token e `transparent`, nunca um primitivo.
+- **Imagens e ícones** de item ficam em fundo transparente, e ilustrações decorativas usam `currentColor` ou tokens.
+- **Contraste conferido nos dois temas** quando o tema claro existir (§9).
 
 ---
 
@@ -401,26 +448,89 @@ Toda área que carrega dados trata os quatro estados abaixo. Um PR sem eles não
 
 ### 6.6 Responsividade
 
-- O layout é pensado primeiro para o celular e para as **container queries** (`@container conteudo`). As media queries ficam só para a casca.
-- **Pontos de quebra:** 600 px (celular), 760 px (tabela vira cartão, como hoje) e 1600 px (largura máxima do conteúdo, no token `--largura-conteudo`). Até esse limite, a página ocupa a largura da tela; texto corrido fica limitado a 80 caracteres por linha.
-- **Alvos de toque** têm no mínimo 40×40 px, e não há rolagem horizontal na página.
+O mesmo app serve o celular de quem confere o farm no meio do jogo e o monitor largo de quem lança uma run. Nenhuma tela é "só desktop".
+
+**Faixas e onde elas valem**
+
+| Faixa         | Largura do contêiner | O que muda                                                      |
+| ------------- | -------------------- | --------------------------------------------------------------- |
+| Celular       | até 600 px           | Uma coluna; ações quebram linha; painel lateral e diálogo em tela cheia |
+| Celular largo | 601 a 760 px         | Grades com 2 colunas; tabelas ainda em modo cartão              |
+| Tablet e notebook | 761 a 1279 px    | Tabelas viram tabela; menu em trilho ao lado                    |
+| Desktop       | 1280 px ou mais      | Grades com mais colunas; o conteúdo cresce até `--largura-conteudo` (1600 px) |
+
+- **Componentes respondem ao contêiner, não à janela.** Use `@container conteudo (…)`: o contêiner `conteudo` é a área principal da casca. Media query (`@media`) só aparece em `layout/` e nos estilos globais.
+- **Mobile first.** O estilo base é o do celular; as faixas maiores acrescentam (`min-width`). Exceção: o `uiTabela`, que já nasce tabela e vira cartão abaixo de 761 px.
+- **Grades fluidas** com `repeat(auto-fill, minmax(min(100%, <mínimo>), 1fr))`, em vez de número fixo de colunas. O `min(100%, …)` evita estourar a 320 px.
+- **Larguras fixas de coluna** (ex.: a coluna de ações com `width: 1%`) só dentro de `@container conteudo (min-width: 761px)`. No modo cartão, cada célula ocupa a linha (lição do farm).
+- **Texto longo** (nomes de item, de instância, apelidos) quebra com `overflow-wrap: anywhere`. Nada de `white-space: nowrap` em nome, só em datas e números curtos. Texto corrido fica limitado a 80 caracteres por linha.
+- **Alturas:** nada de altura fixa em bloco com texto (quebra com zoom e com o espaçamento de texto do §7). Tela cheia usa `dvh`, e elementos fixos no rodapé respeitam `env(safe-area-inset-bottom)`.
+- **Imagens** com `aspect-ratio` e `max-width: 100%`, nunca com largura e altura fixas ao mesmo tempo.
+- **Toque:** alvos com no mínimo 40×40 px e 8 px entre alvos vizinhos. Nada depende de hover: informação que só aparece com o mouse em cima não existe no celular (lição da Nebula). `@media (hover: hover)` serve só para enfeite.
+- **Orientação:** nenhuma tela trava retrato ou paisagem.
+- **Sem rolagem horizontal** da página a **320 px** de largura (WCAG 1.4.10, equivale a 1280 px com zoom de 400%). Só uma tabela muito larga pode rolar dentro do próprio contêiner, e com `tabindex="0"` e `aria-label` para ser rolada pelo teclado.
+
+**Como conferir:** cada PR de tela traz prints a 360 px e a 1280 px, e a tela é aberta a 320 px e com zoom de 200% antes do PR.
 
 ---
 
-## 7. Acessibilidade (mínimo AA)
+## 7. Acessibilidade (WCAG 2.2 AA)
 
-- **Contraste:**
-  - texto ≥ 4,5:1 e texto grande ≥ 3:1;
-  - contornos de controles e ícones com significado ≥ 3:1;
-  - os tokens da §2 já cumprem isso, e misturas novas precisam ser medidas.
-- **Foco visível** em tudo que é interativo: `outline: 2px solid var(--foco)`. Nunca use `outline: none` sem substituto.
-- **Teclado:** tudo funciona sem mouse. Esc fecha painéis e diálogos, e o foco fica preso dentro deles enquanto estão abertos (CDK `cdkTrapFocus`).
-- **Semântica:**
-  - `button` para ações e `a` para navegação;
-  - um `h1` por página e hierarquia de títulos sem pular níveis.
-- **Mensagens dinâmicas:** `role="status"` para informação e `role="alert"` para erro. O `ui-aviso` já aplica o certo.
-- **Botões só com ícone** têm `aria-label`, e imagens de item têm `alt` com o nome.
-- **Movimento:** `prefers-reduced-motion` desliga animações, o cursor piscando e os brilhos que se movem.
+O mínimo é o **WCAG 2.2 nível AA**. A acessibilidade é conferida em cada PR, e não numa revisão no fim.
+
+**Estrutura e navegação**
+
+- `lang="pt-BR"` no `index.html` *(já existe)*; marcos `header`, `nav` e `main` na casca *(já existem)*.
+- **Um `h1` por página** (o do `ui-pagina`), hierarquia de títulos sem pular nível, e cada seção com título (`aria-labelledby`).
+- **Título da aba por rota** (`title` na rota, "Tela · Empty Variable") *(já existe)*.
+- **Link "Ir para o conteúdo"**, o primeiro foco da página, visível ao receber foco *(falta: §10, etapa 5)*.
+- **Ao trocar de rota, o foco vai para o `h1`** da página nova, e o título é anunciado *(falta: §10, etapa 5)*. Sem isso, quem usa leitor de tela não percebe a navegação.
+- **Item ativo do menu** com `aria-current="page"` *(já existe)*.
+- `button` para ações e `a` para navegação; nunca `div` ou `span` com `(click)`.
+
+**Teclado e foco**
+
+- **Tudo funciona sem mouse**, na ordem visual de leitura. Nada de `tabindex` maior que 0.
+- **Foco visível** em tudo que é interativo: `outline: 2px solid var(--foco)` com `offset: 2px`. Nunca use `outline: none` sem substituto.
+- **Foco não encoberto** (WCAG 2.4.11): o topo fixo não pode cobrir o elemento focado. A casca usa `scroll-padding-top` com a altura do topo.
+- **Painéis e diálogos:** Esc fecha, o foco fica preso dentro enquanto estão abertos (CDK `cdkTrapFocus`), vai ao primeiro campo ao abrir e volta ao botão de origem ao fechar.
+- **Conteúdo que some da tela** (aba trocada, linha removida, formulário fechado) não leva o foco junto: ele vai para o próximo item lógico ou para o título da área.
+
+**Formulários**
+
+- Rótulo visível em todo campo (§6.4), com a exceção da célula de tabela.
+- **Erro ligado ao campo** (`aria-describedby` e `aria-invalid`, que o `ui-campo` já aplica), em texto que diz como corrigir.
+- **`autocomplete`** nos campos de dado pessoal, e nada de pedir de novo um dado que a pessoa já informou no mesmo fluxo (WCAG 3.3.7).
+- O login é pelo Discord: nenhum teste cognitivo nem captcha na tela (WCAG 3.3.8).
+
+**Conteúdo dinâmico**
+
+- **Mensagens:** `role="status"` para informação e `role="alert"` para erro. O `ui-aviso` já aplica o certo.
+- **Carregamento:** o esqueleto é escondido do leitor de tela, e um `role="status"` anuncia que está carregando (o `ui-estado` já faz os dois). Resultados de filtro e busca anunciam a contagem ("3 itens").
+- **Snackbar** (`Acao.executar`): é anunciado pelo leitor de tela. Erro que exige ação da pessoa não pode depender só do snackbar, que some em 4 s: ele também aparece na tela (ex.: o `ui-aviso` do formulário) até ser resolvido.
+- **Conteúdo em hover ou foco** (dica, menu): some com Esc, não some quando o mouse passa por cima dele e não guarda informação que não esteja em outro lugar (WCAG 1.4.13).
+
+**Cor, imagem e movimento**
+
+- **Contraste:** texto ≥ 4,5:1, texto grande ≥ 3:1, contornos de controle e ícones com significado ≥ 3:1. Os tokens da §2 cumprem isso nos dois temas; misturas novas precisam ser medidas.
+- **Nunca só a cor:** estado sempre tem ícone ou texto junto (selos, chips, linhas de tabela, barras de progresso com o número ao lado).
+- **Botões só com ícone** têm `aria-label`; imagens de item têm `alt` com o nome; ícones e ilustrações decorativos têm `aria-hidden="true"`.
+- **Tabelas** com `th scope="col"` e um nome (`caption` ou `aria-label`); no modo cartão, o `uiTabela` repete o cabeçalho em cada célula.
+- **Movimento:** `prefers-reduced-motion` desliga animações, o cursor piscando, a estrela cadente e os brilhos que se movem. Nada pisca mais de 3 vezes por segundo.
+- **Zoom e texto:** a tela funciona com zoom de 200% e com o espaçamento de texto aumentado (WCAG 1.4.12) sem cortar conteúdo, por isso blocos com texto não têm altura fixa.
+
+**Toque e gestos**
+
+- Alvos de toque com no mínimo 40×40 px (o AA pede 24 px; adotamos mais por causa do uso no celular).
+- Toda ação de arrastar tem alternativa por clique (WCAG 2.5.7). Gestos de vários dedos não são exigidos.
+
+**Como conferir**
+
+- O lint de template (`templateAccessibility`) roda no CI (§8.3).
+- Os specs de componente conferem papéis, `aria-*` e o uso pelo teclado (Enter, Espaço, Esc, Tab).
+- Antes do PR, a tela é percorrida só com o teclado e com zoom de 200%.
+- Quando uma feature é liberada, alguém a percorre com um leitor de tela (NVDA no Windows ou VoiceOver no macOS ou iOS).
+- **Sem varredura automática com axe:** decidido na validação, para não acrescentar dependência de teste. A conferência fica com o lint, os specs e a revisão manual acima.
 
 ---
 
@@ -481,8 +591,10 @@ Enquanto o código antigo não migrar, essas regras rodam como **erro** em `shar
 - [ ] Nenhuma página ou componente injeta `HttpClient`. As chamadas estão em `data/*.api.ts`.
 - [ ] Estados de carregando, vazio, erro e sem permissão estão tratados.
 - [ ] Ações destrutivas pedem confirmação. Botões ficam em `carregando` durante o envio.
-- [ ] Funciona só no teclado, com foco visível, e o contraste foi conferido.
-- [ ] Funciona a 360 px de largura sem rolagem horizontal.
+- [ ] Funciona só no teclado, com foco visível e não encoberto, e o contraste foi conferido (§7).
+- [ ] Funciona a 320 px de largura sem rolagem horizontal e com zoom de 200%; os prints de 360 px e 1280 px estão no PR (§6.6).
+- [ ] Nenhuma informação depende só de hover ou só de cor.
+- [ ] Só tokens semânticos: nada de `white`, `black` ou `rgb(0 0 0 / …)` em componente, para o tema claro (§2.6). Quando o tema claro existir, a tela foi conferida nos dois temas.
 - [ ] Os specs foram atualizados e os `data-testid` estão nos elementos que o e2e usa.
 - [ ] Componente UI novo está registrado na tabela da §5, com o seu nível, e tem exemplo no catálogo (§8.2).
 - [ ] O componente tem um propósito só e respeita os níveis (§3.3). Ele só foi para `shared/` se a regra de três (§1.1) se aplica.
@@ -495,23 +607,61 @@ Enquanto o código antigo não migrar, essas regras rodam como **erro** em `shar
 
 A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**: quem mexer numa tela migra essa tela.
 
-1. **Fundação.** *(feita)* Criar `styles/` com os tokens desta paleta e mapear `--mat-sys-*`. Para não quebrar as telas, os tokens antigos (`--fundo`, `--cartao`, `--acento`, `--texto-suave`…) passam a ser **apelidos** dos novos. Depois, `TONS` de `shared/dominio/visual.ts` é refeito com tons da paleta.
-2. **Ferramentas.** *(feita)* Ligar as regras de lint da §8.3 (aviso no código antigo) e montar o catálogo da §8.2, para que cada peça base já nasça com exemplo.
-3. **Peças base.** *(feita)* Criar `uiBotao`, `ui-pagina`, `ui-estado`, `ui-aviso`, `ui-cartao`, `ui-resumo` e `ui-chips-filtro`. Mover `ui-painel-lateral`, `ui-como-funciona` e `uiTabela` de `core/`.
-3. **Casca.** *(feita: `layout/casca`, `layout/topo`, `layout/menu-lateral` e `features/acesso/paginas/login.page.ts`)* Fazer o `layout/` (app-shell, menu e topo) com a nova identidade e a marca `{∅_}`, e o login com fundo de aurora.
-4. **Features, uma por vez.** A ordem sugerida é pelo uso e pela dor:
-   - loja *(feita: `features/loja`)* e carteira *(feita: `features/carteira`)*;
-   - farm *(feita: `features/farm`)*;
-   - Nebula *(feita: `features/nebula`, com a fila do admin em `/admin/nebula`; o cadastro de receitas fica com o admin)*;
-   - instâncias e gestão;
-   - admin;
-   - simulador.
+### 10.1 Estado em 22/11/2026
 
-   Em cada feature: criar `data/*.api.ts`, trocar o HTML e o CSS locais por componentes e quebrar os arquivos com mais de 300 linhas.
-5. **Limpeza.**
-   - Remover as classes globais (`.botao-acao`, `.chip`, `.resumo-*`, `.dica`…) quando nenhuma tela usar mais.
-   - Remover os apelidos de tokens antigos.
-   - Remover o tema `azure-blue.css`.
+**Feito**
+
+- **Etapas 1 a 3:** tokens e mapeamento do Material, lint e catálogo, peças base de `shared/ui` e a casca (`layout/`), com o login.
+- **Features em `features/`:** acesso (login), loja, carteira, farm e Nebula (com a fila do admin em `/admin/nebula`).
+- **Revisões do TL:** cada feature teve um PR de acertos depois da revisão. As pendências que dependem da API estão em 10.3.
+
+**Falta**
+
+- **28 arquivos em `paginas/`**, com cerca de 10.500 linhas. Os maiores: `simulador.component.ts` (1.390), `vinculo.component.ts` (915), `admin-run-assistente.component.ts` (814), `gestao-grupos.component.ts` (673) e `admin-estoque.component.ts` (621).
+- **Domínio ainda em `core/`:** `build.ts`, `cadastros.ts`, `estoque.ts`, `grupos-classes.ts`, `icones-classes.ts`, `instancias.ts`, `runs.ts`, `link-simulador.ts`, `painel.ts` e `equipamento-select.component.ts`. Ao fim da migração, `core/` fica só com singletons (autenticação, guardas, `Acao`, `Confirmacao`, saldo e telas liberadas).
+- **Estilos legados:** `_legado.scss` (cerca de 300 linhas, 29 classes globais), os apelidos dos tokens antigos e o tema `azure-blue.css` no `angular.json`.
+- **Lint:** 63 avisos, todos no código antigo (`paginas/` e `core/`).
+- **Acessibilidade da casca:** faltam o link "Ir para o conteúdo", o foco no `h1` ao trocar de rota e o `scroll-padding-top` do topo fixo (§7).
+
+### 10.2 Próximas etapas
+
+A ordem é pelo uso: primeiro as telas **liberadas em produção** (`core/telas-liberadas.ts`), que as pessoas usam hoje, e depois as que ainda não foram liberadas. Em cada feature:
+
+- criar `data/*.api.ts`;
+- levar o domínio de `core/` para `data/` (ou para `shared/dominio`, se mais de uma feature usa);
+- trocar o HTML e o CSS locais por componentes;
+- quebrar os arquivos com mais de 300 linhas;
+- atualizar o e2e da tela.
+
+4. **Features restantes, uma por vez:**
+   - a. **Vínculo e perfil** *(liberado)*: `vinculo`, `vinculo/aprovacoes` e `me`. A ficha (`vinculo-ficha.scss`) e o `equipamento-select` entram aqui; `build.ts`, `grupos-classes.ts` e `icones-classes.ts` vão para `shared/dominio`, porque o simulador também usa.
+   - b. **Runs e grupos** *(liberado)*: `gestao/runs` (lista, nova, corrigir e detalhe), `gestao/grupos` e `instancias-programadas`. O assistente de run é o maior arquivo dessa etapa e deve ser quebrado por passo. `runs.ts` vai para `features/runs/data`, e `instancias.ts` e `cadastros.ts` para `shared/dominio`, porque são usados por muitas telas.
+   - c. **Estoque e itens** *(o estoque é liberado)*: `admin/estoque` e `admin/itens`, com `estoque.ts`.
+   - d. **Simulador** *(liberado)*: `simulador` (hub) e `simulador/estimativa`, com `link-simulador.ts`. Pelo tamanho, deve sair em 2 ou 3 PRs, como o farm.
+   - e. **Gestão** *(não liberada)*: início da gestão, `gestao/instancias` (lista e detalhe), saldos, jogadores, classes, parâmetros e receitas da Nebula, com `painel.ts`.
+   - f. **Admin** *(não liberado)*: início do admin, compras, ofertas, taxa e usuários.
+5. **Acessibilidade e responsividade da casca.** É um PR pequeno, que pode entrar a qualquer momento (não depende da etapa 4):
+   - o link "Ir para o conteúdo";
+   - o foco no `h1` e o anúncio do título ao trocar de rota;
+   - o `scroll-padding-top` com a altura do topo;
+   - o menu no celular continua no alto da página por enquanto. Se ele vira uma barra fixa embaixo, ao alcance do polegar, será decidido depois.
+6. **Limpeza.**
+   - Remover o `_legado.scss` e as classes globais (`.botao-acao`, `.chip`, `.resumo-*`, `.cartao-*`, `.pagina`…) quando nenhuma tela usar mais.
+   - Remover os apelidos dos tokens antigos.
+   - Remover o tema `azure-blue.css`, conferindo que o `_material.scss` cobre todos os `--mat-sys-*`.
+   - Apagar `paginas/` e deixar em `core/` só os singletons.
+   - Trocar os avisos do lint por erro em todo o `app/` (§8.3).
+7. **Tema claro** (§2.6). Depende da limpeza: sem apelidos e sem o `azure-blue.css`, há um só lugar de cores para trocar.
+   - Criar o bloco `:root[data-tema="claro"]` com os valores da §2.6 e as variantes do céu, da aurora e da marca.
+   - Criar a escolha de tema no menu do perfil (Escuro, Claro e Automático) e o script no `index.html` que aplica a escolha antes do Angular subir.
+   - Conferir o contraste de todas as telas e do catálogo nos dois temas e acrescentar o tema ao catálogo (§8.2).
+
+Pela conta de hoje, são de 10 a 12 PRs até o fim da etapa 7, contando os PRs de acertos depois de cada revisão.
+
+### 10.3 Pendências fora do frontend
+
+- **Nebula:** a solicitação não manda o preço que o membro viu, e a API cobra o preço vigente. Precisa de um `precoEsperado` na API, como na loja, antes de liberar a Nebula.
+- **e2e da Nebula:** o `nebula.spec.ts` só passa rodando sozinho. Depois do `estoque.spec.ts`, no mesmo banco, a preparação recebe 409 (lote ativo). Precisa ser ajustado antes de entrar no `testMatch`.
 
 ---
 
