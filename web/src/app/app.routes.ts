@@ -1,11 +1,5 @@
 import type { Routes } from "@angular/router";
-import {
-  adminGuard,
-  anonimoGuard,
-  autenticadoGuard,
-  gestorGuard,
-  inicioGuard,
-} from "./core/guardas";
+import { adminGuard, anonimoGuard, autenticadoGuard, gestorGuard, inicioGuard } from "./core/guardas";
 import { TELAS_LIBERADAS } from "./core/telas-liberadas";
 import { ROTAS_DEV } from "./dev/dev.routes";
 import { ROTAS_CARTEIRA } from "./features/carteira/carteira.routes";
