@@ -4,6 +4,7 @@ import { Router } from "@angular/router";
 import { AuthService } from "../core/auth.service";
 import { SaldoService } from "../core/saldo.service";
 import { telaLiberada } from "../core/telas-liberadas";
+import { CeuComponent } from "./ceu.component";
 import { type ItemMenu, MenuLateralComponent } from "./menu-lateral.component";
 import { TopoComponent } from "./topo.component";
 
@@ -15,14 +16,15 @@ const ITENS_MENU: readonly ItemMenu[] = [
 ];
 
 /**
- * Casca da aplicação (diretrizes §3, layout/): topo, menu principal e a área de conteúdo, que é o
+ * Casca da aplicação (diretrizes §3, layout/): o céu ao fundo, topo, menu principal e a área de conteúdo, que é o
  * contêiner `conteudo` das container queries (§6.6). Sem usuário (login), só o conteúdo.
  */
 @Component({
   selector: "app-casca",
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, TopoComponent, MenuLateralComponent],
+  imports: [NgTemplateOutlet, CeuComponent, TopoComponent, MenuLateralComponent],
   template: `
+    <app-ceu />
     @if (auth.usuario(); as u) {
       <app-topo
         [usuario]="u"

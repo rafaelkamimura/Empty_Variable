@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core";
 import { MarcaComponent } from "./marca.component";
 
-/** Exemplos do catálogo: ui-marca nos três tamanhos, sobre o fundo e sobre a aurora. */
+/** Exemplos do catálogo: ui-marca nos três tamanhos, em texto e animada, sobre o fundo e sobre a aurora. */
 @Component({
   selector: "ui-marca-catalogo",
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -11,6 +11,11 @@ import { MarcaComponent } from "./marca.component";
       <ui-marca tamanho="p" />
       <ui-marca />
       <ui-marca tamanho="g" rotulo="Empty Variable" />
+    </div>
+    <div class="linha">
+      <ui-marca variante="animada" tamanho="p" />
+      <ui-marca variante="animada" />
+      <ui-marca variante="animada" tamanho="g" rotulo="Empty Variable" />
     </div>
     <div class="linha aurora">
       <ui-marca tamanho="g" />

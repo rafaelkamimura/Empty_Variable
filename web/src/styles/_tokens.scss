@@ -52,6 +52,27 @@ html {
     radial-gradient(50% 35% at 85% 10%, rgb(202 36 237 / 25%), transparent);
   --brilho-acento: 0 0 0 1px rgb(198 91 251 / 40%), 0 8px 24px rgb(153 31 219 / 25%);
 
+  /* ---------- Céu estrelado (só decoração, atrás do conteúdo: layout/ceu) ----------
+   * Cada camada é um ladrilho que se repete; os tamanhos diferentes evitam que o padrão apareça. */
+  --estrela: var(--ev-estrela);
+  --ceu-distante:
+    radial-gradient(1px 1px at 22px 34px, var(--ev-estrela), transparent),
+    radial-gradient(1px 1px at 96px 148px, var(--ev-estrela), transparent),
+    radial-gradient(1px 1px at 171px 62px, var(--ev-lavanda), transparent),
+    radial-gradient(1px 1px at 228px 201px, var(--ev-estrela), transparent),
+    radial-gradient(1px 1px at 58px 243px, var(--ev-chave-fim), transparent),
+    radial-gradient(1px 1px at 139px 12px, var(--ev-estrela), transparent),
+    radial-gradient(1px 1px at 262px 118px, var(--ev-lavanda), transparent);
+  --ceu-distante-tamanho: 290px 270px;
+  --ceu-proximo:
+    radial-gradient(1.5px 1.5px at 64px 92px, var(--ev-estrela), transparent),
+    radial-gradient(2px 2px at 318px 41px, var(--ev-chave-fim), transparent),
+    radial-gradient(1.5px 1.5px at 207px 286px, var(--ev-estrela), transparent),
+    radial-gradient(2px 2px at 441px 233px, var(--ev-chave-inicio), transparent),
+    radial-gradient(1.5px 1.5px at 383px 402px, var(--ev-estrela), transparent),
+    radial-gradient(1.5px 1.5px at 121px 447px, var(--ev-lavanda), transparent);
+  --ceu-proximo-tamanho: 510px 490px;
+
   /* ---------- Estados (todos acima de 7:1) ---------- */
   --sucesso: #7ee0c3;
   --sucesso-fundo: rgb(126 224 195 / 12%);

@@ -101,6 +101,14 @@ Estes são os tokens que os componentes usam. Os contrastes foram medidos contra
 | `--aurora-brilho` | `radial-gradient(60% 40% at 20% 0%, rgb(39 32 185 / 35%), transparent), radial-gradient(50% 35% at 85% 10%, rgb(202 36 237 / 25%), transparent)` |
 | `--brilho-acento` | `0 0 0 1px rgb(198 91 251 / 40%), 0 8px 24px rgb(153 31 219 / 25%)`  |
 
+**Céu estrelado (decoração).** A camada de estrelas atrás do conteúdo (`layout/ceu`). Nunca serve para texto ou ícone.
+
+| Token                                   | Valor                                                              |
+| --------------------------------------- | ------------------------------------------------------------------ |
+| `--estrela`                             | `--ev-estrela` (#EED7FF)                                           |
+| `--ceu-distante` e `--ceu-distante-tamanho` | Ladrilho de 290 × 270 px com 7 estrelas de 1 px                |
+| `--ceu-proximo` e `--ceu-proximo-tamanho`   | Ladrilho de 510 × 490 px com 6 estrelas de 1,5 a 2 px, que cintilam |
+
 > **Atenção:** `#2720B9` (1,96:1) e `#991FDB` (3,5:1) **reprovam** como texto sobre o fundo. Eles servem só como decoração.
 
 **Estados.** Não fazem parte da paleta, mas foram harmonizados com ela. Todos têm contraste acima de 7:1.
@@ -149,7 +157,10 @@ Números (pontos, zeny, quantidades) usam `font-variant-numeric: tabular-nums` p
   - no brilho atrás do número de saldo.
 
   Ela nunca aparece atrás de tabelas ou formulários.
+- **O céu estrelado** (`app-ceu`, em `layout/`) fica atrás de toda a aplicação, na casca. São estrelas pequenas e esparsas nos tons da marca: as distantes ficam paradas, as próximas cintilam devagar e uma estrela cadente passa de vez em quando. Ele aparece só onde não há superfície (`--superficie`, `--cartao`) por cima, e para com `prefers-reduced-motion`.
 - **A marca `{∅_}`** (chaves em degradê, `∅` lavanda, cursor `_` piscando) é usada no logotipo e nos estados vazios. O cursor pisca a 1 Hz e para com `prefers-reduced-motion`.
+  - No topo e no login, ela entra na variante `animada`: a imagem `public/imagens/empty-variable-header.gif`, com a marca entre as nebulosas. Com `prefers-reduced-motion`, entra o quadro parado (`.png`).
+  - Nos estados vazios e no meio de texto, ela continua em caracteres.
 - **Há um único botão principal por tela,** em `--acento-degrade`. As demais ações usam a variante secundária (contorno) ou a fantasma (texto).
 - **Cartões** usam `--cartao`, borda `--borda` e `--raio-g`, sem sombra. No hover, a borda passa a `--borda-forte`. Um cartão clicável também ganha `--brilho-acento` no foco.
 
@@ -317,7 +328,7 @@ O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no c
 | `ui-confirmacao`          | Organismo | Diálogo de confirmação para ações destrutivas, com descrição do efeito            | `confirm()` e confirmações ad hoc                    |
 | `table[uiTabela]`         | Organismo | Tabela responsiva. É **diretiva**, porque também vai em `<table mat-table>`; o estilo fica em `tabela/tabela.scss`, escopado em `table.ui-tabela` e carregado por `styles.scss`. Com `padrao` (`<table uiTabela padrao>`), dá a aparência das células, e `class="numero"` alinha números à direita; sem ele, nada muda nas tabelas antigas | `appResponsiva`, `.tabela-responsiva` |
 | `ui-badge`                | Átomo | Rótulo de status com tom semântico                                                | chips de status de compra e run                      |
-| `ui-marca`                | Átomo | Logotipo `{∅_}` com o cursor animado                                              | (novo)                                               |
+| `ui-marca`                | Átomo | Logotipo `{∅_}`: em texto, com o cursor animado, ou a imagem animada (`variante="animada"`) | (novo)                                    |
 | Pipes `pontos` e `zeny`   | — | Formatação pt-BR com sufixo e `tabular-nums`                                      | `number` + " pts" repetido                           |
 
 Os componentes de RO, usados por mais de uma feature, vão para `shared/dominio/`: `app-icone`, `app-imagem-item`, `app-icone-classe`, `app-equipamento-select` e `app-busca-item`.

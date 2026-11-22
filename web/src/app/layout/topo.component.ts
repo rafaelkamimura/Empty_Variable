@@ -7,7 +7,7 @@ import { formatarPontos } from "../shared/pipes/pontos.pipe";
 import { MarcaComponent } from "../shared/ui/marca/marca.component";
 
 /**
- * Topo da casca (diretrizes §2.4): a marca {∅_}, o saldo com o brilho da aurora atrás e o menu
+ * Topo da casca (diretrizes §2.4): a marca {∅_} animada, o saldo com o brilho da aurora atrás e o menu
  * do perfil. A faixa fina da aurora fica na borda de baixo.
  */
 @Component({
@@ -17,7 +17,7 @@ import { MarcaComponent } from "../shared/ui/marca/marca.component";
   template: `
     <header class="topo">
       <a routerLink="/" class="inicio" aria-label="Empty Variable, início">
-        <ui-marca />
+        <ui-marca variante="animada" />
         <span class="nome">Empty Variable</span>
       </a>
       <span class="espaco"></span>
@@ -72,7 +72,8 @@ import { MarcaComponent } from "../shared/ui/marca/marca.component";
       gap: var(--esp-4);
       height: 64px;
       padding: 0 var(--esp-5);
-      background: var(--superficie);
+      background: color-mix(in srgb, var(--superficie) 82%, transparent);
+      backdrop-filter: blur(var(--esp-3));
     }
     .topo::after {
       content: "";

@@ -111,7 +111,7 @@ export const ENTRADAS_CATALOGO: readonly EntradaCatalogo[] = [
     id: "marca",
     nome: "ui-marca",
     nivel: "atomo",
-    descricao: "A marca {∅_}: chaves no degradê, ∅ lavanda e o cursor piscando.",
+    descricao: "A marca {∅_}: em texto, com o cursor piscando, ou a imagem animada do topo e do login.",
     carregar: () => import("../../shared/ui/marca/marca.catalogo").then((m) => m.MarcaCatalogoComponent),
   },
   {
