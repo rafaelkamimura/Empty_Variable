@@ -7,7 +7,7 @@
 // A estimativa à mão fica em /simulador/estimativa.
 // D62: o membro cola um link de compartilhamento do simulador público e a build abre no simulador
 // completo, sem vir de nenhuma ficha; gravar numa ficha pede confirmação.
-import { type APIResponse, type Page, expect, test } from "@playwright/test";
+import { type APIResponse, type Page, type Request, expect, test } from "@playwright/test";
 import { ORIGEM } from "../playwright.config";
 
 const ADMIN = { discordId: "900000000000000001", username: "admin-simulador" };
@@ -18,6 +18,18 @@ const SAGE = { discordId: `9000000059${N}`, username: `sage-simulador-${N}` };
 const HUB = { discordId: `9000000061${N}`, username: `hub-simulador-${N}` };
 const LINK = { discordId: `9000000062${N}`, username: `link-simulador-${N}` };
 const headers = { Origin: ORIGEM };
+
+/** D61: as únicas origens externas do simulador são as das imagens (as mesmas do `img-src`). */
+const ORIGENS_DE_IMAGEM = ["https://assets.latam-tools.com.br", "https://www.divine-pride.net"];
+
+/**
+ * Diz se o pedido é uma imagem de uma das origens liberadas para o simulador.
+ * @param pedido Pedido que o simulador fez para fora do sistema
+ * @returns true só para imagem vinda de uma origem de `ORIGENS_DE_IMAGEM`
+ */
+function imagemLiberada(pedido: Request): boolean {
+  return pedido.resourceType() === "image" && ORIGENS_DE_IMAGEM.includes(new URL(pedido.url()).origin);
+}
 
 /** Token do link https://short.latam-tools.com.br/Ukxuq4: Feiticeiro 105/50 com Lanças de Fogo nv. 10. */
 const TOKEN_FEITICEIRO = [
@@ -240,12 +252,13 @@ test("membro abre a build no simulador completo, troca o alvo, muda o nível e g
   const erros: string[] = [];
   page.on("pageerror", (erro) => erros.push(erro.message));
   // O simulador servido pelo sistema não pode depender de outro servidor: qualquer pedido dele para
-  // fora é cortado e anotado. O site da latam-tools não participa deste teste.
+  // fora é cortado, e só as imagens liberadas na D61 deixam de ser anotadas. O site da latam-tools
+  // não participa deste teste.
   const pedidosParaFora: string[] = [];
   await page.route(
     (url) => url.origin !== ORIGEM,
     (rota) => {
-      if (rota.request().frame().url().includes("/simulador-latam/"))
+      if (rota.request().frame().url().includes("/simulador-latam/") && !imagemLiberada(rota.request()))
         pedidosParaFora.push(rota.request().url());
       return rota.abort();
     },
@@ -310,7 +323,7 @@ test("membro abre no simulador completo o link do simulador público, muda o ní
   await page.route(
     (url) => url.origin !== ORIGEM,
     (rota) => {
-      if (rota.request().frame().url().includes("/simulador-latam/"))
+      if (rota.request().frame().url().includes("/simulador-latam/") && !imagemLiberada(rota.request()))
         pedidosParaFora.push(rota.request().url());
       return rota.abort();
     },

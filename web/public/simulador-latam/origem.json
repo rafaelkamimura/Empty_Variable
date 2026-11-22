@@ -2,7 +2,7 @@
   "repositorio": "https://github.com/adsonpleal/latam-ro-calc",
   "commit": "5c9afd71c02a73bd60ee7042747df9ad92bb154d",
   "licenca": "MIT, Copyright (c) 2026 Adson Leal (ver LICENSE)",
-  "imagens": null,
+  "imagens": "https://assets.latam-tools.com.br",
   "dadosDispensados": [
     "itemNamesEs",
     "itemNamesEn",
@@ -12,10 +12,6 @@
     "releaseHistory"
   ],
   "ajustes": [
-    {
-      "arquivo": "src/react/views/content/item-search.tsx",
-      "motivo": "Sem servidor de imagens, a busca de itens não pede a figura do item à Divine Pride."
-    },
     {
       "arquivo": "src/main.ts",
       "motivo": "A interface roda numa sub-rota: a troca de endereço na abertura mantém o caminho."
