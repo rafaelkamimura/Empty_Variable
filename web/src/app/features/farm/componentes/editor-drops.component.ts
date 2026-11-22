@@ -90,20 +90,28 @@ export interface ItemEditor {
       font-weight: 600;
       color: var(--texto-suave);
     }
+    /* O nome nunca é espremido: se ele não cabe ao lado do − [n] +, o controle desce para a linha de baixo. */
     .linha {
-      display: grid;
-      grid-template-columns: 24px minmax(0, 1fr) auto;
+      display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: var(--esp-2);
+      gap: var(--esp-1) var(--esp-2);
+    }
+    .linha app-imagem-item {
+      flex: none;
     }
     .linha label {
+      flex: 1 1 auto;
+      min-width: 0;
       overflow-wrap: anywhere;
       color: var(--texto);
     }
     .passo {
+      flex: none;
       display: inline-flex;
       align-items: center;
       gap: var(--esp-1);
+      margin-left: auto;
     }
     .passo input {
       box-sizing: border-box;
