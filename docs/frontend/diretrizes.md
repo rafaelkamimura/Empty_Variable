@@ -612,7 +612,7 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 **Feito**
 
 - **Etapas 1 a 3:** tokens e mapeamento do Material, lint e catálogo, peças base de `shared/ui` e a casca (`layout/`), com o login.
-- **Features em `features/`:** acesso (login), loja, carteira, farm e Nebula (com a fila do admin em `/admin/nebula`).
+- **Features em `features/`:** acesso (login), loja, carteira (com a Minha área), farm, Nebula (com a fila do admin em `/admin/nebula`) e vínculo (com a fila de aprovações).
 - **Revisões do TL:** cada feature teve um PR de acertos depois da revisão. As pendências que dependem da API estão em 10.3.
 
 **Falta**
@@ -634,7 +634,7 @@ A ordem é pelo uso: primeiro as telas **liberadas em produção** (`core/telas-
 - atualizar o e2e da tela.
 
 4. **Features restantes, uma por vez:**
-   - a. **Vínculo e perfil** *(liberado)*: `vinculo`, `vinculo/aprovacoes` e `me`. A ficha (`vinculo-ficha.scss`) e o `equipamento-select` entram aqui; `build.ts`, `grupos-classes.ts` e `icones-classes.ts` vão para `shared/dominio`, porque o simulador também usa.
+   - a. **Vínculo e perfil** *(feita: `features/vinculo`, com a fila em `/vinculo/aprovacoes`; a Minha área, `/me`, foi para `features/carteira`, porque mostra o saldo e o extrato. `build.ts`, `grupos-classes.ts` e `icones-classes.ts` foram para `shared/dominio`, e os tipos da build saíram de `core/modelos.ts` para `shared/dominio/build.ts`)*.
    - b. **Runs e grupos** *(liberado)*: `gestao/runs` (lista, nova, corrigir e detalhe), `gestao/grupos` e `instancias-programadas`. O assistente de run é o maior arquivo dessa etapa e deve ser quebrado por passo. `runs.ts` vai para `features/runs/data`, e `instancias.ts` e `cadastros.ts` para `shared/dominio`, porque são usados por muitas telas.
    - c. **Estoque e itens** *(o estoque é liberado)*: `admin/estoque` e `admin/itens`, com `estoque.ts`.
    - d. **Simulador** *(liberado)*: `simulador` (hub) e `simulador/estimativa`, com `link-simulador.ts`. Pelo tamanho, deve sair em 2 ou 3 PRs, como o farm.

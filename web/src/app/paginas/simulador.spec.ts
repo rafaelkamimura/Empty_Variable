@@ -10,7 +10,12 @@ import { type ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ActivatedRoute, convertToParamMap, provideRouter } from "@angular/router";
 import { NAO_CONSIDERA } from "@betel/simulador";
-import { atributoDaBuild, detalhesDoEquipamento, refinoEGrau, resumoDosAtributos } from "../core/build";
+import {
+  atributoDaBuild,
+  detalhesDoEquipamento,
+  refinoEGrau,
+  resumoDosAtributos,
+} from "../shared/dominio/build";
 import { lerLinkColado } from "../core/link-simulador";
 import type { AtributosBuild, ItemEquipamento, SituacaoVinculo } from "../core/modelos";
 import {
@@ -28,7 +33,6 @@ import {
   type InstanciaDoHub,
   SimuladorHubComponent,
 } from "./simulador-hub.component";
-import { VinculoComponent } from "./vinculo.component";
 
 const esperar = () => new Promise((r) => setTimeout(r));
 const texto = (f: ComponentFixture<unknown>) => (f.nativeElement as HTMLElement).textContent ?? "";
@@ -154,67 +158,6 @@ describe("Build da ficha (D57)", () => {
     expect(atributoDaBuild(ATRIBUTOS, "str")).toBe(142);
     expect(atributoDaBuild(ATRIBUTOS, "int")).toBe(0);
     expect(atributoDaBuild(undefined, "str")).toBe(0);
-  });
-});
-
-describe("Ficha: importação da build completa (D57)", () => {
-  it("guarda refino, grau, cartas, encantamentos e atributos, e envia tudo ao salvar", async () => {
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter([]),
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideNoopAnimations(),
-      ],
-    });
-    const http = TestBed.inject(HttpTestingController);
-    const f = TestBed.createComponent(VinculoComponent);
-    f.detectChanges();
-    http.expectOne("/api/vinculo").flush(SITUACAO);
-    http.expectOne("/api/vinculo/classes").flush([]);
-    await esperar();
-    const c = f.componentInstance;
-    const ficha = {
-      nome: "Ana-DK",
-      classeId: "dk",
-      nivelBase: 250,
-      build: "",
-      equipamentos: { topo: { id: 5011, nome: "Antena" } },
-    };
-    c.editando.set(ficha);
-    c.linkSimulador = "https://short.latam-tools.com.br/abc";
-    const importacao = c.importarBuild(ficha);
-    http.expectOne("/api/vinculo/build-simulador").flush({
-      classeId: null,
-      classeNome: null,
-      nivelBase: 250,
-      equipamentos: { arma: { ...ARMA, nome: null } },
-      atributos: ATRIBUTOS,
-    });
-    http.expectOne("/equipamentos-latam.json").flush({ slots: { arma: [{ id: 600020, nome: ARMA.nome }] } });
-    await importacao;
-    expect(ficha as object).toEqual({
-      nome: "Ana-DK",
-      classeId: "dk",
-      nivelBase: 250,
-      build: "",
-      equipamentos: { arma: ARMA },
-      atributos: ATRIBUTOS,
-    });
-    expect(c.tituloDoSlot(ARMA)).toBe("Espada de Duas Mãos · +12 · Grau A");
-    expect(c.tituloDoSlot(undefined)).toBeNull();
-
-    c.editandoId = "p-dk";
-    const envio = c.salvarFicha(ficha);
-    const pedido = http.expectOne("/api/vinculo/personagens/p-dk");
-    expect(pedido.request.body).toEqual(
-      jasmine.objectContaining({ equipamentos: { arma: ARMA }, atributos: ATRIBUTOS }),
-    );
-    pedido.flush({});
-    await esperar();
-    http.expectOne("/api/vinculo").flush(SITUACAO);
-    http.expectOne("/api/vinculo/classes").flush([]);
-    await envio;
   });
 });
 

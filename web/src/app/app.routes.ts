@@ -1,18 +1,12 @@
 import type { Routes } from "@angular/router";
-import {
-  adminGuard,
-  anonimoGuard,
-  autenticadoGuard,
-  gestorGuard,
-  inicioGuard,
-  vinculadoGuard,
-} from "./core/guardas";
+import { adminGuard, anonimoGuard, autenticadoGuard, gestorGuard, inicioGuard } from "./core/guardas";
 import { TELAS_LIBERADAS } from "./core/telas-liberadas";
 import { ROTAS_DEV } from "./dev/dev.routes";
 import { ROTAS_CARTEIRA } from "./features/carteira/carteira.routes";
 import { ROTAS_FARM } from "./features/farm/farm.routes";
 import { ROTAS_LOJA } from "./features/loja/loja.routes";
 import { ROTAS_NEBULA } from "./features/nebula/nebula.routes";
+import { ROTAS_VINCULO } from "./features/vinculo/vinculo.routes";
 
 /** paineis §4: o painel vem da URL — /me, /loja e /nebula (Cliente), /gestao (Gestão), /admin (Administração). */
 const rotasCompletas: Routes = [
@@ -28,30 +22,13 @@ const rotasCompletas: Routes = [
     title: "Entrar · Empty Variable",
     loadComponent: () => import("./features/acesso/paginas/login.page").then((m) => m.LoginPage),
   },
-  {
-    path: "vinculo/aprovacoes",
-    canActivate: [adminGuard],
-    data: { filaAprovacoes: true },
-    loadComponent: () => import("./paginas/vinculo.component").then((m) => m.VinculoComponent),
-  },
-  {
-    path: "vinculo",
-    canActivate: [autenticadoGuard],
-    title: "Vínculo · Empty Variable",
-    loadComponent: () => import("./paginas/vinculo.component").then((m) => m.VinculoComponent),
-  },
 
   // ---- Cliente ----
+  ...ROTAS_VINCULO,
   ...ROTAS_LOJA,
   ...ROTAS_CARTEIRA,
   ...ROTAS_FARM,
   ...ROTAS_NEBULA,
-  {
-    path: "me",
-    canActivate: [vinculadoGuard],
-    title: "Minha área · Empty Variable",
-    loadComponent: () => import("./paginas/me.component").then((m) => m.MeComponent),
-  },
   {
     path: "simulador",
     canActivate: [autenticadoGuard],

@@ -1,5 +1,32 @@
 // D57: leitura da build guardada na ficha (refino, grau, cartas, encantamentos e atributos).
-import type { AtributosBuild, EncaixeEquipamento, EquipamentoFicha } from "./modelos";
+/** D57: carta ou encantamento de um equipamento; o nome vem da Divine Pride quando ela responde. */
+export interface EncaixeEquipamento {
+  id: number;
+  nome: string | null;
+}
+export interface ItemEquipamento {
+  id: number;
+  nome: string;
+  /** D57: o que a build importada do simulador traz além do item. */
+  refino?: number;
+  grau?: "D" | "C" | "B" | "A";
+  cartas?: EncaixeEquipamento[];
+  encantamentos?: EncaixeEquipamento[];
+}
+type Pontos<Chave extends string> = Partial<Record<Chave, number>>;
+/** D57: atributos da build importada do simulador, guardados na ficha. */
+export interface AtributosBuild {
+  nivelClasse?: number;
+  base?: Pontos<"str" | "agi" | "vit" | "int" | "dex" | "luk">;
+  bonusClasse?: Pontos<"str" | "agi" | "vit" | "int" | "dex" | "luk">;
+  talentos?: Pontos<"pow" | "sta" | "wis" | "spl" | "con" | "crt">;
+  habilidade?: { nome: string; nivel?: number };
+  elementoAtaque?: string;
+  /** D59: número da classe no simulador e token do link importado, usados pela simulação. */
+  classeSimulador?: number;
+  token?: string;
+}
+export type EquipamentoFicha = string | ItemEquipamento;
 
 const ROTULOS_ATRIBUTO = [
   ["str", "FOR"],

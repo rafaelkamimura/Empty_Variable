@@ -23,7 +23,7 @@ import {
 } from "@betel/simulador";
 import { firstValueFrom } from "rxjs";
 import { AuthService } from "../core/auth.service";
-import { atributoDaBuild, refinoEGrau } from "../core/build";
+import { atributoDaBuild, refinoEGrau } from "../shared/dominio/build";
 import { mensagemDeErro, type PersonagemResumo, type SituacaoVinculo } from "../core/modelos";
 
 /** Atributos de um monstro como a API devolve; null é o que a fonte não trouxe. */
