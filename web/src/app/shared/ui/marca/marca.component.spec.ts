@@ -18,4 +18,27 @@ describe("MarcaComponent", () => {
     expect(el.hasAttribute("aria-hidden")).toBeFalse();
     expect(el.classList).toContain("tamanho-g");
   });
+
+  it("variante animada: a imagem no tamanho pedido, com o quadro parado para movimento reduzido", () => {
+    const fixture = TestBed.createComponent(MarcaComponent);
+    fixture.componentRef.setInput("variante", "animada");
+    fixture.componentRef.setInput("rotulo", "Empty Variable");
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    const img = el.querySelector("img");
+    expect(el.classList).toContain("animada");
+    expect(el.textContent?.trim()).toBe("");
+    expect(img?.getAttribute("src")).toBe("imagens/empty-variable-header.gif");
+    expect(img?.getAttribute("alt")).toBe("");
+    expect(img?.getAttribute("width")).toBe("72");
+    expect(img?.getAttribute("height")).toBe("42");
+    expect(el.querySelector("source")?.getAttribute("media")).toBe("(prefers-reduced-motion: reduce)");
+    expect(el.querySelector("source")?.getAttribute("srcset")).toBe("imagens/empty-variable-header.png");
+    expect(el.getAttribute("role")).toBe("img");
+
+    fixture.componentRef.setInput("tamanho", "g");
+    fixture.detectChanges();
+    expect(img?.getAttribute("width")).toBe("144");
+    expect(img?.getAttribute("height")).toBe("84");
+  });
 });

@@ -73,7 +73,7 @@ const ROTULO_ORIGEM: Record<ResultadoBuscaItem["origem"], string> = {
     }
     input {
       box-sizing: border-box;
-      width: 100%;
+      flex: 1 1 180px;
       min-width: 0;
       min-height: 40px;
       padding: var(--esp-2) var(--esp-3);
@@ -86,9 +86,10 @@ const ROTULO_ORIGEM: Record<ResultadoBuscaItem["origem"], string> = {
     input::placeholder {
       color: var(--texto-apagado);
     }
+    /* Em espaço estreito, o botão desce e o campo fica com a largura toda (a dica cabe inteira). */
     .linha {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      display: flex;
+      flex-wrap: wrap;
       gap: var(--esp-2);
     }
     .lista {

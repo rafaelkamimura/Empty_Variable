@@ -17,7 +17,7 @@ export function mensagemDoErro(erro: string | undefined): string | null {
 }
 
 /**
- * Entrada pelo Discord (diretrizes §2.4: a aurora no fundo do login). A navegação para
+ * Entrada pelo Discord (diretrizes §2.4: a aurora no fundo do login, sobre o céu da casca). A navegação para
  * `api/auth/discord` é completa: o fluxo OAuth começa na API.
  */
 @Component({
@@ -28,7 +28,7 @@ export function mensagemDoErro(erro: string | undefined): string | null {
     <div class="cena">
       <ui-cartao class="cartao">
         <div class="marca">
-          <ui-marca tamanho="g" rotulo="Empty Variable" />
+          <ui-marca variante="animada" tamanho="g" rotulo="Empty Variable" />
           <span class="nome" aria-hidden="true">Empty Variable</span>
         </div>
         <h1>Betel · Torre da Constelação</h1>
@@ -57,13 +57,14 @@ export function mensagemDoErro(erro: string | undefined): string | null {
       min-height: 100dvh;
       box-sizing: border-box;
       padding: var(--esp-5) var(--esp-4);
-      background: var(--aurora-brilho), var(--fundo);
+      background: var(--aurora-brilho);
     }
     .cartao {
       width: min(440px, 100%);
       gap: var(--esp-4);
       padding: var(--esp-6) var(--esp-5);
       background: color-mix(in srgb, var(--cartao) 88%, transparent);
+      backdrop-filter: blur(var(--esp-2));
       box-shadow: var(--sombra-2);
     }
     .marca {
