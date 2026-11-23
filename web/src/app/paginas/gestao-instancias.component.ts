@@ -22,7 +22,7 @@ import {
   ROTULO_MODO,
   ROTULO_RETORNO,
   situacaoInstancia,
-} from "../core/instancias";
+} from "../shared/dominio/instancias";
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { PainelLateralComponent } from "../shared/ui/painel-lateral/painel-lateral.component";
 import { mensagemDeErro } from "../core/modelos";

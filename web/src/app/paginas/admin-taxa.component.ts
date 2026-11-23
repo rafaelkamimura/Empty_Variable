@@ -8,7 +8,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
-import { paraCentesimos } from "../core/cadastros";
+import { paraCentesimos } from "../shared/dominio/cadastros";
 import type { VersaoConfigLoja } from "../core/estoque";
 import { ComoFuncionaComponent } from "../shared/ui/como-funciona/como-funciona.component";
 import { TabelaDirective } from "../shared/ui/tabela/tabela.directive";

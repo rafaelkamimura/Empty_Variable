@@ -1,0 +1,144 @@
+<ui-pagina [titulo]="correcaoDe() ? 'Corrigir run' : 'Nova run'" [subtitulo]="subtitulo()">
+  <ui-estado [valor]="carga()" (tentarNovamente)="iniciar()">
+    <ng-template uiEstadoPronto [tipo]="carga()" let-ctx>
+      @if (ctx.origem; as o) {
+        <ui-aviso
+          tom="info"
+          [titulo]="'Rascunho do nag4eyes' + (o.partyId ? ' (grupo ' + o.partyId + ')' : '')"
+          data-testid="runs-origem-rascunho"
+        >
+          Data e participantes vieram do grupo encerrado no Discord. Confira, escolha o resultado e o encontro
+          e informe empréstimos e drops: nada pontua até o registro.
+          @if (o.instancia === null && o.instanciaOrigem) {
+            A instância "{{ o.instanciaOrigem.nome }}" não foi encontrada aqui; escolha-a.
+          }
+          @if (pendentesRascunho().length > 0) {
+            <p>Não entraram automaticamente (inclua à mão, se for o caso):</p>
+            <ul>
+              @for (x of pendentesRascunho(); track $index) {
+                <li>
+                  {{ x.personagem }}{{ x.classe ? " · " + x.classe : "" }}
+                  {{ x.jogador ? "(" + x.jogador + ")" : "(Discord " + x.discordId + ")" }}:
+                  <strong>{{ x.motivo }}</strong>
+                </li>
+              }
+            </ul>
+          }
+        </ui-aviso>
+      }
+      @let r = run(); @let p = pend();
+      <mat-stepper
+        linear
+        [orientation]="estreito() ? 'vertical' : 'horizontal'"
+        aria-label="Passos do registro da run"
+      >
+        <!-- Sem a fonte Material Icons: os passos mostram o número em vez dos ícones "edit"/"done". -->
+        <ng-template matStepperIcon="edit" let-index="index">{{ index + 1 }}</ng-template>
+        <ng-template matStepperIcon="done" let-index="index">{{ index + 1 }}</ng-template>
+
+        <mat-step label="Dados da run" [completed]="p.dados.length === 0">
+          <div class="passo">
+            <app-passo-dados
+              [erros]="validacao.erros()"
+              (tocou)="validacao.tocar($event)"
+              [rascunho]="r"
+              [instancias]="instanciasDisponiveis()"
+              [encontros]="encontros()"
+              [correcao]="correcaoDe() !== null"
+              [motivo]="motivo()"
+              [ehBetelgeuse]="ehBetelgeuse()"
+              (mudar)="mudar($event)"
+              (instancia)="escolherInstancia($event)"
+              (motivoChange)="motivo.set($event)"
+            />
+            @if (erroClasses(); as e) {
+              <ui-aviso
+                tom="erro"
+                titulo="Não deu para carregar as classes desta instância"
+                data-testid="runs-erro-classes"
+              >
+                {{ e }}
+                <button slot="acoes" uiBotao tamanho="p" (click)="recarregarClasses()">
+                  Tentar novamente
+                </button>
+              </ui-aviso>
+            }
+            <app-pendencias-passo [pendencias]="p.dados" data-pendencias="dados" />
+            <app-acoes-passo [voltar]="false" (avancar)="avancar('dados')" />
+          </div>
+        </mat-step>
+
+        <mat-step label="Participantes" [completed]="p.participantes.length === 0">
+          <div class="passo">
+            <app-passo-participantes
+              [erros]="validacao.erros()"
+              (tocou)="validacao.tocar($event)"
+              [participantes]="r.participantes"
+              [jogadores]="ctx.jogadores"
+              [classes]="classesAtivas()"
+              (alterar)="editar(edicao.comParticipante, $event.i, $event.parte)"
+              (classe)="escolherClasse($event.i, $event.classeId)"
+              (adicionar)="editar(edicao.comNovoParticipante)"
+              (remover)="editar(edicao.semParticipante, $event)"
+            />
+            <app-pendencias-passo [pendencias]="p.participantes" data-pendencias="participantes" />
+            <app-acoes-passo (avancar)="avancar('participantes')" />
+          </div>
+        </mat-step>
+
+        <mat-step label="Empréstimos" [completed]="p.emprestimos.length === 0">
+          <div class="passo">
+            <app-passo-emprestimos
+              [erros]="validacao.erros()"
+              (tocou)="validacao.tocar($event)"
+              [participantes]="vistasEmprestimos()"
+              [itens]="itensAtivos()"
+              [sugestoes]="sugestoes()"
+              [teto]="teto()"
+              (alterar)="editar(edicao.comEmprestimo, $event.i, $event.j, $event.parte)"
+              (adicionar)="editar(edicao.comNovoEmprestimo, $event)"
+              (remover)="editar(edicao.semEmprestimo, $event.i, $event.j)"
+            />
+            <app-pendencias-passo [pendencias]="p.emprestimos" data-pendencias="emprestimos" />
+            <app-acoes-passo (avancar)="avancar('emprestimos')" />
+          </div>
+        </mat-step>
+
+        <mat-step label="Itens obtidos" [completed]="p.drops.length === 0">
+          <div class="passo">
+            <app-passo-drops
+              [erros]="validacao.erros()"
+              (tocou)="validacao.tocar($event)"
+              [drops]="r.drops"
+              [itens]="itensAtivos()"
+              (alterar)="editar(edicao.comDrop, $event.i, $event.parte)"
+              (adicionar)="editar(edicao.comNovoDrop)"
+              (remover)="editar(edicao.semDrop, $event)"
+            />
+            <app-pendencias-passo [pendencias]="p.drops" data-pendencias="drops" />
+            <app-acoes-passo (avancar)="avancar('drops')" />
+          </div>
+        </mat-step>
+
+        <mat-step label="Revisão">
+          <!-- Só renderiza (e calcula a prévia) quando o passo é aberto. -->
+          <ng-template matStepContent>
+            <div class="passo">
+              @if (previa(); as pv) {
+                <app-previa-run [previa]="pv" [resumo]="resumoRevisao()" />
+              }
+              @if (erroEnvio(); as e) {
+                <ui-aviso tom="erro">{{ e }}</ui-aviso>
+              }
+              <app-acoes-passo
+                [rotulo]="correcaoDe() ? 'Registrar correção' : 'Registrar run'"
+                [carregando]="enviando()"
+                (avancar)="enviar()"
+              />
+            </div>
+          </ng-template>
+        </mat-step>
+      </mat-stepper>
+    </ng-template>
+  </ui-estado>
+</ui-pagina>

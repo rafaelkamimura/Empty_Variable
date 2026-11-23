@@ -1,0 +1,87 @@
+@let r = rascunho();
+@let e = erros();
+<div class="grade">
+  <ui-campo rotulo="Data" [erro]="e.get(campo.dados('data'))">
+    <input
+      uiCampo
+      type="date"
+      required
+      [attr.data-campo]="campo.dados('data')"
+      [value]="r.data"
+      (input)="mudar.emit({ data: valor($event) })"
+    />
+  </ui-campo>
+  <ui-campo
+    rotulo="Instância"
+    [dica]="correcao() ? 'A correção fica na mesma instância, na versão vigente' : ''"
+    [erro]="e.get(campo.dados('instanciaId'))"
+  >
+    <select
+      uiCampo
+      [attr.data-campo]="campo.dados('instanciaId')"
+      [disabled]="correcao()"
+      (change)="instancia.emit(valor($event))"
+    >
+      @for (i of instancias(); track i.id) {
+        <option [value]="i.id" [selected]="r.instanciaId === i.id">{{ i.nome }}</option>
+      }
+    </select>
+  </ui-campo>
+  <ui-campo rotulo="Encontro" [erro]="e.get(campo.dados('encontroId'))">
+    <select
+      uiCampo
+      [attr.data-campo]="campo.dados('encontroId')"
+      (change)="mudar.emit({ encontroId: valor($event) || null })"
+    >
+      <option value="" [selected]="r.encontroId === null">Escolha</option>
+      @for (enc of encontros(); track enc.id) {
+        <option [value]="enc.id" [selected]="r.encontroId === enc.id">
+          {{ enc.nome }} ({{ multiplicador(enc.multiplicadorCentesimos) }})
+        </option>
+      }
+    </select>
+  </ui-campo>
+  <ui-campo rotulo="Resultado">
+    <select uiCampo (change)="mudar.emit({ status: status(valor($event)) })">
+      @for (s of statusRun; track s) {
+        <option [value]="s" [selected]="r.status === s">{{ rotuloStatus[s] }}</option>
+      }
+    </select>
+  </ui-campo>
+  @if (ehBetelgeuse()) {
+    <ui-campo
+      rotulo="Pontuação do Betelgeuse (opcional)"
+      dica="Só informativa: não entra no cálculo"
+      [erro]="e.get(campo.dados('pontuacaoBetelgeuse'))"
+    >
+      <input
+        uiCampo
+        type="number"
+        min="0"
+        inputmode="numeric"
+        [attr.data-campo]="campo.dados('pontuacaoBetelgeuse')"
+        [value]="r.pontuacaoBetelgeuse ?? ''"
+        (input)="mudar.emit({ pontuacaoBetelgeuse: numero($event) })"
+      />
+    </ui-campo>
+  }
+</div>
+<ui-campo rotulo="Observação (opcional)">
+  <input uiCampo maxlength="500" [value]="r.observacao" (input)="mudar.emit({ observacao: valor($event) })" />
+</ui-campo>
+@if (correcao()) {
+  <ui-campo
+    rotulo="Motivo da correção"
+    dica="Fica registrado junto com a correção."
+    [erro]="e.get(campo.dados('motivo'))"
+  >
+    <input
+      uiCampo
+      maxlength="500"
+      required
+      [attr.data-campo]="campo.dados('motivo')"
+      [value]="motivo()"
+      (input)="motivoChange.emit(valor($event))"
+    />
+  </ui-campo>
+}

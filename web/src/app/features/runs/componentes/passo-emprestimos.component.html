@@ -1,0 +1,91 @@
+@let er = erros();
+<ui-aviso tom="info">
+  Itens emprestados por outro jogador. A categoria sugere o percentual; informe um valor só para mudá-lo. Os
+  credores somados recebem no máximo {{ teto() }} dos pontos.
+</ui-aviso>
+@for (p of participantes(); track p.chave; let i = $index) {
+  <ui-cartao [attr.data-participante]="p.chave">
+    <h2>{{ p.nome }}</h2>
+    @for (e of p.emprestimos; track e.chave; let j = $index) {
+      <ui-grupo-campos [legenda]="'Empréstimo ' + (j + 1)" larguraCampo="p" data-linha>
+        <ui-campo
+          rotulo="Emprestado por"
+          [erro]="er.get(campo.emprestimo(p.chave, e.chave, 'credorJogadorId'))"
+        >
+          <select
+            uiCampo
+            [attr.data-campo]="campo.emprestimo(p.chave, e.chave, 'credorJogadorId')"
+            (change)="alterar.emit({ i, j, parte: { credorJogadorId: valor($event) || null } })"
+          >
+            <option value="" [selected]="e.credorJogadorId === null">Escolha</option>
+            @for (jg of p.credores; track jg.id) {
+              <option [value]="jg.id" [selected]="e.credorJogadorId === jg.id">{{ jg.apelido }}</option>
+            }
+          </select>
+        </ui-campo>
+        <ui-campo rotulo="Item do catálogo">
+          <select uiCampo (change)="alterar.emit({ i, j, parte: { itemId: valor($event) || null } })">
+            <option value="" [selected]="e.itemId === null">Outro (descrever)</option>
+            @for (it of itens(); track it.id) {
+              <option [value]="it.id" [selected]="e.itemId === it.id">{{ it.nome }}</option>
+            }
+          </select>
+        </ui-campo>
+        @if (e.itemId === null) {
+          <ui-campo
+            rotulo="Descrição do item"
+            [erro]="er.get(campo.emprestimo(p.chave, e.chave, 'itemDescricao'))"
+          >
+            <input
+              uiCampo
+              maxlength="80"
+              [attr.data-campo]="campo.emprestimo(p.chave, e.chave, 'itemDescricao')"
+              [value]="e.itemDescricao"
+              (input)="alterar.emit({ i, j, parte: { itemDescricao: valor($event) } })"
+            />
+          </ui-campo>
+        }
+        <ui-campo rotulo="Categoria">
+          <select uiCampo (change)="alterar.emit({ i, j, parte: { categoria: categoria(valor($event)) } })">
+            @for (c of categorias; track c) {
+              <option [value]="c" [selected]="e.categoria === c">
+                {{ rotuloCategoria[c] }} ({{ sugestoes()[c] }})
+              </option>
+            }
+          </select>
+        </ui-campo>
+        <ui-campo
+          rotulo="% informado"
+          dica="Vazio usa a sugestão"
+          [erro]="er.get(campo.emprestimo(p.chave, e.chave, 'percentualInformado'))"
+        >
+          <input
+            uiCampo
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            inputmode="decimal"
+            [attr.data-campo]="campo.emprestimo(p.chave, e.chave, 'percentualInformado')"
+            [value]="e.percentualInformado ?? ''"
+            (input)="alterar.emit({ i, j, parte: { percentualInformado: numero($event) } })"
+          />
+        </ui-campo>
+        <button
+          uiBotao
+          slot="acoes"
+          variante="fantasma"
+          tamanho="p"
+          data-acao="remover"
+          (click)="aoRemover(p.chave, i, j)"
+          [attr.aria-label]="'Remover empréstimo ' + (j + 1) + ' de ' + p.nome"
+        >
+          Remover
+        </button>
+      </ui-grupo-campos>
+    }
+    <button uiBotao tamanho="p" data-acao="adicionar" (click)="aoAdicionar(p.chave, i)">
+      Adicionar empréstimo
+    </button>
+  </ui-cartao>
+}

@@ -112,7 +112,7 @@ import { RascunhoHoje } from "./rascunho-hoje";
                     <h2 [id]="'recarga-' + r">{{ rotuloRecarga[r] }}</h2>
                     <span class="dica">{{ dica(r) }}</span>
                   </div>
-                  <div class="grade">
+                  <div class="grade grade-cartoes">
                     @for (i of lista; track i.id) {
                       @let s = farm.situacaoDe(pid, i);
                       <app-cartao-instancia
@@ -122,6 +122,7 @@ import { RascunhoHoje } from "./rascunho-hoje";
                         [nomesDrops]="nomes(i)"
                         [valor]="s.checkin ? farm.valorDe(s.checkin.drops) : 0"
                         [aberto]="aberto() === chave(pid, i)"
+                        [class.aberto]="aberto() === chave(pid, i)"
                         (checkin)="abrir(pid, i, null)"
                         (editar)="abrir(pid, i, s.checkin)"
                         (desfazer)="desfazer(i, s.checkin)"
@@ -178,9 +179,16 @@ import { RascunhoHoje } from "./rascunho-hoje";
     .grade {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-      /* Cada cartão com a sua altura: um editor aberto não estica os vizinhos da linha. */
       align-items: start;
       gap: var(--esp-3);
+    }
+    /* Cartões da mesma linha com a mesma altura e o botão no rodapé. O cartão com o editor aberto
+       ocupa a linha inteira, para não esticar os vizinhos. */
+    .grade-cartoes {
+      align-items: stretch;
+    }
+    .grade-cartoes > .aberto {
+      grid-column: 1 / -1;
     }
     .secao {
       display: grid;

@@ -12,7 +12,7 @@ import {
   paraCentesimos,
   paraConfigMotor,
   type VersaoParametros,
-} from "../core/cadastros";
+} from "../shared/dominio/cadastros";
 import { AdminClassesComponent } from "./admin-classes.component";
 import { AdminParametrosComponent } from "./admin-parametros.component";
 

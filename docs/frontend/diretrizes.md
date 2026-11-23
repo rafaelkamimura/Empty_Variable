@@ -355,7 +355,7 @@ O projeto usa o vocabulário do Atomic Design para decidir **o que um componente
 
 O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no código atual.
 
-**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Na etapa 4 entraram `ui-marca` e o pipe `pontos` (`shared/pipes/pontos.pipe.ts`). Com a loja: `ui-badge`, `ui-campo` (com a diretiva `uiCampo` no controle; `rotuloOculto` entrou com o farm, só para célula de tabela) e `ui-confirmacao` (aberto pelo serviço `Confirmacao`, em `core/confirmacao.ts`). `app-icone`, `app-imagem-item` e `visual.ts` já estão em `shared/dominio/`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
+**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Na etapa 4 entraram `ui-marca` e o pipe `pontos` (`shared/pipes/pontos.pipe.ts`). Com a loja: `ui-badge`, `ui-campo` (com a diretiva `uiCampo` no controle; `rotuloOculto` entrou com o farm, só para célula de tabela) e `ui-confirmacao` (aberto pelo serviço `Confirmacao`, em `core/confirmacao.ts`). Com as runs: `ui-grupo-campos`. `app-icone`, `app-imagem-item` e `visual.ts` já estão em `shared/dominio/`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
 
 | Componente                | Nível | Responsabilidade                                                                  | Substitui hoje                                       |
 | ------------------------- | --------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
@@ -370,6 +370,7 @@ O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no c
 | `ui-skeleton`             | Átomo | Placeholder animado de linha, cartão ou tabela                                    | "Carregando…"                                        |
 | `ui-aviso`                | Molécula | Mensagem inline com tom `info`, `sucesso`, `alerta` ou `erro`, ícone e `role` correto | `.dica` e `<p role="alert">`                     |
 | `ui-campo`                | Molécula | Rótulo, controle projetado, dica e erro, ligados por `aria-describedby`           | `.campo`, `.campo-largo`                             |
+| `ui-grupo-campos`         | Molécula | Fieldset com legenda: os `ui-campo` de um item (participante, empréstimo, drop) numa grade fluida, com slot de ações | `fieldset.linha` repetido no assistente de run |
 | `ui-painel-lateral`       | Organismo | Formulário de criar e editar à direita, com o foco preso e devolvido ao fechar     | `app-painel-lateral` (de `core/layout.ts`)           |
 | `ui-como-funciona`        | Molécula | Explicação recolhida                                                              | `app-como-funciona` (de `core/layout.ts`)            |
 | `ui-confirmacao`          | Organismo | Diálogo de confirmação para ações destrutivas, com descrição do efeito            | `confirm()` e confirmações ad hoc                    |
@@ -612,13 +613,13 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 **Feito**
 
 - **Etapas 1 a 3:** tokens e mapeamento do Material, lint e catálogo, peças base de `shared/ui` e a casca (`layout/`), com o login.
-- **Features em `features/`:** acesso (login), loja, carteira (com a Minha área), farm, Nebula (com a fila do admin em `/admin/nebula`) e vínculo (com a fila de aprovações).
+- **Features em `features/`:** acesso (login), loja, carteira (com a Minha área), farm, Nebula (com a fila do admin em `/admin/nebula`), vínculo (com a fila de aprovações) e runs (lista, assistente, correção e detalhe).
 - **Revisões do TL:** cada feature teve um PR de acertos depois da revisão. As pendências que dependem da API estão em 10.3.
 
 **Falta**
 
-- **28 arquivos em `paginas/`**, com cerca de 10.500 linhas. Os maiores: `simulador.component.ts` (1.390), `vinculo.component.ts` (915), `admin-run-assistente.component.ts` (814), `gestao-grupos.component.ts` (673) e `admin-estoque.component.ts` (621).
-- **Domínio ainda em `core/`:** `build.ts`, `cadastros.ts`, `estoque.ts`, `grupos-classes.ts`, `icones-classes.ts`, `instancias.ts`, `runs.ts`, `link-simulador.ts`, `painel.ts` e `equipamento-select.component.ts`. Ao fim da migração, `core/` fica só com singletons (autenticação, guardas, `Acao`, `Confirmacao`, saldo e telas liberadas).
+- **19 arquivos em `paginas/`**, com cerca de 7.200 linhas. Os maiores: `simulador.component.ts` (1.390), `simulador-hub.component.ts` (682), `gestao-grupos.component.ts` (673) e `admin-estoque.component.ts` (621).
+- **Domínio ainda em `core/`:** `estoque.ts`, `link-simulador.ts` e `painel.ts`. Ao fim da migração, `core/` fica só com singletons (autenticação, guardas, `Acao`, `Confirmacao`, saldo e telas liberadas).
 - **Estilos legados:** `_legado.scss` (cerca de 300 linhas, 29 classes globais), os apelidos dos tokens antigos e o tema `azure-blue.css` no `angular.json`.
 - **Lint:** 63 avisos, todos no código antigo (`paginas/` e `core/`).
 - **Acessibilidade da casca:** faltam o link "Ir para o conteúdo", o foco no `h1` ao trocar de rota e o `scroll-padding-top` do topo fixo (§7).
@@ -635,7 +636,9 @@ A ordem é pelo uso: primeiro as telas **liberadas em produção** (`core/telas-
 
 4. **Features restantes, uma por vez:**
    - a. **Vínculo e perfil** *(feita: `features/vinculo`, com a fila em `/vinculo/aprovacoes`; a Minha área, `/me`, foi para `features/carteira`, porque mostra o saldo e o extrato. `build.ts`, `grupos-classes.ts` e `icones-classes.ts` foram para `shared/dominio`, e os tipos da build saíram de `core/modelos.ts` para `shared/dominio/build.ts`)*.
-   - b. **Runs e grupos** *(liberado)*: `gestao/runs` (lista, nova, corrigir e detalhe), `gestao/grupos` e `instancias-programadas`. O assistente de run é o maior arquivo dessa etapa e deve ser quebrado por passo. `runs.ts` vai para `features/runs/data`, e `instancias.ts` e `cadastros.ts` para `shared/dominio`, porque são usados por muitas telas.
+   - b. **Runs e grupos** *(liberado)*: em dois PRs.
+     - **Runs** *(feita: `features/runs`, com `gestao/runs` (lista, nova, corrigir e detalhe). O assistente foi quebrado em um componente por passo, e o rascunho é editado sem mutação (`data/edicao-run.ts`). `runs.ts` foi dividido em `data/` (`runs.modelos.ts`, `previa-run.ts`, `detalhe-run.modelos.ts` e `nag4eyes.modelos.ts`), e `instancias.ts` e `cadastros.ts` foram para `shared/dominio`. O tipo e os rótulos dos lançamentos saíram da carteira para `shared/dominio/lancamento.ts`, porque o detalhe da run também os mostra)*.
+     - **Grupos:** `gestao/grupos` e `instancias-programadas`.
    - c. **Estoque e itens** *(o estoque é liberado)*: `admin/estoque` e `admin/itens`, com `estoque.ts`.
    - d. **Simulador** *(liberado)*: `simulador` (hub) e `simulador/estimativa`, com `link-simulador.ts`. Pelo tamanho, deve sair em 2 ou 3 PRs, como o farm.
    - e. **Gestão** *(não liberada)*: início da gestão, `gestao/instancias` (lista e detalhe), saldos, jogadores, classes, parâmetros e receitas da Nebula, com `painel.ts`.

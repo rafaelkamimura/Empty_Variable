@@ -1,0 +1,42 @@
+@let e = erros();
+<ui-aviso tom="info">Os itens obtidos não alteram a pontuação.</ui-aviso>
+@for (d of drops(); track d.chave; let i = $index) {
+  <ui-grupo-campos [legenda]="'Item ' + (i + 1)" data-linha>
+    <ui-campo rotulo="Item" [erro]="e.get(campo.drop(d.chave, 'itemId'))">
+      <select
+        uiCampo
+        [attr.data-campo]="campo.drop(d.chave, 'itemId')"
+        (change)="alterar.emit({ i, parte: { itemId: valor($event) || null } })"
+      >
+        <option value="" [selected]="d.itemId === null">Escolha</option>
+        @for (it of itens(); track it.id) {
+          <option [value]="it.id" [selected]="d.itemId === it.id">{{ it.nome }}</option>
+        }
+      </select>
+    </ui-campo>
+    <ui-campo rotulo="Quantidade" [erro]="e.get(campo.drop(d.chave, 'quantidade'))">
+      <input
+        uiCampo
+        type="number"
+        min="1"
+        step="1"
+        inputmode="numeric"
+        [attr.data-campo]="campo.drop(d.chave, 'quantidade')"
+        [value]="d.quantidade ?? ''"
+        (input)="alterar.emit({ i, parte: { quantidade: numero($event) } })"
+      />
+    </ui-campo>
+    <button
+      uiBotao
+      slot="acoes"
+      variante="fantasma"
+      tamanho="p"
+      data-acao="remover"
+      (click)="aoRemover(i)"
+      [attr.aria-label]="'Remover item ' + (i + 1)"
+    >
+      Remover
+    </button>
+  </ui-grupo-campos>
+}
+<button uiBotao data-acao="adicionar" (click)="aoAdicionar()">Adicionar item</button>

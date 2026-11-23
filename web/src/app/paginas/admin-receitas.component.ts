@@ -10,7 +10,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { firstValueFrom } from "rxjs";
 import { Acao } from "../core/acao";
-import type { ItemCatalogo } from "../core/cadastros";
+import type { ItemCatalogo } from "../shared/dominio/cadastros";
 import type { Receita } from "../features/nebula/data/nebula.modelos";
 import {
   type ComponenteEditavel,

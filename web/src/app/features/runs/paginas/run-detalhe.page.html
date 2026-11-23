@@ -1,0 +1,90 @@
+<ui-pagina [titulo]="titulo()">
+  <span slot="acao" class="acoes">
+    @if (podeCorrigir()) {
+      <a uiBotao variante="principal" [routerLink]="['/gestao/runs', id(), 'corrigir']">Corrigir</a>
+    }
+    <a uiBotao variante="fantasma" [routerLink]="voltarLista">Voltar à lista</a>
+  </span>
+
+  <ui-estado [valor]="estado()" (tentarNovamente)="carregar(id())">
+    <ng-template uiEstadoPronto [tipo]="estado()" let-r>
+      <p class="linha-resumo" data-testid="runs-resumo">
+        {{ r.versaoInstancia.instancia.nome }} (v{{ r.versaoInstancia.versao }}) · {{ r.encontro.nome }} ·
+        <strong>{{ rotuloStatus[r.status] }}</strong> · parâmetros v{{ r.config.versao }} · registrada por
+        {{ r.registradaPor.discordUsername }} em {{ r.criadaEm | date: "dd/MM/yyyy HH:mm" }}
+        @if (r.pontuacaoBetelgeuse !== null) {
+          · pontuação do Betelgeuse {{ r.pontuacaoBetelgeuse }}
+        }
+      </p>
+      @if (r.corrigidaPorRunId) {
+        <ui-aviso tom="alerta" titulo="Esta run foi corrigida">
+          Os lançamentos dela foram estornados.
+          <a slot="acoes" uiBotao tamanho="p" [routerLink]="['/gestao/runs', r.corrigidaPorRunId]"
+            >Ver a correção</a
+          >
+        </ui-aviso>
+      }
+      @if (r.corrigeRunId) {
+        <p>Esta run corrige <a [routerLink]="['/gestao/runs', r.corrigeRunId]">a run original</a>.</p>
+      }
+      @if (r.observacao) {
+        <p>Observação: {{ r.observacao }}</p>
+      }
+
+      <section aria-labelledby="titulo-party">
+        <h2 id="titulo-party">
+          Party <small>· {{ r.participacoes.length }} personagens</small>
+        </h2>
+        <div class="grade" data-testid="runs-participacoes">
+          @for (p of r.participacoes; track p.id) {
+            <app-cartao-participacao [participacao]="p" />
+          }
+        </div>
+      </section>
+
+      @if (r.drops.length > 0) {
+        <section aria-labelledby="titulo-drops">
+          <h2 id="titulo-drops">Itens obtidos</h2>
+          <app-drops-run
+            [drops]="r.drops"
+            [podeLancar]="ehAdmin() && r.status !== 'ESTORNADA' && dropsPendentes() > 0"
+            [lancando]="lancando()"
+            [resultado]="resultadoDrops()"
+            (lancar)="lancarDrops(r.id)"
+          />
+        </section>
+      }
+
+      <section aria-labelledby="titulo-lancamentos">
+        <h2 id="titulo-lancamentos">Lançamentos</h2>
+        @if (r.lancamentos.length === 0) {
+          <ui-vazio mensagem="Nenhum lançamento: a run não gerou pontos." />
+        } @else {
+          <table uiTabela padrao aria-label="Lançamentos da run" data-testid="runs-lancamentos">
+            <thead>
+              <tr>
+                <th scope="col">Jogador</th>
+                <th scope="col">Tipo</th>
+                <th scope="col" class="numero">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of r.lancamentos; track l.id) {
+                <tr>
+                  <td>{{ l.jogador.apelido }}</td>
+                  <td>{{ rotuloTipo[l.tipo] }}</td>
+                  <td class="numero" [class.negativo]="l.valor < 0">
+                    {{ l.valor > 0 ? "+" : "" }}{{ l.valor | pontos }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <p>
+            Soma: <strong>{{ somaLancamentos() | pontos }}</strong>
+          </p>
+        }
+      </section>
+    </ng-template>
+  </ui-estado>
+</ui-pagina>

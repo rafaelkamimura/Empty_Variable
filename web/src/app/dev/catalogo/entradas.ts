@@ -129,6 +129,16 @@ export const ENTRADAS_CATALOGO: readonly EntradaCatalogo[] = [
     carregar: () => import("../../shared/ui/campo/campo.catalogo").then((m) => m.CampoCatalogoComponent),
   },
   {
+    id: "grupo-campos",
+    nome: "ui-grupo-campos",
+    nivel: "molecula",
+    descricao: "Fieldset com legenda que junta os campos de um item numa grade fluida, com ações abaixo.",
+    carregar: () =>
+      import("../../shared/ui/grupo-campos/grupo-campos.catalogo").then(
+        (m) => m.GrupoCamposCatalogoComponent,
+      ),
+  },
+  {
     id: "confirmacao",
     nome: "ui-confirmacao",
     nivel: "organismo",

@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
-import type { ItemCatalogo } from "../core/cadastros";
+import type { ItemCatalogo } from "../shared/dominio/cadastros";
 import {
   descreverLote,
   type MovimentoEstoque,

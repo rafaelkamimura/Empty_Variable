@@ -1,0 +1,69 @@
+@let e = erros();
+@for (p of participantes(); track p.chave; let i = $index) {
+  <ui-grupo-campos [legenda]="'Participante ' + (i + 1)" larguraCampo="p" data-linha>
+    <ui-campo rotulo="Personagem" [erro]="e.get(campo.participante(p.chave, 'personagemId'))">
+      <select
+        uiCampo
+        [attr.data-campo]="campo.participante(p.chave, 'personagemId')"
+        (change)="alterar.emit({ i, parte: { personagemId: valor($event) || null } })"
+      >
+        <option value="" [selected]="p.personagemId === null">Escolha</option>
+        @for (j of jogadores(); track j.id) {
+          <optgroup [label]="j.apelido">
+            @for (pp of j.personagens; track pp.id) {
+              @if (pp.ativo) {
+                <option [value]="pp.id" [selected]="p.personagemId === pp.id">{{ pp.nome }}</option>
+              }
+            }
+          </optgroup>
+        }
+      </select>
+    </ui-campo>
+    <ui-campo rotulo="Classe" [erro]="e.get(campo.participante(p.chave, 'classeId'))">
+      <select
+        uiCampo
+        [attr.data-campo]="campo.participante(p.chave, 'classeId')"
+        (change)="classe.emit({ i, classeId: valor($event) })"
+      >
+        <option value="" [selected]="p.classeId === null" disabled>Escolha</option>
+        @for (c of classes(); track c.id) {
+          <option [value]="c.id" [selected]="p.classeId === c.id">
+            {{ c.apelidoGrupo ?? c.nomeOficial }}
+          </option>
+        }
+      </select>
+    </ui-campo>
+    <ui-campo rotulo="Função" [erro]="e.get(campo.participante(p.chave, 'funcaoId'))">
+      <select
+        uiCampo
+        [attr.data-campo]="campo.participante(p.chave, 'funcaoId')"
+        [disabled]="p.classeId === null"
+        (change)="alterar.emit({ i, parte: { funcaoId: valor($event) || null } })"
+      >
+        <option value="" [selected]="p.funcaoId === null">Escolha</option>
+        @for (f of funcoesDe(p); track f.id) {
+          <option [value]="f.id" [selected]="p.funcaoId === f.id">{{ f.nome }} (rank {{ f.rank }})</option>
+        }
+      </select>
+    </ui-campo>
+    <ui-campo rotulo="Participação">
+      <select uiCampo (change)="alterar.emit({ i, parte: { fracaoCentesimos: fracao(valor($event)) } })">
+        @for (f of fracoes; track f) {
+          <option [value]="f" [selected]="p.fracaoCentesimos === f">{{ rotuloFracao[f] }}</option>
+        }
+      </select>
+    </ui-campo>
+    <button
+      uiBotao
+      slot="acoes"
+      variante="fantasma"
+      tamanho="p"
+      data-acao="remover"
+      (click)="aoRemover(i)"
+      [attr.aria-label]="'Remover participante ' + (i + 1)"
+    >
+      Remover
+    </button>
+  </ui-grupo-campos>
+}
+<button uiBotao data-acao="adicionar" (click)="aoAdicionar()">Adicionar participante</button>
