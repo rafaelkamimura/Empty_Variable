@@ -636,7 +636,7 @@ A ordem é pelo uso: primeiro as telas **liberadas em produção** (`core/telas-
 4. **Features restantes, uma por vez:**
    - a. **Vínculo e perfil** *(feita: `features/vinculo`, com a fila em `/vinculo/aprovacoes`; a Minha área, `/me`, foi para `features/carteira`, porque mostra o saldo e o extrato. `build.ts`, `grupos-classes.ts` e `icones-classes.ts` foram para `shared/dominio`, e os tipos da build saíram de `core/modelos.ts` para `shared/dominio/build.ts`)*.
    - b. **Runs e grupos** *(liberado)*: em dois PRs.
-     - **Runs** *(feita: `features/runs`, com `gestao/runs` (lista, nova, corrigir e detalhe). O assistente foi quebrado em um componente por passo, e o rascunho é editado sem mutação (`data/edicao-run.ts`). `runs.ts` foi dividido em `data/` (`runs.modelos.ts`, `previa-run.ts`, `detalhe-run.modelos.ts` e `nag4eyes.modelos.ts`), e `instancias.ts` e `cadastros.ts` foram para `shared/dominio`)*.
+     - **Runs** *(feita: `features/runs`, com `gestao/runs` (lista, nova, corrigir e detalhe). O assistente foi quebrado em um componente por passo, e o rascunho é editado sem mutação (`data/edicao-run.ts`). `runs.ts` foi dividido em `data/` (`runs.modelos.ts`, `previa-run.ts`, `detalhe-run.modelos.ts` e `nag4eyes.modelos.ts`), e `instancias.ts` e `cadastros.ts` foram para `shared/dominio`. O tipo e os rótulos dos lançamentos saíram da carteira para `shared/dominio/lancamento.ts`, porque o detalhe da run também os mostra)*.
      - **Grupos:** `gestao/grupos` e `instancias-programadas`.
    - c. **Estoque e itens** *(o estoque é liberado)*: `admin/estoque` e `admin/itens`, com `estoque.ts`.
    - d. **Simulador** *(liberado)*: `simulador` (hub) e `simulador/estimativa`, com `link-simulador.ts`. Pelo tamanho, deve sair em 2 ou 3 PRs, como o farm.

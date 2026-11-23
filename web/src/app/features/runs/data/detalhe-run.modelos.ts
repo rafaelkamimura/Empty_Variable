@@ -1,5 +1,6 @@
 // Run registrada, como a API devolve, e o rascunho de correção que sai dela (US-07).
 import type { CategoriaEmprestimo, StatusRun } from "@betel/scoring";
+import type { TipoLancamento } from "../../../shared/dominio/lancamento";
 import type { RascunhoRun } from "./runs.modelos";
 
 export type { ResultadoDropsRun } from "../../../core/estoque";
@@ -67,7 +68,7 @@ export interface DetalheRun {
   lancamentos: {
     id: string;
     valor: number;
-    tipo: string;
+    tipo: TipoLancamento;
     jogador: { id: string; apelido: string };
     estornaLancamentoId: string | null;
   }[];

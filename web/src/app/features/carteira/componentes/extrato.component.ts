@@ -1,12 +1,12 @@
 import { DatePipe } from "@angular/common";
 import { ChangeDetectionStrategy, Component, computed, input } from "@angular/core";
+import { ROTULO_TIPO_LANCAMENTO } from "../../../shared/dominio/lancamento";
 import { TabelaDirective } from "../../../shared/ui/tabela/tabela.directive";
 import { VazioComponent } from "../../../shared/ui/vazio/vazio.component";
 import {
   descreverLancamento,
   type Extrato,
   type LancamentoExtrato,
-  ROTULO_TIPO_LANCAMENTO,
   somaDosLancamentos,
 } from "../data/extrato.modelos";
 

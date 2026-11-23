@@ -2,22 +2,13 @@
 // de cada lançamento.
 import type { CategoriaEmprestimo, StatusRun } from "@betel/scoring";
 import { ROTULO_CATEGORIA } from "../../../shared/dominio/emprestimo";
+import type { TipoLancamento } from "../../../shared/dominio/lancamento";
 
 /** Lançamento como o extrato devolve (GET /api/extrato/...). */
 export interface LancamentoExtrato {
   id: string;
   valor: number;
-  tipo:
-    | "PARTICIPACAO"
-    | "EMPRESTIMO_DEBITO"
-    | "EMPRESTIMO_CREDITO"
-    | "ESTORNO"
-    | "AJUSTE_ADMIN"
-    | "COMPRA"
-    | "VENDA"
-    | "NEBULA"
-    | "TRANSFERENCIA_ENVIADA"
-    | "TRANSFERENCIA_RECEBIDA";
+  tipo: TipoLancamento;
   criadoEm: string;
   observacao: string | null;
   estornaLancamentoId: string | null;
@@ -122,19 +113,6 @@ export function descreverLancamento(l: LancamentoExtrato): string {
       return l.observacao ?? l.tipo;
   }
 }
-
-export const ROTULO_TIPO_LANCAMENTO: Record<LancamentoExtrato["tipo"], string> = {
-  PARTICIPACAO: "Participação",
-  EMPRESTIMO_DEBITO: "Parcela de empréstimo",
-  EMPRESTIMO_CREDITO: "Empréstimo concedido",
-  ESTORNO: "Estorno",
-  AJUSTE_ADMIN: "Ajuste",
-  COMPRA: "Compra na loja",
-  VENDA: "Venda na loja",
-  NEBULA: "Nebula",
-  TRANSFERENCIA_ENVIADA: "Transferência enviada",
-  TRANSFERENCIA_RECEBIDA: "Transferência recebida",
-};
 
 /** Só os lançamentos que somam pontos (aba Créditos). */
 export function apenasCreditos(extrato: Extrato): Extrato {

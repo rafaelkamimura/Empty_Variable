@@ -14,7 +14,7 @@ import { TabelaDirective } from "../../../shared/ui/tabela/tabela.directive";
 import { CartaoParticipacaoComponent } from "../componentes/cartao-participacao.component";
 import { DropsRunComponent } from "../componentes/drops-run.component";
 import type { DetalheRun, ResultadoDropsRun } from "../data/detalhe-run.modelos";
-import { ROTULO_TIPO_LANCAMENTO } from "../../carteira/data/extrato.modelos";
+import { ROTULO_TIPO_LANCAMENTO } from "../../../shared/dominio/lancamento";
 import { RunsApi } from "../data/runs.api";
 import { ROTULO_STATUS } from "../data/runs.modelos";
 
@@ -87,9 +87,7 @@ export class RunDetalhePage {
   /** Id da run, vindo da rota. */
   readonly id = input.required<string>();
   protected readonly rotuloStatus = ROTULO_STATUS;
-  protected rotuloTipo(tipo: string): string {
-    return (ROTULO_TIPO_LANCAMENTO as Record<string, string>)[tipo] ?? tipo;
-  }
+  protected readonly rotuloTipo = ROTULO_TIPO_LANCAMENTO;
   protected readonly estado = signal<Carregavel<DetalheRun>>(carregando());
   protected readonly lancando = signal(false);
   protected readonly resultadoDrops = signal<ResultadoDropsRun | null>(null);
