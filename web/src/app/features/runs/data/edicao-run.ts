@@ -83,10 +83,3 @@ export const comNovoDrop = (r: RascunhoRun): RascunhoRun => ({
   drops: [...r.drops, { itemId: null, quantidade: 1 }],
 });
 export const semDrop = (r: RascunhoRun, i: number): RascunhoRun => ({ ...r, drops: sem(r.drops, i) });
-
-/** Número digitado num campo: vazio ou inválido é null. */
-export function numeroOuNulo(texto: string): number | null {
-  if (texto.trim() === "") return null;
-  const n = Number(texto);
-  return Number.isFinite(n) ? n : null;
-}

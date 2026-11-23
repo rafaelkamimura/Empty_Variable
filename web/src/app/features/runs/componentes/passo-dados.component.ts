@@ -6,8 +6,8 @@ import {
   textoMultiplicador,
 } from "../../../shared/dominio/instancias";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
-import { numeroOuNulo } from "../data/edicao-run";
 import { ROTULO_STATUS, type RascunhoRun } from "../data/runs.modelos";
+import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 
 /** Passo 1 do assistente: data, instância, encontro, resultado e, na correção, o motivo. */
 @Component({
@@ -43,12 +43,8 @@ export class PassoDadosComponent {
   protected readonly statusRun = STATUS_RUN;
   protected readonly rotuloStatus = ROTULO_STATUS;
 
-  protected texto(evento: Event): string {
-    return (evento.target as HTMLInputElement | HTMLSelectElement).value;
-  }
-  protected numero(texto: string): number | null {
-    return numeroOuNulo(texto);
-  }
+  protected readonly valor = valorDoEvento;
+  protected readonly numero = numeroDoEvento;
   protected status(valor: string): StatusRun {
     return (STATUS_RUN as readonly string[]).includes(valor) ? (valor as StatusRun) : "CONCLUIDA";
   }

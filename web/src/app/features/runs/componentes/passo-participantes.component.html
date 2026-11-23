@@ -2,7 +2,7 @@
   <fieldset class="linha" [attr.data-participante]="i">
     <legend>Participante {{ i + 1 }}</legend>
     <ui-campo rotulo="Personagem">
-      <select uiCampo (change)="alterar.emit({ i, parte: { personagemId: texto($event) || null } })">
+      <select uiCampo (change)="alterar.emit({ i, parte: { personagemId: valor($event) || null } })">
         <option value="" [selected]="p.personagemId === null">Escolha</option>
         @for (j of jogadores(); track j.id) {
           <optgroup [label]="j.apelido">
@@ -16,7 +16,7 @@
       </select>
     </ui-campo>
     <ui-campo rotulo="Classe">
-      <select uiCampo (change)="classe.emit({ i, classeId: texto($event) })">
+      <select uiCampo (change)="classe.emit({ i, classeId: valor($event) })">
         <option value="" [selected]="p.classeId === null" disabled>Escolha</option>
         @for (c of classes(); track c.id) {
           <option [value]="c.id" [selected]="p.classeId === c.id">
@@ -29,7 +29,7 @@
       <select
         uiCampo
         [disabled]="p.classeId === null"
-        (change)="alterar.emit({ i, parte: { funcaoId: texto($event) || null } })"
+        (change)="alterar.emit({ i, parte: { funcaoId: valor($event) || null } })"
       >
         <option value="" [selected]="p.funcaoId === null">Escolha</option>
         @for (f of funcoesDe(p); track f.id) {
@@ -38,7 +38,7 @@
       </select>
     </ui-campo>
     <ui-campo rotulo="Participação">
-      <select uiCampo (change)="alterar.emit({ i, parte: { fracaoCentesimos: fracao(texto($event)) } })">
+      <select uiCampo (change)="alterar.emit({ i, parte: { fracaoCentesimos: fracao(valor($event)) } })">
         @for (f of fracoes; track f) {
           <option [value]="f" [selected]="p.fracaoCentesimos === f">{{ rotuloFracao[f] }}</option>
         }

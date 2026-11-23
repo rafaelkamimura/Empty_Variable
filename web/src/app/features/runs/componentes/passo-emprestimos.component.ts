@@ -5,8 +5,8 @@ import { ROTULO_CATEGORIA } from "../../../shared/dominio/emprestimo";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { CartaoComponent } from "../../../shared/ui/cartao/cartao.component";
-import { numeroOuNulo } from "../data/edicao-run";
 import type { JogadorCadastro, RascunhoEmprestimo, RascunhoParticipante } from "../data/runs.modelos";
+import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 
 /**
  * Passo 3 do assistente: itens emprestados por outro jogador a cada participante. A categoria
@@ -75,12 +75,8 @@ export class PassoEmprestimosComponent {
   protected readonly categorias = CATEGORIAS_EMPRESTIMO;
   protected readonly rotuloCategoria = ROTULO_CATEGORIA;
 
-  protected texto(evento: Event): string {
-    return (evento.target as HTMLInputElement | HTMLSelectElement).value;
-  }
-  protected numero(texto: string): number | null {
-    return numeroOuNulo(texto);
-  }
+  protected readonly valor = valorDoEvento;
+  protected readonly numero = numeroDoEvento;
   protected categoria(valor: string): CategoriaEmprestimo {
     return (CATEGORIAS_EMPRESTIMO as readonly string[]).includes(valor)
       ? (valor as CategoriaEmprestimo)

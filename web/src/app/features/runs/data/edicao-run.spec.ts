@@ -43,10 +43,4 @@ describe("Edição do rascunho da run", () => {
     const r = base();
     expect(e.comParticipante(r, 5, { personagemId: "p" })).toBe(r);
   });
-
-  it("numeroOuNulo: vazio vira nulo; texto inválido também", () => {
-    expect(e.numeroOuNulo("")).toBeNull();
-    expect(e.numeroOuNulo("abc")).toBeNull();
-    expect(e.numeroOuNulo("12.5")).toBe(12.5);
-  });
 });

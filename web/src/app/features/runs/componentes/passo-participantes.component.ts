@@ -3,6 +3,7 @@ import type { Classe } from "../../../shared/dominio/cadastros";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { type JogadorCadastro, ROTULO_FRACAO, type RascunhoParticipante } from "../data/runs.modelos";
+import { valorDoEvento } from "../../../shared/utils/evento";
 
 const FRACOES = [100, 50, 0] as const;
 
@@ -54,9 +55,7 @@ export class PassoParticipantesComponent {
   protected readonly fracoes = FRACOES;
   protected readonly rotuloFracao = ROTULO_FRACAO;
 
-  protected texto(evento: Event): string {
-    return (evento.target as HTMLSelectElement).value;
-  }
+  protected readonly valor = valorDoEvento;
   protected fracao(valor: string): 100 | 50 | 0 {
     const n = Number(valor);
     return n === 50 || n === 0 ? n : 100;

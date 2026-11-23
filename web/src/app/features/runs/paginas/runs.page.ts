@@ -15,6 +15,7 @@ import type { RunResumo } from "../data/detalhe-run.modelos";
 import type { ResumoRascunhoNag4eyes } from "../data/nag4eyes.modelos";
 import { RunsApi } from "../data/runs.api";
 import { ROTULO_STATUS } from "../data/runs.modelos";
+import { valorDoEvento } from "../../../shared/utils/evento";
 
 const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as const;
 
@@ -50,14 +51,14 @@ const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as c
 
       <form class="filtros" (submit)="$event.preventDefault(); carregar()">
         <ui-campo rotulo="De">
-          <input uiCampo type="date" [value]="dataDe()" (input)="dataDe.set(texto($event))" />
+          <input uiCampo type="date" [value]="dataDe()" (input)="dataDe.set(valor($event))" />
         </ui-campo>
         <ui-campo rotulo="Até">
-          <input uiCampo type="date" [value]="dataAte()" (input)="dataAte.set(texto($event))" />
+          <input uiCampo type="date" [value]="dataAte()" (input)="dataAte.set(valor($event))" />
         </ui-campo>
         @if (instancias().length > 1) {
           <ui-campo rotulo="Instância">
-            <select uiCampo (change)="instanciaId.set(texto($event))">
+            <select uiCampo (change)="instanciaId.set(valor($event))">
               <option value="" [selected]="instanciaId() === ''">Todas</option>
               @for (i of instancias(); track i.id) {
                 <option [value]="i.id" [selected]="instanciaId() === i.id">{{ i.nome }}</option>
@@ -66,7 +67,7 @@ const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as c
           </ui-campo>
         }
         <ui-campo rotulo="Status">
-          <select uiCampo (change)="status.set(texto($event))">
+          <select uiCampo (change)="status.set(valor($event))">
             <option value="" [selected]="status() === ''">Todos</option>
             @for (s of statusFiltro; track s) {
               <option [value]="s" [selected]="status() === s">{{ rotuloStatus[s] }}</option>
@@ -170,9 +171,7 @@ export class RunsPage {
     }
   }
 
-  protected texto(evento: Event): string {
-    return (evento.target as HTMLInputElement | HTMLSelectElement).value;
-  }
+  protected readonly valor = valorDoEvento;
 
   protected async descartar(r: ResumoRascunhoNag4eyes): Promise<void> {
     const sim = await this.confirmacao.perguntar({

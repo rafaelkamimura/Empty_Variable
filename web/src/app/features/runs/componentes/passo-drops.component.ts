@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, input, output } from "@angular/core
 import type { ItemCatalogo } from "../../../shared/dominio/cadastros";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
-import { numeroOuNulo } from "../data/edicao-run";
 import type { RascunhoRun } from "../data/runs.modelos";
+import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 
 type Drop = RascunhoRun["drops"][number];
 
@@ -18,7 +18,7 @@ type Drop = RascunhoRun["drops"][number];
       <fieldset class="linha">
         <legend>Item {{ i + 1 }}</legend>
         <ui-campo rotulo="Item">
-          <select uiCampo (change)="alterar.emit({ i, parte: { itemId: texto($event) || null } })">
+          <select uiCampo (change)="alterar.emit({ i, parte: { itemId: valor($event) || null } })">
             <option value="" [selected]="d.itemId === null">Escolha</option>
             @for (it of itens(); track it.id) {
               <option [value]="it.id" [selected]="d.itemId === it.id">{{ it.nome }}</option>
@@ -33,7 +33,7 @@ type Drop = RascunhoRun["drops"][number];
             step="1"
             inputmode="numeric"
             [value]="d.quantidade ?? ''"
-            (input)="alterar.emit({ i, parte: { quantidade: numero(texto($event)) } })"
+            (input)="alterar.emit({ i, parte: { quantidade: numero($event) } })"
           />
         </ui-campo>
         <button
@@ -95,10 +95,6 @@ export class PassoDropsComponent {
   readonly adicionar = output();
   readonly remover = output<number>();
 
-  protected texto(evento: Event): string {
-    return (evento.target as HTMLInputElement | HTMLSelectElement).value;
-  }
-  protected numero(texto: string): number | null {
-    return numeroOuNulo(texto);
-  }
+  protected readonly valor = valorDoEvento;
+  protected readonly numero = numeroDoEvento;
 }

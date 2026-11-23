@@ -11,7 +11,7 @@
         <ui-campo rotulo="Emprestado por">
           <select
             uiCampo
-            (change)="alterar.emit({ i, j, parte: { credorJogadorId: texto($event) || null } })"
+            (change)="alterar.emit({ i, j, parte: { credorJogadorId: valor($event) || null } })"
           >
             <option value="" [selected]="e.credorJogadorId === null">Escolha</option>
             @for (jg of credoresPara()(p); track jg.id) {
@@ -20,7 +20,7 @@
           </select>
         </ui-campo>
         <ui-campo rotulo="Item do catálogo">
-          <select uiCampo (change)="alterar.emit({ i, j, parte: { itemId: texto($event) || null } })">
+          <select uiCampo (change)="alterar.emit({ i, j, parte: { itemId: valor($event) || null } })">
             <option value="" [selected]="e.itemId === null">Outro (descrever)</option>
             @for (it of itens(); track it.id) {
               <option [value]="it.id" [selected]="e.itemId === it.id">{{ it.nome }}</option>
@@ -33,12 +33,12 @@
               uiCampo
               maxlength="80"
               [value]="e.itemDescricao"
-              (input)="alterar.emit({ i, j, parte: { itemDescricao: texto($event) } })"
+              (input)="alterar.emit({ i, j, parte: { itemDescricao: valor($event) } })"
             />
           </ui-campo>
         }
         <ui-campo rotulo="Categoria">
-          <select uiCampo (change)="alterar.emit({ i, j, parte: { categoria: categoria(texto($event)) } })">
+          <select uiCampo (change)="alterar.emit({ i, j, parte: { categoria: categoria(valor($event)) } })">
             @for (c of categorias; track c) {
               <option [value]="c" [selected]="e.categoria === c">
                 {{ rotuloCategoria[c] }} ({{ sugestoes()[c] }})
@@ -55,7 +55,7 @@
             step="0.01"
             inputmode="decimal"
             [value]="e.percentualInformado ?? ''"
-            (input)="alterar.emit({ i, j, parte: { percentualInformado: numero(texto($event)) } })"
+            (input)="alterar.emit({ i, j, parte: { percentualInformado: numero($event) } })"
           />
         </ui-campo>
         <button
