@@ -48,6 +48,16 @@
               (instancia)="escolherInstancia($event)"
               (motivoChange)="motivo.set($event)"
             />
+            @if (erroClasses(); as e) {
+            <ui-aviso
+              tom="erro"
+              titulo="Não deu para carregar as classes desta instância"
+              data-testid="runs-erro-classes"
+            >
+              {{ e }}
+              <button slot="acoes" uiBotao tamanho="p" (click)="recarregarClasses()">Tentar novamente</button>
+            </ui-aviso>
+            }
             <app-pendencias-passo [pendencias]="p[1]" />
             <div class="acoes">
               <button uiBotao variante="principal" matStepperNext [disabled]="p[1].length > 0">

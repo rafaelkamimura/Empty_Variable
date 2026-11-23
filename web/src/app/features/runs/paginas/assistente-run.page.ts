@@ -112,6 +112,9 @@ export class AssistenteRunPage implements OnInit {
   protected readonly origemRascunho = signal<RascunhoNag4eyes | null>(null);
   protected readonly run = signal<RascunhoRun>(novoRascunho());
   protected readonly motivo = signal("");
+  /** Erro ao carregar as classes da instância escolhida. */
+  protected readonly erroClasses = signal<string | null>(null);
+  private versaoClasses = 0;
 
   protected readonly pendentesRascunho = computed(() => {
     const o = this.origemRascunho();
@@ -270,12 +273,32 @@ export class AssistenteRunPage implements OnInit {
   protected async escolherInstancia(instanciaId: string): Promise<void> {
     const inst = this.instancias().find((i) => i.id === instanciaId);
     this.mudar({ instanciaId, encontroId: inst?.vigente?.encontros[0]?.id ?? null });
+    await this.carregarClasses(instanciaId);
+  }
+
+  /**
+   * Classes (com as funções da versão vigente) da instância escolhida. Só a resposta do pedido
+   * mais recente vale. Enquanto carrega ou se der erro, a lista fica vazia: assim nenhum
+   * participante fica com uma função de outra instância, e as pendências impedem o registro.
+   */
+  protected async carregarClasses(instanciaId: string): Promise<void> {
+    const minha = ++this.versaoClasses;
+    this.classes.set([]);
+    this.erroClasses.set(null);
+    this.run.update((r) => edicao.comFuncoesPadrao(r, []));
     try {
-      this.classes.set(await this.api.classes(instanciaId));
-      this.run.update((r) => edicao.comFuncoesPadrao(r, this.classes()));
+      const classes = await this.api.classes(instanciaId);
+      if (minha !== this.versaoClasses) return;
+      this.classes.set(classes);
+      this.run.update((r) => edicao.comFuncoesPadrao(r, classes));
     } catch (e) {
-      this.acao.avisar(mensagemDeErro(e));
+      if (minha === this.versaoClasses) this.erroClasses.set(mensagemDeErro(e));
     }
+  }
+
+  protected recarregarClasses(): void {
+    const id = this.run().instanciaId;
+    if (id !== null) void this.carregarClasses(id);
   }
 
   protected async enviar(): Promise<void> {

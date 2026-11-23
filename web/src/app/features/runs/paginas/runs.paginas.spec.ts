@@ -313,6 +313,76 @@ describe("AssistenteRunPage", () => {
     expect(navegar).toHaveBeenCalledWith(["/gestao/runs", "run-9"]);
   });
 
+  it("trocar de instância: só as classes do pedido mais recente valem", async () => {
+    const { http } = configurar();
+    const a: Instancia = { ...torreComFuncoes, id: "i-a", codigo: "A", nome: "Instância A" };
+    const b: Instancia = { ...torreComFuncoes, id: "i-b", codigo: "B", nome: "Instância B" };
+    const f = TestBed.createComponent(AssistenteRunPage);
+    f.autoDetectChanges();
+    const el = f.nativeElement as HTMLElement;
+    http.expectOne("/api/jogadores").flush(cat.jogadores);
+    http.expectOne("/api/instancias").flush([torreComFuncoes, a, b]);
+    http.expectOne("/api/itens").flush([]);
+    http.expectOne("/api/config-pontuacao").flush([parametros]);
+    await esperar();
+    http.expectOne((r) => r.url === "/api/classes").flush(classes);
+    await esperar();
+
+    const instancia = el.querySelector<HTMLSelectElement>("app-passo-dados select")!;
+    const escolher = (id: string) => {
+      instancia.value = id;
+      instancia.dispatchEvent(new Event("change"));
+    };
+    escolher("i-a");
+    escolher("i-b");
+    const pedidoA = http.expectOne((r) => r.url === "/api/classes" && r.params.get("instanciaId") === "i-a");
+    const pedidoB = http.expectOne((r) => r.url === "/api/classes" && r.params.get("instanciaId") === "i-b");
+    pedidoB.flush([{ ...classes[0]!, id: "c-b", apelidoGrupo: "Classe de B" }]);
+    await esperar();
+    pedidoA.flush([{ ...classes[0]!, id: "c-a", apelidoGrupo: "Classe de A" }]);
+    await esperar();
+
+    const opcoes = el.querySelector("app-passo-participantes")!.textContent!;
+    expect(opcoes).toContain("Classe de B");
+    expect(opcoes).not.toContain("Classe de A");
+  });
+
+  it("erro ao carregar as classes: mostra o erro, deixa as classes vazias e tenta de novo", async () => {
+    const { http } = configurar();
+    const b: Instancia = { ...torreComFuncoes, id: "i-b", codigo: "B", nome: "Instância B" };
+    const f = TestBed.createComponent(AssistenteRunPage);
+    f.autoDetectChanges();
+    const el = f.nativeElement as HTMLElement;
+    http.expectOne("/api/jogadores").flush(cat.jogadores);
+    http.expectOne("/api/instancias").flush([torreComFuncoes, b]);
+    http.expectOne("/api/itens").flush([]);
+    http.expectOne("/api/config-pontuacao").flush([parametros]);
+    await esperar();
+    http.expectOne((r) => r.url === "/api/classes").flush(classes);
+    await esperar();
+
+    const instancia = el.querySelector<HTMLSelectElement>("app-passo-dados select")!;
+    instancia.value = "i-b";
+    instancia.dispatchEvent(new Event("change"));
+    http
+      .expectOne((r) => r.url === "/api/classes")
+      .flush({ mensagem: "falhou" }, { status: 500, statusText: "Erro" });
+    await esperar();
+    const erro = el.querySelector("[data-testid='runs-erro-classes']")!;
+    expect(erro).not.toBeNull();
+    const opcoesClasse = () =>
+      Array.from(el.querySelectorAll("app-passo-participantes select")[1]!.querySelectorAll("option")).map(
+        (o) => o.textContent!.trim(),
+      );
+    expect(opcoesClasse()).toEqual(["Escolha"]);
+
+    botao(erro, "Tentar novamente").click();
+    http.expectOne((r) => r.url === "/api/classes" && r.params.get("instanciaId") === "i-b").flush(classes);
+    await esperar();
+    expect(el.querySelector("[data-testid='runs-erro-classes']")).toBeNull();
+    expect(opcoesClasse()).toContain("MTK");
+  });
+
   it("correção: trava a instância e exige o motivo antes de avançar", async () => {
     const { http } = configurar();
     const f = TestBed.createComponent(AssistenteRunPage);
