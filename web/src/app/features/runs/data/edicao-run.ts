@@ -3,14 +3,14 @@
 import type { Classe } from "../../../shared/dominio/cadastros";
 import {
   funcaoPadrao,
+  novoDrop,
   novoEmprestimo,
   novoParticipante,
+  type RascunhoDrop,
   type RascunhoEmprestimo,
   type RascunhoParticipante,
   type RascunhoRun,
 } from "./runs.modelos";
-
-type Drop = RascunhoRun["drops"][number];
 
 const trocar = <T>(lista: readonly T[], i: number, novo: T): T[] => lista.map((x, k) => (k === i ? novo : x));
 const sem = <T>(lista: readonly T[], i: number): T[] => lista.filter((_, k) => k !== i);
@@ -74,12 +74,12 @@ export function semEmprestimo(r: RascunhoRun, i: number, j: number): RascunhoRun
   return p ? comParticipante(r, i, { emprestimos: sem(p.emprestimos, j) }) : r;
 }
 
-export function comDrop(r: RascunhoRun, i: number, parte: Partial<Drop>): RascunhoRun {
+export function comDrop(r: RascunhoRun, i: number, parte: Partial<RascunhoDrop>): RascunhoRun {
   const d = r.drops[i];
   return d ? { ...r, drops: trocar(r.drops, i, { ...d, ...parte }) } : r;
 }
 export const comNovoDrop = (r: RascunhoRun): RascunhoRun => ({
   ...r,
-  drops: [...r.drops, { itemId: null, quantidade: 1 }],
+  drops: [...r.drops, novoDrop()],
 });
 export const semDrop = (r: RascunhoRun, i: number): RascunhoRun => ({ ...r, drops: sem(r.drops, i) });

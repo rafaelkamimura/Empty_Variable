@@ -1,13 +1,8 @@
-// Modelo do assistente de run (T-20): o rascunho editável e as pendências de cada passo.
+// Modelo do assistente de run (T-20): o rascunho editável. As pendências ficam em pendencias-run.ts.
 // A prévia e o corpo ficam em previa-run.ts; a run registrada, em detalhe-run.modelos.ts.
 // Tudo aqui é puro (sem Angular), para ser testado isoladamente.
 import type { CategoriaEmprestimo, StatusRun } from "@betel/scoring";
-import {
-  type Classe,
-  type FuncaoClasse,
-  type ItemCatalogo,
-  paraCentesimos,
-} from "../../../shared/dominio/cadastros";
+import type { Classe, FuncaoClasse, ItemCatalogo } from "../../../shared/dominio/cadastros";
 import type { Instancia } from "../../../shared/dominio/instancias";
 import { ROTULO_CATEGORIA } from "../../../shared/dominio/emprestimo";
 
@@ -35,6 +30,8 @@ export interface JogadorCadastro {
 }
 
 export interface RascunhoEmprestimo {
+  /** Identidade da linha na tela (track e foco). Só existe no front: não vai para a API. */
+  chave: string;
   credorJogadorId: string | null;
   itemId: string | null;
   itemDescricao: string;
@@ -44,6 +41,8 @@ export interface RascunhoEmprestimo {
 }
 
 export interface RascunhoParticipante {
+  /** Identidade da linha na tela (track e foco). Só existe no front: não vai para a API. */
+  chave: string;
   personagemId: string | null;
   classeId: string | null;
   funcaoId: string | null;
@@ -60,7 +59,14 @@ export interface RascunhoRun {
   pontuacaoBetelgeuse: number | null;
   observacao: string;
   participantes: RascunhoParticipante[];
-  drops: { itemId: string | null; quantidade: number | null }[];
+  drops: RascunhoDrop[];
+}
+
+export interface RascunhoDrop {
+  /** Identidade da linha na tela (track e foco). Só existe no front: não vai para a API. */
+  chave: string;
+  itemId: string | null;
+  quantidade: number | null;
 }
 
 /** Dados de apoio carregados da API. */
@@ -93,12 +99,32 @@ export function novoRascunho(
   };
 }
 
+let sequencia = 0;
+
+/** Chave única de uma linha do rascunho (participante, empréstimo ou drop). */
+export function novaChave(): string {
+  // randomUUID só existe em contexto seguro (https ou localhost); fora dele, um contador basta.
+  return globalThis.crypto?.randomUUID?.() ?? `linha-${Date.now()}-${++sequencia}`;
+}
+
 export function novoParticipante(): RascunhoParticipante {
-  return { personagemId: null, classeId: null, funcaoId: null, fracaoCentesimos: 100, emprestimos: [] };
+  return {
+    chave: novaChave(),
+    personagemId: null,
+    classeId: null,
+    funcaoId: null,
+    fracaoCentesimos: 100,
+    emprestimos: [],
+  };
+}
+
+export function novoDrop(): RascunhoDrop {
+  return { chave: novaChave(), itemId: null, quantidade: 1 };
 }
 
 export function novoEmprestimo(): RascunhoEmprestimo {
   return {
+    chave: novaChave(),
     credorJogadorId: null,
     itemId: null,
     itemDescricao: "",
@@ -165,61 +191,4 @@ export function funcaoDe(p: RascunhoParticipante, cat: Catalogos): FuncaoClasse 
   if (classe === undefined) return null;
   if (p.funcaoId !== null) return classe.funcoes.find((f) => f.id === p.funcaoId) ?? null;
   return funcaoPadrao(classe);
-}
-
-/** Pendências que impedem avançar, por passo do assistente (1 a 4). */
-export function pendencias(r: RascunhoRun, cat: Catalogos): Record<1 | 2 | 3 | 4, string[]> {
-  const pessoas = indicePersonagens(cat.jogadores);
-  const passo1: string[] = [];
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(r.data)) passo1.push("Informe a data da run.");
-  if (r.instanciaId === null) passo1.push("Escolha a instância.");
-  else if (encontroDe(r, cat) === null) passo1.push("Escolha o encontro.");
-  if (
-    r.pontuacaoBetelgeuse !== null &&
-    (!Number.isInteger(r.pontuacaoBetelgeuse) || r.pontuacaoBetelgeuse < 0)
-  ) {
-    passo1.push("A pontuação do Betelgeuse deve ser um inteiro ≥ 0.");
-  }
-
-  const passo2: string[] = [];
-  if (r.participantes.length === 0) passo2.push("Adicione ao menos um participante.");
-  const vistos = new Set<string>();
-  r.participantes.forEach((p, i) => {
-    const n = `Participante ${i + 1}`;
-    if (p.personagemId === null) passo2.push(`${n}: escolha o personagem.`);
-    else if (vistos.has(p.personagemId)) {
-      passo2.push(`${n}: ${pessoas.get(p.personagemId)?.nome ?? "personagem"} já está na run.`); // CT-52
-    } else vistos.add(p.personagemId);
-    if (p.classeId === null) passo2.push(`${n}: escolha a classe.`);
-    else if (funcaoDe(p, cat) === null)
-      passo2.push(`${n}: esta classe não tem função padrão; escolha a função.`);
-  });
-
-  const passo3: string[] = [];
-  r.participantes.forEach((p, i) => {
-    p.emprestimos.forEach((e, j) => {
-      const n = `Participante ${i + 1}, empréstimo ${j + 1}`;
-      if (e.credorJogadorId === null) passo3.push(`${n}: escolha quem emprestou.`);
-      if (e.itemId === null && e.itemDescricao.trim().length < 2)
-        passo3.push(`${n}: escolha o item ou descreva-o.`);
-      if (e.percentualInformado !== null) {
-        const bp = paraCentesimos(e.percentualInformado);
-        if (bp === null || bp > 10_000) passo3.push(`${n}: percentual entre 0 e 100, com até 2 casas.`);
-      }
-    });
-  });
-
-  const passo4: string[] = [];
-  const itensDrop = new Set<string>();
-  r.drops.forEach((d, i) => {
-    const n = `Drop ${i + 1}`;
-    if (d.itemId === null) passo4.push(`${n}: escolha o item.`);
-    else if (itensDrop.has(d.itemId)) passo4.push(`${n}: item repetido; some as quantidades.`);
-    else itensDrop.add(d.itemId);
-    if (d.quantidade === null || !Number.isInteger(d.quantidade) || d.quantidade < 1) {
-      passo4.push(`${n}: quantidade inteira maior que zero.`); // CT-61
-    }
-  });
-
-  return { 1: passo1, 2: passo2, 3: passo3, 4: passo4 };
 }

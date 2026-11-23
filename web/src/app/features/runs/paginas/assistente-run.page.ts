@@ -1,10 +1,12 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
   ElementRef,
   inject,
+  Injector,
   input,
   type OnInit,
   signal,
@@ -45,14 +47,15 @@ import {
 import { rascunhoDeRun } from "../data/detalhe-run.modelos";
 import * as edicao from "../data/edicao-run";
 import { pendentesDoRascunho, type RascunhoNag4eyes, rascunhoDeNag4eyes } from "../data/nag4eyes.modelos";
+import { PASSOS_RUN, type PassoRun, pendencias } from "../data/pendencias-run";
 import { calcularPrevia, montarCorpo } from "../data/previa-run";
 import { RunsApi } from "../data/runs.api";
+import { focarPrimeiraPendencia, ValidacaoPassos } from "./validacao-passos";
 import {
   ajustarAVersaoVigente,
   type Catalogos,
   type JogadorCadastro,
   novoRascunho,
-  pendencias,
   ROTULO_STATUS,
   type RascunhoParticipante,
   type RascunhoRun,
@@ -92,6 +95,8 @@ export class AssistenteRunPage implements OnInit {
   private readonly api = inject(RunsApi);
   private readonly acao = inject(Acao);
   private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /** Id da run a corrigir (rota /gestao/runs/:id/corrigir). */
   readonly id = input<string | undefined>();
@@ -152,12 +157,10 @@ export class AssistenteRunPage implements OnInit {
         .find((e) => e.id === this.run().encontroId)
         ?.codigo?.startsWith("BETELGEUSE") ?? false,
   );
-  protected readonly pend = computed(() => {
-    const p = pendencias(this.run(), this.catalogos());
-    if (this.correcaoDe() !== null && this.motivo().trim().length < 3)
-      p[1] = [...p[1], "Informe o motivo da correção."];
-    return p;
-  });
+  protected readonly pend = computed(() =>
+    pendencias(this.run(), this.catalogos(), this.correcaoDe() === null ? null : this.motivo()),
+  );
+  protected readonly validacao = new ValidacaoPassos(this.pend);
   protected readonly previa = computed(() => {
     const c = this.configMotor();
     return c === null ? null : calcularPrevia(this.run(), c, this.catalogos());
@@ -165,7 +168,7 @@ export class AssistenteRunPage implements OnInit {
   protected readonly podeEnviar = computed(() => {
     const p = this.pend();
     const pv = this.previa();
-    return [p[1], p[2], p[3], p[4]].every((l) => l.length === 0) && pv !== null && pv.erros.length === 0;
+    return PASSOS_RUN.every((passo) => p[passo].length === 0) && pv !== null && pv.erros.length === 0;
   });
   protected readonly teto = computed(() => textoTeto(this.config()));
   protected readonly sugestoes = computed(() => sugestoesPorCategoria(this.config()));
@@ -185,7 +188,7 @@ export class AssistenteRunPage implements OnInit {
 
   constructor() {
     // Os passos ficam lado a lado só quando o conteúdo é largo (container, não a janela: §6.6).
-    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const host = this.host;
     const observador = new ResizeObserver(([e]) =>
       this.estreito.set((e?.contentRect.width ?? 0) < LARGURA_PASSOS_LADO_A_LADO),
     );
@@ -299,10 +302,26 @@ export class AssistenteRunPage implements OnInit {
     }
   }
 
-  /** Próximo: avança só se o passo não tem pendência. */
-  protected avancar(passo: "dados" | "participantes" | "emprestimos" | "drops"): void {
-    const numero = { dados: 1, participantes: 2, emprestimos: 3, drops: 4 } as const;
-    if (this.pend()[numero[passo]].length === 0) this.stepper()?.next();
+  /**
+   * Próximo: sem pendência, avança. Com pendência, não avança: mostra o erro em cada campo do passo
+   * e leva o foco ao primeiro campo inválido (§6.4).
+   */
+  protected avancar(passo: PassoRun): void {
+    const lista = this.pend()[passo];
+    if (lista.length === 0) {
+      this.stepper()?.next();
+      return;
+    }
+    this.validacao.tentar(passo);
+    afterNextRender(
+      () =>
+        focarPrimeiraPendencia(
+          this.host,
+          lista.map((p) => p.campo),
+          passo,
+        ),
+      { injector: this.injector },
+    );
   }
 
   protected recarregarClasses(): void {

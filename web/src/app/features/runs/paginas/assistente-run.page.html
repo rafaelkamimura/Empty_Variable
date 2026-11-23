@@ -37,9 +37,11 @@
         <ng-template matStepperIcon="edit" let-index="index">{{ index + 1 }}</ng-template>
         <ng-template matStepperIcon="done" let-index="index">{{ index + 1 }}</ng-template>
 
-        <mat-step label="Dados da run" [completed]="p[1].length === 0">
+        <mat-step label="Dados da run" [completed]="p.dados.length === 0">
           <div class="passo">
             <app-passo-dados
+              [erros]="validacao.erros()"
+              (tocou)="validacao.tocar($event)"
               [rascunho]="r"
               [instancias]="instanciasDisponiveis()"
               [encontros]="encontros()"
@@ -62,14 +64,16 @@
                 </button>
               </ui-aviso>
             }
-            <app-pendencias-passo [pendencias]="p[1]" />
+            <app-pendencias-passo [pendencias]="p.dados" data-pendencias="dados" />
             <app-acoes-passo [voltar]="false" (avancar)="avancar('dados')" />
           </div>
         </mat-step>
 
-        <mat-step label="Participantes" [completed]="p[2].length === 0">
+        <mat-step label="Participantes" [completed]="p.participantes.length === 0">
           <div class="passo">
             <app-passo-participantes
+              [erros]="validacao.erros()"
+              (tocou)="validacao.tocar($event)"
               [participantes]="r.participantes"
               [jogadores]="jogadores()"
               [classes]="classesAtivas()"
@@ -78,14 +82,16 @@
               (adicionar)="editar(edicao.comNovoParticipante)"
               (remover)="editar(edicao.semParticipante, $event)"
             />
-            <app-pendencias-passo [pendencias]="p[2]" />
+            <app-pendencias-passo [pendencias]="p.participantes" data-pendencias="participantes" />
             <app-acoes-passo (avancar)="avancar('participantes')" />
           </div>
         </mat-step>
 
-        <mat-step label="Empréstimos" [completed]="p[3].length === 0">
+        <mat-step label="Empréstimos" [completed]="p.emprestimos.length === 0">
           <div class="passo">
             <app-passo-emprestimos
+              [erros]="validacao.erros()"
+              (tocou)="validacao.tocar($event)"
               [participantes]="r.participantes"
               [itens]="itensAtivos()"
               [nomePersonagem]="nomePersonagem"
@@ -96,21 +102,23 @@
               (adicionar)="editar(edicao.comNovoEmprestimo, $event)"
               (remover)="editar(edicao.semEmprestimo, $event.i, $event.j)"
             />
-            <app-pendencias-passo [pendencias]="p[3]" />
+            <app-pendencias-passo [pendencias]="p.emprestimos" data-pendencias="emprestimos" />
             <app-acoes-passo (avancar)="avancar('emprestimos')" />
           </div>
         </mat-step>
 
-        <mat-step label="Itens obtidos" [completed]="p[4].length === 0">
+        <mat-step label="Itens obtidos" [completed]="p.drops.length === 0">
           <div class="passo">
             <app-passo-drops
+              [erros]="validacao.erros()"
+              (tocou)="validacao.tocar($event)"
               [drops]="r.drops"
               [itens]="itensAtivos()"
               (alterar)="editar(edicao.comDrop, $event.i, $event.parte)"
               (adicionar)="editar(edicao.comNovoDrop)"
               (remover)="editar(edicao.semDrop, $event)"
             />
-            <app-pendencias-passo [pendencias]="p[4]" />
+            <app-pendencias-passo [pendencias]="p.drops" data-pendencias="drops" />
             <app-acoes-passo (avancar)="avancar('drops')" />
           </div>
         </mat-step>

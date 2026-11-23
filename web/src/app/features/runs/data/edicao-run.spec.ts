@@ -34,9 +34,19 @@ describe("Edição do rascunho da run", () => {
     expect(r.participantes[0]?.emprestimos.map((x) => x.credorJogadorId)).toEqual(["j-x"]);
 
     r = e.comDrop(e.comNovoDrop(r), 0, { itemId: "it-1", quantidade: 2 });
-    expect(r.drops).toEqual([{ itemId: "it-1", quantidade: 2 }]);
+    expect(r.drops).toEqual([{ chave: jasmine.any(String), itemId: "it-1", quantidade: 2 }]);
     expect(e.semDrop(r, 0).drops).toEqual([]);
     expect(e.semParticipante(r, 0).participantes).toEqual([]);
+  });
+
+  it("cada linha nova ganha uma chave própria, que se mantém ao editar", () => {
+    let r = e.comNovoParticipante(base());
+    const [a, b] = r.participantes;
+    expect(a!.chave).not.toBe(b!.chave);
+    r = e.comParticipante(r, 1, { personagemId: "p-ana" });
+    expect(r.participantes[1]!.chave).toBe(b!.chave);
+    r = e.semParticipante(r, 0);
+    expect(r.participantes.map((p) => p.chave)).toEqual([b!.chave]);
   });
 
   it("índice inexistente não altera nada", () => {

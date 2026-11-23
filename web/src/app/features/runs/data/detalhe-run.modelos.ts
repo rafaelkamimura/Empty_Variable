@@ -1,7 +1,7 @@
 // Run registrada, como a API devolve, e o rascunho de correção que sai dela (US-07).
 import type { CategoriaEmprestimo, StatusRun } from "@betel/scoring";
 import type { TipoLancamento } from "../../../shared/dominio/lancamento";
-import type { RascunhoRun } from "./runs.modelos";
+import { novaChave, type RascunhoRun } from "./runs.modelos";
 
 export type { ResultadoDropsRun } from "../../../core/estoque";
 
@@ -84,11 +84,13 @@ export function rascunhoDeRun(d: DetalheRun): RascunhoRun {
     pontuacaoBetelgeuse: d.pontuacaoBetelgeuse,
     observacao: d.observacao ?? "",
     participantes: d.participacoes.map((p) => ({
+      chave: novaChave(),
       personagemId: p.personagem.id,
       classeId: p.funcao.classe.id,
       funcaoId: p.funcao.id,
       fracaoCentesimos: p.fracaoCentesimos,
       emprestimos: p.emprestimos.map((e) => ({
+        chave: novaChave(),
         credorJogadorId: e.credor.id,
         itemId: e.item?.id ?? null,
         itemDescricao: e.itemDescricao ?? "",
@@ -96,6 +98,6 @@ export function rascunhoDeRun(d: DetalheRun): RascunhoRun {
         percentualInformado: e.pctInformadoBp === null ? null : e.pctInformadoBp / 100,
       })),
     })),
-    drops: d.drops.map((x) => ({ itemId: x.item.id, quantidade: x.quantidade })),
+    drops: d.drops.map((x) => ({ chave: novaChave(), itemId: x.item.id, quantidade: x.quantidade })),
   };
 }

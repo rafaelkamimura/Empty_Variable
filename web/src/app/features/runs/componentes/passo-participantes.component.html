@@ -1,7 +1,12 @@
-@for (p of participantes(); track $index; let i = $index) {
-  <ui-grupo-campos [legenda]="'Participante ' + (i + 1)" larguraCampo="p" [attr.data-participante]="i">
-    <ui-campo rotulo="Personagem">
-      <select uiCampo (change)="alterar.emit({ i, parte: { personagemId: valor($event) || null } })">
+@let e = erros();
+@for (p of participantes(); track p.chave; let i = $index) {
+  <ui-grupo-campos [legenda]="'Participante ' + (i + 1)" larguraCampo="p" data-linha>
+    <ui-campo rotulo="Personagem" [erro]="e.get(campo.participante(p.chave, 'personagemId'))">
+      <select
+        uiCampo
+        [attr.data-campo]="campo.participante(p.chave, 'personagemId')"
+        (change)="alterar.emit({ i, parte: { personagemId: valor($event) || null } })"
+      >
         <option value="" [selected]="p.personagemId === null">Escolha</option>
         @for (j of jogadores(); track j.id) {
           <optgroup [label]="j.apelido">
@@ -14,8 +19,12 @@
         }
       </select>
     </ui-campo>
-    <ui-campo rotulo="Classe">
-      <select uiCampo (change)="classe.emit({ i, classeId: valor($event) })">
+    <ui-campo rotulo="Classe" [erro]="e.get(campo.participante(p.chave, 'classeId'))">
+      <select
+        uiCampo
+        [attr.data-campo]="campo.participante(p.chave, 'classeId')"
+        (change)="classe.emit({ i, classeId: valor($event) })"
+      >
         <option value="" [selected]="p.classeId === null" disabled>Escolha</option>
         @for (c of classes(); track c.id) {
           <option [value]="c.id" [selected]="p.classeId === c.id">
@@ -24,9 +33,10 @@
         }
       </select>
     </ui-campo>
-    <ui-campo rotulo="Função">
+    <ui-campo rotulo="Função" [erro]="e.get(campo.participante(p.chave, 'funcaoId'))">
       <select
         uiCampo
+        [attr.data-campo]="campo.participante(p.chave, 'funcaoId')"
         [disabled]="p.classeId === null"
         (change)="alterar.emit({ i, parte: { funcaoId: valor($event) || null } })"
       >
@@ -48,11 +58,12 @@
       slot="acoes"
       variante="fantasma"
       tamanho="p"
-      (click)="remover.emit(i)"
+      data-acao="remover"
+      (click)="aoRemover(i)"
       [attr.aria-label]="'Remover participante ' + (i + 1)"
     >
       Remover
     </button>
   </ui-grupo-campos>
 }
-<button uiBotao (click)="adicionar.emit()">Adicionar participante</button>
+<button uiBotao data-acao="adicionar" (click)="aoAdicionar()">Adicionar participante</button>

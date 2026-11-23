@@ -3,13 +3,15 @@ import type { Classe } from "../../../shared/dominio/cadastros";
 import type { Instancia } from "../../../shared/dominio/instancias";
 import { type DetalheRun, rascunhoDeRun } from "./detalhe-run.modelos";
 import { pendentesDoRascunho, type RascunhoNag4eyes, rascunhoDeNag4eyes } from "./nag4eyes.modelos";
+import { pendencias, textoPendencia } from "./pendencias-run";
 import { calcularPrevia, montarCorpo } from "./previa-run";
 import {
   ajustarAVersaoVigente,
   type Catalogos,
+  novoDrop,
   novoEmprestimo,
+  novoParticipante,
   novoRascunho,
-  pendencias,
   type RascunhoRun,
 } from "./runs.modelos";
 
@@ -93,6 +95,7 @@ describe("Rascunho de run", () => {
     const r = rascunho({
       participantes: [
         {
+          ...novoParticipante(),
           personagemId: "p-beto",
           classeId: "c-gx",
           funcaoId: "f-gx",
@@ -123,6 +126,7 @@ describe("Rascunho de run", () => {
     const r = rascunho({
       participantes: [
         {
+          ...novoParticipante(),
           personagemId: "p-ana",
           classeId: "c-mtk",
           funcaoId: "f-mtk",
@@ -149,6 +153,7 @@ describe("Rascunho de run", () => {
     const r = rascunho({
       participantes: [
         {
+          ...novoParticipante(),
           personagemId: "p-ana",
           classeId: "c-mtk",
           funcaoId: "f-mtk",
@@ -156,6 +161,7 @@ describe("Rascunho de run", () => {
           emprestimos: [],
         },
         {
+          ...novoParticipante(),
           personagemId: "p-ana",
           classeId: "c-mtk",
           funcaoId: "f-mtk",
@@ -163,6 +169,7 @@ describe("Rascunho de run", () => {
           emprestimos: [],
         },
         {
+          ...novoParticipante(),
           personagemId: "p-ana2",
           classeId: "c-magus",
           funcaoId: null,
@@ -170,12 +177,23 @@ describe("Rascunho de run", () => {
           emprestimos: [],
         },
       ],
-      drops: [{ itemId: "i1", quantidade: 0 }],
+      drops: [{ ...novoDrop(), itemId: "i1", quantidade: 0 }],
     });
     const p = pendencias(r, cat);
-    expect(p[2].join(" ")).toContain("já está na run");
-    expect(p[2].join(" ")).toContain("não tem função padrão");
-    expect(p[4].join(" ")).toContain("quantidade inteira");
+    expect(p.participantes.map(textoPendencia).join(" ")).toContain("já está na run");
+    expect(p.participantes.map(textoPendencia).join(" ")).toContain("não tem função padrão");
+    expect(p.drops.map(textoPendencia).join(" ")).toContain("quantidade inteira");
+  });
+
+  it("a chave das linhas fica só no front: não vai no corpo da API", () => {
+    const r = rascunho({ drops: [{ ...novoDrop(), itemId: "i1", quantidade: 1 }] });
+    const corpo = JSON.stringify(montarCorpo(r, cat));
+    expect(corpo).not.toContain("chave");
+    for (const p of r.participantes) {
+      expect(corpo).not.toContain(p.chave);
+      for (const e of p.emprestimos) expect(corpo).not.toContain(e.chave);
+    }
+    expect(corpo).not.toContain(r.drops[0]!.chave);
   });
 
   it("monta o corpo da API: % informado em pontos-base e item descrito", () => {
@@ -183,6 +201,7 @@ describe("Rascunho de run", () => {
       pontuacaoBetelgeuse: 120,
       participantes: [
         {
+          ...novoParticipante(),
           personagemId: "p-ana",
           classeId: "c-mtk",
           funcaoId: null,
@@ -198,7 +217,7 @@ describe("Rascunho de run", () => {
           ],
         },
       ],
-      drops: [{ itemId: "i1", quantidade: 3 }],
+      drops: [{ ...novoDrop(), itemId: "i1", quantidade: 3 }],
     });
     expect(montarCorpo(r, cat)).toEqual({
       data: "2026-11-14",
@@ -264,12 +283,14 @@ describe("Rascunho de run", () => {
     const r = rascunhoDeRun(d);
     expect(r.data).toBe("2026-11-10");
     expect(r.participantes[0]).toEqual({
+      chave: jasmine.any(String),
       personagemId: "p-beto",
       classeId: "c-gx",
       funcaoId: "f-gx",
       fracaoCentesimos: 50,
       emprestimos: [
         {
+          chave: jasmine.any(String),
           credorJogadorId: "j-x",
           itemId: null,
           itemDescricao: "Arma",
@@ -278,14 +299,17 @@ describe("Rascunho de run", () => {
         },
       ],
     });
-    expect(r.drops).toEqual([{ itemId: "i1", quantidade: 2 }]);
+    expect(r.drops).toEqual([{ chave: jasmine.any(String), itemId: "i1", quantidade: 2 }]);
   });
 
   it("instância e encontro (D44): sem encontro é pendência; o multiplicador vem do encontro", () => {
     const sem = rascunho({ encontroId: null });
-    expect(pendencias(sem, cat)[1]).toContain("Escolha o encontro.");
-    expect(pendencias(rascunho({ instanciaId: null }), cat)[1]).toContain("Escolha a instância.");
+    expect(pendencias(sem, cat).dados.map(textoPendencia)).toContain("Escolha o encontro.");
+    expect(pendencias(rascunho({ instanciaId: null }), cat).dados.map(textoPendencia)).toContain(
+      "Escolha a instância.",
+    );
     const p = {
+      ...novoParticipante(),
       personagemId: "p-ana",
       classeId: "c-mtk",
       funcaoId: "f-mtk",
@@ -305,6 +329,7 @@ describe("Rascunho de run", () => {
       encontroId: "e-b50-v1",
       participantes: [
         {
+          ...novoParticipante(),
           personagemId: "p-beto",
           classeId: "c-gx",
           funcaoId: "f-gx-v1",
@@ -312,6 +337,7 @@ describe("Rascunho de run", () => {
           emprestimos: [],
         },
         {
+          ...novoParticipante(),
           personagemId: "p-ana2",
           classeId: "c-magus",
           funcaoId: "f-sumiu",
@@ -331,7 +357,7 @@ describe("Rascunho de run", () => {
     expect(r.participantes[0]!.funcaoId).toBe("f-gx");
     // Sem igual pelo nome e sem padrão (Magus, D16): fica para escolher de novo
     expect(r.participantes[1]!.funcaoId).toBeNull();
-    expect(pendencias(r, cat)[2]).toEqual([
+    expect(pendencias(r, cat).participantes.map(textoPendencia)).toEqual([
       "Participante 2: esta classe não tem função padrão; escolha a função.",
     ]);
   });
@@ -388,7 +414,7 @@ describe("Rascunho de run", () => {
       ["p-ana", "c-mtk", null],
       ["p-beto", "c-gx", null],
     ]);
-    expect(pendencias(r, cat)[2]).toEqual([]);
+    expect(pendencias(r, cat).participantes).toEqual([]);
     expect(calcularPrevia(r, CONFIG_V1, cat).total).toBe(500);
     expect(montarCorpo(r, cat).participantes.map((p) => ("funcaoId" in p ? p.funcaoId : null))).toEqual([
       "f-mtk",
