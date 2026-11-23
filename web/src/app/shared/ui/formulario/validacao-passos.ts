@@ -1,25 +1,8 @@
-// Validação de formulários em passos (diretrizes §6.4 e §7): cada pendência diz o campo e como
-// corrigir; o erro de um campo aparece depois de a pessoa sair dele ou de tentar avançar o passo,
-// e nunca antes de ela mexer. O `campo` é o atributo `data-campo` do controle na tela.
+// Validação de formulários em passos (diretrizes §6.4 e §7): o erro de um campo aparece depois de a
+// pessoa sair dele ou de tentar avançar o passo, e nunca antes de ela mexer; ao tentar avançar com
+// pendência, o foco vai ao primeiro campo inválido. O `campo` é o atributo `data-campo` do controle.
 import { computed, signal, type Signal } from "@angular/core";
-
-export interface Pendencia {
-  /** Campo com o problema (`data-campo` do controle), ou o nome da lista quando não há campo. */
-  readonly campo: string;
-  /** Como corrigir, para aparecer junto do campo ("Escolha o personagem."). */
-  readonly mensagem: string;
-  /** De qual linha é ("Participante 2"), para o resumo do passo. */
-  readonly contexto?: string;
-}
-
-/** Pendências de cada passo de um formulário em passos. */
-export type PendenciasPorPasso<P extends string> = Readonly<Record<P, readonly Pendencia[]>>;
-
-/** Texto da pendência no resumo do passo: "Participante 2: escolha a classe." */
-export function textoPendencia(p: Pendencia): string {
-  if (p.contexto === undefined) return p.mensagem;
-  return `${p.contexto}: ${p.mensagem.charAt(0).toLowerCase()}${p.mensagem.slice(1)}`;
-}
+import type { PendenciasPorPasso } from "../../utils/pendencias";
 
 /** Quais erros mostrar: os dos campos tocados e os dos passos em que a pessoa tentou avançar. */
 export class ValidacaoPassos<P extends string> {

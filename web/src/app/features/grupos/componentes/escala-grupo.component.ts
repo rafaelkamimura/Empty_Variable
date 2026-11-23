@@ -16,7 +16,7 @@ import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-campos.component";
 import { valorDoEvento } from "../../../shared/utils/evento";
-import { focarDepois } from "../../../shared/utils/foco";
+import { focarDepois } from "../../../shared/ui/formulario/foco";
 import {
   candidatos,
   comVaga,

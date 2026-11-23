@@ -13,7 +13,12 @@ import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-campos.component";
 import { valorDoEvento } from "../../../shared/utils/evento";
-import { campoQueSaiu, focarAposRemover, focarDepois, primeiroControle } from "../../../shared/utils/foco";
+import {
+  campoQueSaiu,
+  focarAposRemover,
+  focarDepois,
+  primeiroControle,
+} from "../../../shared/ui/formulario/foco";
 import {
   type ClasseGrupo,
   indicesDoTipo,

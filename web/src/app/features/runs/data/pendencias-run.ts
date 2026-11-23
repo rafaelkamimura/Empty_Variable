@@ -2,7 +2,7 @@
 // Puro (sem Angular). O `campo` liga a mensagem ao controle da tela (atributo data-campo), para o
 // erro aparecer no próprio campo e o foco ir até ele (diretrizes §6.4 e §7).
 import { paraCentesimos } from "../../../shared/dominio/cadastros";
-import type { Pendencia, PendenciasPorPasso } from "../../../shared/utils/validacao-passos";
+import type { Pendencia, PendenciasPorPasso } from "../../../shared/utils/pendencias";
 import { type Catalogos, encontroDe, funcaoDe, indicePersonagens, type RascunhoRun } from "./runs.modelos";
 
 /** Passos do assistente que têm campos (a revisão só mostra a prévia). */

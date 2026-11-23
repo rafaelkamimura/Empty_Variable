@@ -13,7 +13,12 @@ import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo
 import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-campos.component";
 import { campoRun } from "../data/pendencias-run";
 import { type JogadorCadastro, ROTULO_FRACAO, type RascunhoParticipante } from "../data/runs.modelos";
-import { campoQueSaiu, focarAposRemover, focarDepois, primeiroControle } from "../../../shared/utils/foco";
+import {
+  campoQueSaiu,
+  focarAposRemover,
+  focarDepois,
+  primeiroControle,
+} from "../../../shared/ui/formulario/foco";
 import { valorDoEvento } from "../../../shared/utils/evento";
 
 const FRACOES = [100, 50, 0] as const;

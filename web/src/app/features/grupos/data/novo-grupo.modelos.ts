@@ -1,5 +1,5 @@
 // Assistente de criação de grupo em passos: o rascunho e as pendências de cada passo, campo a campo.
-import type { Pendencia, PendenciasPorPasso } from "../../../shared/utils/validacao-passos";
+import type { Pendencia, PendenciasPorPasso } from "../../../shared/utils/pendencias";
 import { indicesDoTipo, partidaDe, type TipoReserva, type Vaga, vagasIniciais } from "./grupos.modelos";
 
 export type PassoGrupo = "instancia" | "obrigatorias" | "secundarias" | "horario";

@@ -1,6 +1,7 @@
 import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { type PendenciasPorPasso, textoPendencia, ValidacaoPassos } from "./validacao-passos";
+import type { PendenciasPorPasso } from "../../utils/pendencias";
+import { ValidacaoPassos } from "./validacao-passos";
 
 type Passo = "a" | "b";
 
@@ -24,11 +25,5 @@ describe("Validação em passos", () => {
     v.limpar();
     pend.set({ a: [{ campo: "a.nome", mensagem: "Informe o nome." }], b: [] });
     expect(v.erros().size).toBe(0);
-  });
-
-  it("texto do resumo leva o contexto", () => {
-    expect(textoPendencia({ campo: "c", mensagem: "Escolha a classe.", contexto: "Vaga 3" })).toBe(
-      "Vaga 3: escolha a classe.",
-    );
   });
 });

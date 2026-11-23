@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from "@angular/core";
-import { type Pendencia, textoPendencia } from "../../utils/validacao-passos";
+import { type Pendencia, textoPendencia } from "../../utils/pendencias";
 import { AvisoComponent } from "../aviso/aviso.component";
 
 /**

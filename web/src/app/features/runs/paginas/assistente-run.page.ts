@@ -44,7 +44,7 @@ import { calcularPrevia, montarCorpo } from "../data/previa-run";
 import { RunsApi } from "../data/runs.api";
 import { type Catalogos, novoRascunho, ROTULO_STATUS, type RascunhoRun } from "../data/runs.modelos";
 import type { ComRascunhoNaoSalvo } from "../sair-do-assistente.guard";
-import { focarPrimeiraPendencia, ValidacaoPassos } from "../../../shared/utils/validacao-passos";
+import { focarPrimeiraPendencia, ValidacaoPassos } from "../../../shared/ui/formulario/validacao-passos";
 
 /** Abaixo desta largura do conteúdo, os passos ficam um embaixo do outro. */
 const LARGURA_PASSOS_LADO_A_LADO = 700;

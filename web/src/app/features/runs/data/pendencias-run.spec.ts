@@ -1,4 +1,4 @@
-import { textoPendencia } from "../../../shared/utils/validacao-passos";
+import { textoPendencia } from "../../../shared/utils/pendencias";
 import { campoRun, pendencias } from "./pendencias-run";
 import { cat } from "./runs.modelos.spec";
 import { novoDrop, novoEmprestimo, novoParticipante, novoRascunho, type RascunhoRun } from "./runs.modelos";

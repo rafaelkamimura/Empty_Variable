@@ -19,8 +19,8 @@ import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { PendenciasComponent } from "../../../shared/ui/pendencias/pendencias.component";
 import { valorDoEvento } from "../../../shared/utils/evento";
-import { campoQueSaiu } from "../../../shared/utils/foco";
-import { focarPrimeiraPendencia, ValidacaoPassos } from "../../../shared/utils/validacao-passos";
+import { campoQueSaiu } from "../../../shared/ui/formulario/foco";
+import { focarPrimeiraPendencia, ValidacaoPassos } from "../../../shared/ui/formulario/validacao-passos";
 import {
   comReserva,
   comVaga,

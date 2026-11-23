@@ -12,7 +12,7 @@ import { BadgeComponent } from "../../../shared/ui/badge/badge.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { valorDoEvento } from "../../../shared/utils/evento";
-import { focarDepois, primeiroControle } from "../../../shared/utils/foco";
+import { focarDepois, primeiroControle } from "../../../shared/ui/formulario/foco";
 import { ROTULO_TIPO_VAGA } from "../data/grupos.modelos";
 import type { MeuPersonagem, SituacaoVaga, VagaProgramada } from "../data/programadas.modelos";
 
