@@ -28,7 +28,7 @@ import type { Previa } from "../data/previa-run";
         </tr>
       </thead>
       <tbody>
-        @for (l of pv.linhas; track l.personagem) {
+        @for (l of pv.linhas; track $index) {
           <tr [class.erro]="l.erro">
             <td>{{ l.personagem }}</td>
             <td>{{ l.jogador }}</td>
@@ -59,7 +59,7 @@ import type { Previa } from "../data/previa-run";
         }
       </ul>
     </section>
-    @for (e of pv.erros; track e) {
+    @for (e of pv.erros; track $index) {
       <ui-aviso tom="erro">{{ e }}</ui-aviso>
     }
   `,
