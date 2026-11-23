@@ -40,7 +40,8 @@ import type { Previa } from "../data/previa-run";
                 <div>{{ pc.credor }}: {{ pc.pontos }}</div>
               }
               @if (l.reducao) {
-                <div class="aviso">Reduzido ao teto (D9a)</div>
+                <!-- D9a: os credores somados passam do teto. -->
+                <div class="aviso">Reduzido ao teto dos credores</div>
               }
             </td>
             <td class="numero">{{ l.pontosTomador }}</td>

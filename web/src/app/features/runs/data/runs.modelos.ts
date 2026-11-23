@@ -188,7 +188,7 @@ export function pendencias(r: RascunhoRun, cat: Catalogos): Record<1 | 2 | 3 | 4
     const n = `Participante ${i + 1}`;
     if (p.personagemId === null) passo2.push(`${n}: escolha o personagem.`);
     else if (vistos.has(p.personagemId)) {
-      passo2.push(`${n}: ${pessoas.get(p.personagemId)?.nome ?? "personagem"} já está na run (CT-52).`);
+      passo2.push(`${n}: ${pessoas.get(p.personagemId)?.nome ?? "personagem"} já está na run.`); // CT-52
     } else vistos.add(p.personagemId);
     if (p.classeId === null) passo2.push(`${n}: escolha a classe.`);
     else if (funcaoDe(p, cat) === null)
@@ -217,7 +217,7 @@ export function pendencias(r: RascunhoRun, cat: Catalogos): Record<1 | 2 | 3 | 4
     else if (itensDrop.has(d.itemId)) passo4.push(`${n}: item repetido; some as quantidades.`);
     else itensDrop.add(d.itemId);
     if (d.quantidade === null || !Number.isInteger(d.quantidade) || d.quantidade < 1) {
-      passo4.push(`${n}: quantidade inteira maior que zero (CT-61).`);
+      passo4.push(`${n}: quantidade inteira maior que zero.`); // CT-61
     }
   });
 
