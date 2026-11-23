@@ -4,14 +4,21 @@ let proximoId = 0;
 
 /**
  * Importância de uma reserva, de 1 a 5, como estrelas. São rádios nativos num `fieldset` com
- * legenda (teclado: setas trocam o valor), cada um com o nome "N de 5" para o leitor de tela.
+ * `role="radiogroup"` e legenda (teclado: setas trocam o valor), cada um com o nome "N de 5" para o
+ * leitor de tela. O erro fica no grupo (`aria-invalid` e `aria-describedby`), não nos rádios. Cada
+ * estrela tem alvo de toque de 40×40 px (§6.6 e §7).
  */
 @Component({
   selector: "app-importancia",
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <fieldset [attr.aria-invalid]="erro() ? true : null" [attr.aria-describedby]="erro() ? idErro : null">
-      <legend>Importância</legend>
+    <fieldset
+      role="radiogroup"
+      [attr.aria-labelledby]="idLegenda"
+      [attr.aria-invalid]="erro() ? true : null"
+      [attr.aria-describedby]="erro() ? idErro : null"
+    >
+      <legend [id]="idLegenda">Importância</legend>
       <div class="estrelas">
         @for (n of valores; track n) {
           <label class="estrela" [class.marcada]="n <= (valor() ?? 0)">
@@ -49,16 +56,17 @@ let proximoId = 0;
       font-weight: 600;
       color: var(--texto);
     }
+    /* 5 alvos de 40 px lado a lado (200 px) cabem a 320 px; se não couberem, quebram a linha. */
     .estrelas {
       display: flex;
-      gap: var(--esp-1);
+      flex-wrap: wrap;
     }
     .estrela {
       position: relative;
       display: grid;
       place-items: center;
-      min-width: 32px;
-      min-height: 32px;
+      min-width: 40px;
+      min-height: 40px;
       border-radius: var(--raio-p);
       color: var(--texto-suave);
       cursor: pointer;
@@ -97,4 +105,5 @@ export class ImportanciaComponent {
   protected readonly valores = [1, 2, 3, 4, 5] as const;
   protected readonly nome = `importancia-${++proximoId}`;
   protected readonly idErro = `${this.nome}-erro`;
+  protected readonly idLegenda = `${this.nome}-legenda`;
 }
