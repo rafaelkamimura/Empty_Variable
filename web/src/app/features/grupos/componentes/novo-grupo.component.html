@@ -1,0 +1,107 @@
+@let r = rascunho();
+@let p = pend();
+@let e = validacao.erros();
+<mat-stepper
+  linear
+  [orientation]="estreito() ? 'vertical' : 'horizontal'"
+  aria-label="Passos da criação do grupo"
+>
+  <!-- Sem a fonte Material Icons: os passos mostram o número em vez dos ícones "edit"/"done". -->
+  <ng-template matStepperIcon="edit" let-index="index">{{ index + 1 }}</ng-template>
+  <ng-template matStepperIcon="done" let-index="index">{{ index + 1 }}</ng-template>
+
+  <mat-step label="Instância" [completed]="p.instancia.length === 0">
+    <div class="passo">
+      <ui-campo rotulo="Instância" [erro]="e.get(campo.instancia)">
+        <select uiCampo [attr.data-campo]="campo.instancia" (change)="mudar({ instanciaId: valor($event) })">
+          <option value="" [selected]="r.instanciaId === ''">Escolha</option>
+          @for (i of opcoes().instancias; track i.id) {
+            <option [value]="i.id" [selected]="r.instanciaId === i.id">{{ i.nome }}</option>
+          }
+        </select>
+      </ui-campo>
+      <ui-pendencias [pendencias]="p.instancia" data-pendencias="instancia" />
+      <ui-acoes-passo [voltar]="false" (avancar)="avancar('instancia')" />
+    </div>
+  </mat-step>
+
+  <mat-step label="Classes obrigatórias" [completed]="p.obrigatorias.length === 0">
+    <div class="passo">
+      <app-reservas-grupo
+        tipo="OBRIGATORIA"
+        [vagas]="r.vagas"
+        [classes]="opcoes().classes"
+        [erros]="e"
+        (tocou)="validacao.tocar($event)"
+        (alterar)="alterarVaga($event.i, $event.parte)"
+        (adicionar)="adicionarReserva('OBRIGATORIA')"
+        (remover)="removerReserva($event)"
+      />
+      <ui-pendencias [pendencias]="p.obrigatorias" data-pendencias="obrigatorias" />
+      <ui-acoes-passo (avancar)="avancar('obrigatorias')" />
+    </div>
+  </mat-step>
+
+  <mat-step label="Classes secundárias" [completed]="p.secundarias.length === 0">
+    <div class="passo">
+      @if (obrigatorias() !== "Nenhuma") {
+        <section class="escolhidas" aria-label="Classes obrigatórias já escolhidas">
+          <strong>Obrigatórias escolhidas:</strong> {{ obrigatorias() }}
+        </section>
+      }
+      <app-reservas-grupo
+        tipo="SECUNDARIA"
+        [vagas]="r.vagas"
+        [classes]="opcoes().classes"
+        [erros]="e"
+        (tocou)="validacao.tocar($event)"
+        (alterar)="alterarVaga($event.i, $event.parte)"
+        (adicionar)="adicionarReserva('SECUNDARIA')"
+        (remover)="removerReserva($event)"
+      />
+      <ui-pendencias [pendencias]="p.secundarias" data-pendencias="secundarias" />
+      <ui-acoes-passo (avancar)="avancar('secundarias')" />
+    </div>
+  </mat-step>
+
+  <mat-step label="Data e hora" [completed]="p.horario.length === 0">
+    <div class="passo" (focusout)="sairDoHorario($event)">
+      <ui-campo rotulo="Data e hora (São Paulo)" dica="Horário do servidor" [erro]="e.get(campo.horario)">
+        <input
+          uiCampo
+          type="datetime-local"
+          required
+          [attr.data-campo]="campo.horario"
+          [value]="r.horario"
+          (input)="mudar({ horario: valor($event) })"
+        />
+      </ui-campo>
+      <ui-pendencias [pendencias]="p.horario" data-pendencias="horario" />
+      <ui-acoes-passo (avancar)="avancar('horario')" />
+    </div>
+  </mat-step>
+
+  <mat-step label="Revisão">
+    <ng-template matStepContent>
+      <div class="passo">
+        <h3>Revisão</h3>
+        <dl class="resumo">
+          <dt>Instância</dt>
+          <dd>{{ nomeInstancia() }}</dd>
+          <dt>Partida</dt>
+          <dd>{{ partida() | date: "dd/MM/yyyy HH:mm" : "-0300" }} (horário de São Paulo)</dd>
+          <dt>Obrigatórias</dt>
+          <dd>{{ obrigatorias() }}</dd>
+          <dt>Secundárias</dt>
+          <dd>{{ secundarias() }}</dd>
+          <dt>Livres</dt>
+          <dd>{{ livres() }} de {{ totalVagas }} vagas</dd>
+        </dl>
+        @if (erroEnvio(); as msg) {
+          <ui-aviso tom="erro">{{ msg }}</ui-aviso>
+        }
+        <ui-acoes-passo rotulo="Confirmar e criar grupo" [carregando]="salvando()" (avancar)="confirmar()" />
+      </div>
+    </ng-template>
+  </mat-step>
+</mat-stepper>

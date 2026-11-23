@@ -1,0 +1,59 @@
+<ui-pagina
+  titulo="Grupos de instância"
+  subtitulo="Monte a composição de um grupo e escale os personagens nas 12 vagas."
+>
+  @if (grupo()) {
+    <a slot="acao" uiBotao variante="principal" routerLink="/gestao/grupos">Novo grupo</a>
+  }
+
+  <ui-estado [valor]="carga()" (tentarNovamente)="carregar()">
+    <ng-template uiEstadoPronto [tipo]="carga()" let-c>
+      <section class="secao" aria-labelledby="titulo-agendados">
+        <h2 id="titulo-agendados">Grupos agendados</h2>
+        @if (c.grupos.length === 0) {
+          <ui-vazio mensagem="Nenhum grupo ainda. Crie o primeiro abaixo." />
+        } @else {
+          <app-lista-grupos
+            data-testid="grupos-lista"
+            [grupos]="c.grupos"
+            [selecionado]="grupo() ?? null"
+            [bloqueado]="salvando()"
+            (abrir)="abrir($event)"
+          />
+        }
+      </section>
+
+      <section class="secao editor" aria-labelledby="titulo-editor" data-testid="grupos-editor">
+        @if (selecionado(); as g) {
+          <h2 id="titulo-editor">{{ g.instancia.nome }}</h2>
+          @if (erroEscala(); as msg) {
+            <ui-aviso tom="erro" titulo="A escala não foi salva">
+              {{ msg }}
+              <button slot="acoes" uiBotao tamanho="p" (click)="carregar()">Recarregar a escala</button>
+            </ui-aviso>
+          }
+          <app-escala-grupo
+            [grupo]="g"
+            [opcoes]="c.opcoes"
+            [salvando]="salvando()"
+            (salvar)="salvarEscala(g, $event.vagas, $event.fechar)"
+          />
+        } @else {
+          @if (grupo()) {
+            <ui-aviso tom="alerta"
+              >Este grupo não foi encontrado. Escolha outro na lista ou crie um novo.</ui-aviso
+            >
+          } @else {
+            <h2 id="titulo-editor">Novo grupo</h2>
+            <app-novo-grupo
+              [opcoes]="c.opcoes"
+              [salvando]="salvando()"
+              [erroEnvio]="erroCriacao()"
+              (criar)="criar($event)"
+            />
+          }
+        }
+      </section>
+    </ng-template>
+  </ui-estado>
+</ui-pagina>
