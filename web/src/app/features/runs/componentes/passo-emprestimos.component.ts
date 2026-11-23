@@ -27,7 +27,7 @@ import type { JogadorCadastro, RascunhoEmprestimo, RascunhoParticipante } from "
       font-size: var(--fs-s);
       color: var(--texto-suave);
     }
-    h3 {
+    h2 {
       margin: 0;
       font-size: var(--fs-m);
       font-weight: 600;

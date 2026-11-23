@@ -1,13 +1,13 @@
-<ui-estado [valor]="estado()" (tentarNovamente)="carregar(id())">
-  <ng-template uiEstadoPronto [tipo]="estado()" let-r>
-    <ui-pagina [titulo]="'Run de ' + (r.data | date: 'dd/MM/yyyy' : 'UTC')">
-      <span slot="acao" class="acoes">
-        @if (r.status !== "ESTORNADA" && correcaoLiberada) {
-          <a uiBotao variante="principal" [routerLink]="['/gestao/runs', r.id, 'corrigir']">Corrigir</a>
-        }
-        <a uiBotao variante="fantasma" routerLink="/gestao/runs">Voltar à lista</a>
-      </span>
+<ui-pagina [titulo]="titulo()">
+  <span slot="acao" class="acoes">
+    @if (podeCorrigir()) {
+      <a uiBotao variante="principal" [routerLink]="['/gestao/runs', id(), 'corrigir']">Corrigir</a>
+    }
+    <a uiBotao variante="fantasma" routerLink="/gestao/runs">Voltar à lista</a>
+  </span>
 
+  <ui-estado [valor]="estado()" (tentarNovamente)="carregar(id())">
+    <ng-template uiEstadoPronto [tipo]="estado()" let-r>
       <p class="linha-resumo" data-testid="runs-resumo">
         {{ r.versaoInstancia.instancia.nome }} (v{{ r.versaoInstancia.versao }}) · {{ r.encontro.nome }} ·
         <strong>{{ rotuloStatus[r.status] }}</strong> · parâmetros v{{ r.config.versao }} · registrada por
@@ -85,6 +85,6 @@
           </p>
         }
       </section>
-    </ui-pagina>
-  </ng-template>
-</ui-estado>
+    </ng-template>
+  </ui-estado>
+</ui-pagina>

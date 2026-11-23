@@ -53,7 +53,7 @@ import type { Previa } from "../data/previa-run";
       <strong>Total gerado: {{ pv.total | pontos }}</strong>
     </p>
     <section aria-labelledby="titulo-ganho">
-      <h3 id="titulo-ganho">Ganho por jogador</h3>
+      <h2 id="titulo-ganho">Ganho por jogador</h2>
       <ul data-testid="runs-ganho-por-jogador">
         @for (g of pv.porJogador; track g.jogador) {
           <li>{{ g.jogador }}: {{ g.pontos | pontos }}</li>
@@ -77,7 +77,7 @@ import type { Previa } from "../data/previa-run";
     .linha-resumo {
       color: var(--texto-suave);
     }
-    h3 {
+    h2 {
       margin: 0 0 var(--esp-1);
       font-size: var(--fs-m);
       font-weight: 600;

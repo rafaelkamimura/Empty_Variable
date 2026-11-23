@@ -19,6 +19,9 @@ import { ROTULO_TIPO_LANCAMENTO } from "../../../shared/dominio/lancamento";
 import { RunsApi } from "../data/runs.api";
 import { ROTULO_STATUS } from "../data/runs.modelos";
 
+/** A data da run é um dia, gravado à meia-noite UTC. */
+const DATA_RUN = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" });
+
 /** Detalhe da run (/gestao/runs/:id, T-21): party, empréstimos, drops, lançamentos e a correção (US-07). */
 @Component({
   selector: "app-run-detalhe-page",
@@ -97,6 +100,14 @@ export class RunDetalhePage {
     const e = this.estado();
     return e.estado === "pronto" ? e.dados : null;
   });
+  /** "Run" enquanto carrega ou dá erro; "Run de 20/11/2026" quando os dados chegam. */
+  protected readonly titulo = computed(() => {
+    const r = this.run();
+    return r === null ? "Run" : `Run de ${DATA_RUN.format(new Date(r.data))}`;
+  });
+  protected readonly podeCorrigir = computed(
+    () => this.correcaoLiberada && this.run() !== null && this.run()?.status !== "ESTORNADA",
+  );
   protected readonly dropsPendentes = computed(
     () => (this.run()?.drops ?? []).filter((d) => !d.lancadoNoEstoque).length,
   );

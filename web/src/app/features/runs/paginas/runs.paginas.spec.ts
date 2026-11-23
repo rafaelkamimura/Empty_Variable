@@ -253,8 +253,11 @@ describe("RunDetalhePage", () => {
     f.componentRef.setInput("id", "run-1");
     f.autoDetectChanges();
     const el = f.nativeElement as HTMLElement;
+    // O cabeçalho aparece já no carregamento, com um título genérico.
+    expect(el.querySelector("h1")?.textContent).toContain("Run");
     http.expectOne("/api/runs/run-1").flush(detalhe());
     await esperar();
+    expect(el.querySelector("h1")?.textContent).toContain("Run de 20/11/2026");
     expect(el.querySelector("[data-testid='runs-participacoes']")?.textContent).toContain("Ana-MTK");
     expect(el.querySelector("[data-testid='runs-lancamentos']")?.textContent).toContain("+250 pts");
     expect(el.textContent).toContain("Soma: 250 pts");

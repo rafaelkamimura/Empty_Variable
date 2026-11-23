@@ -4,7 +4,7 @@
 </p>
 @for (p of participantes(); track $index; let i = $index) {
   <ui-cartao>
-    <h3>{{ nomePersonagem()(p) }}</h3>
+    <h2>{{ nomePersonagem()(p) }}</h2>
     @for (e of p.emprestimos; track $index; let j = $index) {
       <fieldset class="linha">
         <legend>Empréstimo {{ j + 1 }}</legend>
