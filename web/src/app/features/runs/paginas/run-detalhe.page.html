@@ -58,7 +58,7 @@
       <section aria-labelledby="titulo-lancamentos">
         <h2 id="titulo-lancamentos">Lançamentos</h2>
         @if (r.lancamentos.length === 0) {
-          <p class="dica">Nenhum lançamento (pontos zerados).</p>
+          <ui-vazio mensagem="Nenhum lançamento: a run não gerou pontos." />
         } @else {
           <table uiTabela padrao aria-label="Lançamentos da run" data-testid="runs-lancamentos">
             <thead>

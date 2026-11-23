@@ -2,9 +2,11 @@ import { ChangeDetectionStrategy, Component, input, output } from "@angular/core
 import { CATEGORIAS_EMPRESTIMO, type CategoriaEmprestimo } from "@betel/scoring";
 import type { ItemCatalogo } from "../../../shared/dominio/cadastros";
 import { ROTULO_CATEGORIA } from "../../../shared/dominio/emprestimo";
+import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { CartaoComponent } from "../../../shared/ui/cartao/cartao.component";
+import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-campos.component";
 import type { JogadorCadastro, RascunhoEmprestimo, RascunhoParticipante } from "../data/runs.modelos";
 import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 
@@ -15,45 +17,29 @@ import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 @Component({
   selector: "app-passo-emprestimos",
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BotaoComponent, CampoComponent, CampoControleDirective, CartaoComponent],
+  imports: [
+    AvisoComponent,
+    BotaoComponent,
+    CampoComponent,
+    CampoControleDirective,
+    CartaoComponent,
+    GrupoCamposComponent,
+  ],
   templateUrl: "./passo-emprestimos.component.html",
   styles: `
     :host {
       display: grid;
       gap: var(--esp-3);
     }
-    .dica {
-      margin: 0;
-      font-size: var(--fs-s);
-      color: var(--texto-suave);
-    }
     h2 {
       margin: 0;
       font-size: var(--fs-m);
       font-weight: 600;
       color: var(--texto-forte);
+      overflow-wrap: anywhere;
     }
     ui-cartao > button {
       align-self: flex-start;
-    }
-    .linha {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
-      align-items: end;
-      gap: var(--esp-2) var(--esp-3);
-      margin: 0;
-      padding: var(--esp-3);
-      border: 1px solid var(--borda);
-      border-radius: var(--raio-m);
-    }
-    legend {
-      padding: 0 var(--esp-1);
-      font-size: var(--fs-s);
-      font-weight: 600;
-      color: var(--texto-suave);
-    }
-    .linha button {
-      justify-self: start;
     }
   `,
 })

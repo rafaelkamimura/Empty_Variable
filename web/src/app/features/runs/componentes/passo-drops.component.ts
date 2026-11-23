@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, input, output } from "@angular/core";
 import type { ItemCatalogo } from "../../../shared/dominio/cadastros";
+import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
+import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-campos.component";
 import type { RascunhoRun } from "../data/runs.modelos";
 import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 
@@ -11,12 +13,11 @@ type Drop = RascunhoRun["drops"][number];
 @Component({
   selector: "app-passo-drops",
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BotaoComponent, CampoComponent, CampoControleDirective],
+  imports: [AvisoComponent, BotaoComponent, CampoComponent, CampoControleDirective, GrupoCamposComponent],
   template: `
-    <p class="dica">Os itens obtidos não alteram a pontuação.</p>
+    <ui-aviso tom="info">Os itens obtidos não alteram a pontuação.</ui-aviso>
     @for (d of drops(); track $index; let i = $index) {
-      <fieldset class="linha">
-        <legend>Item {{ i + 1 }}</legend>
+      <ui-grupo-campos [legenda]="'Item ' + (i + 1)">
         <ui-campo rotulo="Item">
           <select uiCampo (change)="alterar.emit({ i, parte: { itemId: valor($event) || null } })">
             <option value="" [selected]="d.itemId === null">Escolha</option>
@@ -38,6 +39,7 @@ type Drop = RascunhoRun["drops"][number];
         </ui-campo>
         <button
           uiBotao
+          slot="acoes"
           variante="fantasma"
           tamanho="p"
           (click)="remover.emit(i)"
@@ -45,7 +47,7 @@ type Drop = RascunhoRun["drops"][number];
         >
           Remover
         </button>
-      </fieldset>
+      </ui-grupo-campos>
     }
     <button uiBotao (click)="adicionar.emit()">Adicionar item</button>
   `,
@@ -53,38 +55,9 @@ type Drop = RascunhoRun["drops"][number];
     :host {
       display: grid;
       gap: var(--esp-3);
-      justify-items: start;
     }
-    .dica {
-      margin: 0;
-      font-size: var(--fs-s);
-      color: var(--texto-suave);
-    }
-    .linha {
-      display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
-      align-items: end;
-      gap: var(--esp-2) var(--esp-3);
-      width: 100%;
-      box-sizing: border-box;
-      margin: 0;
-      padding: var(--esp-3);
-      border: 1px solid var(--borda);
-      border-radius: var(--raio-m);
-    }
-    legend {
-      padding: 0 var(--esp-1);
-      font-size: var(--fs-s);
-      font-weight: 600;
-      color: var(--texto-suave);
-    }
-    @container conteudo (max-width: 600px) {
-      .linha {
-        grid-template-columns: minmax(0, 1fr);
-      }
-      .linha button {
-        justify-self: start;
-      }
+    :host > button {
+      justify-self: start;
     }
   `,
 })

@@ -8,9 +8,10 @@ import {
   input,
   type OnInit,
   signal,
+  viewChild,
 } from "@angular/core";
-import { MatStepperModule } from "@angular/material/stepper";
-import { Router, RouterLink } from "@angular/router";
+import { MatStepper, MatStepperModule } from "@angular/material/stepper";
+import { Router } from "@angular/router";
 import type { ConfigPontuacao } from "@betel/scoring";
 import { Acao } from "../../../core/acao";
 import { mensagemDeErro } from "../../../core/modelos";
@@ -26,6 +27,7 @@ import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estado/estado.component";
 import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
+import { AcoesPassoComponent } from "../componentes/acoes-passo.component";
 import { PassoDadosComponent } from "../componentes/passo-dados.component";
 import { PassoDropsComponent } from "../componentes/passo-drops.component";
 import { PassoEmprestimosComponent } from "../componentes/passo-emprestimos.component";
@@ -70,12 +72,12 @@ const LARGURA_PASSOS_LADO_A_LADO = 700;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatStepperModule,
-    RouterLink,
     AvisoComponent,
     BotaoComponent,
     EstadoComponent,
     EstadoProntoDirective,
     PaginaComponent,
+    AcoesPassoComponent,
     PassoDadosComponent,
     PassoDropsComponent,
     PassoEmprestimosComponent,
@@ -112,6 +114,7 @@ export class AssistenteRunPage implements OnInit {
   protected readonly origemRascunho = signal<RascunhoNag4eyes | null>(null);
   protected readonly run = signal<RascunhoRun>(novoRascunho());
   protected readonly motivo = signal("");
+  private readonly stepper = viewChild(MatStepper);
   /** Erro ao carregar as classes da instância escolhida. */
   protected readonly erroClasses = signal<string | null>(null);
   private versaoClasses = 0;
@@ -296,13 +299,23 @@ export class AssistenteRunPage implements OnInit {
     }
   }
 
+  /** Próximo: avança só se o passo não tem pendência. */
+  protected avancar(passo: "dados" | "participantes" | "emprestimos" | "drops"): void {
+    const numero = { dados: 1, participantes: 2, emprestimos: 3, drops: 4 } as const;
+    if (this.pend()[numero[passo]].length === 0) this.stepper()?.next();
+  }
+
   protected recarregarClasses(): void {
     const id = this.run().instanciaId;
     if (id !== null) void this.carregarClasses(id);
   }
 
   protected async enviar(): Promise<void> {
-    if (!this.podeEnviar() || this.enviando()) return;
+    if (this.enviando()) return;
+    if (!this.podeEnviar()) {
+      this.erroEnvio.set("Há pendências na run: confira os passos anteriores e a prévia.");
+      return;
+    }
     this.erroEnvio.set(null);
     this.enviando.set(true);
     const alvo = this.correcaoDe();

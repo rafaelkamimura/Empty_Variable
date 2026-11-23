@@ -63,11 +63,7 @@
               </ui-aviso>
             }
             <app-pendencias-passo [pendencias]="p[1]" />
-            <div class="acoes">
-              <button uiBotao variante="principal" matStepperNext [disabled]="p[1].length > 0">
-                Próximo
-              </button>
-            </div>
+            <app-acoes-passo [voltar]="false" (avancar)="avancar('dados')" />
           </div>
         </mat-step>
 
@@ -83,12 +79,7 @@
               (remover)="editar(edicao.semParticipante, $event)"
             />
             <app-pendencias-passo [pendencias]="p[2]" />
-            <div class="acoes">
-              <button uiBotao variante="fantasma" matStepperPrevious>Voltar</button>
-              <button uiBotao variante="principal" matStepperNext [disabled]="p[2].length > 0">
-                Próximo
-              </button>
-            </div>
+            <app-acoes-passo (avancar)="avancar('participantes')" />
           </div>
         </mat-step>
 
@@ -106,12 +97,7 @@
               (remover)="editar(edicao.semEmprestimo, $event.i, $event.j)"
             />
             <app-pendencias-passo [pendencias]="p[3]" />
-            <div class="acoes">
-              <button uiBotao variante="fantasma" matStepperPrevious>Voltar</button>
-              <button uiBotao variante="principal" matStepperNext [disabled]="p[3].length > 0">
-                Próximo
-              </button>
-            </div>
+            <app-acoes-passo (avancar)="avancar('emprestimos')" />
           </div>
         </mat-step>
 
@@ -125,12 +111,7 @@
               (remover)="editar(edicao.semDrop, $event)"
             />
             <app-pendencias-passo [pendencias]="p[4]" />
-            <div class="acoes">
-              <button uiBotao variante="fantasma" matStepperPrevious>Voltar</button>
-              <button uiBotao variante="principal" matStepperNext [disabled]="p[4].length > 0">
-                Próximo
-              </button>
-            </div>
+            <app-acoes-passo (avancar)="avancar('drops')" />
           </div>
         </mat-step>
 
@@ -142,19 +123,11 @@
             @if (erroEnvio(); as e) {
               <ui-aviso tom="erro">{{ e }}</ui-aviso>
             }
-            <div class="acoes">
-              <button uiBotao variante="fantasma" matStepperPrevious>Voltar</button>
-              <button
-                uiBotao
-                variante="principal"
-                [carregando]="enviando()"
-                [disabled]="!podeEnviar()"
-                (click)="enviar()"
-              >
-                {{ correcaoDe() ? "Registrar correção" : "Registrar run" }}
-              </button>
-              <a uiBotao variante="fantasma" routerLink="/gestao/runs">Cancelar</a>
-            </div>
+            <app-acoes-passo
+              [rotulo]="correcaoDe() ? 'Registrar correção' : 'Registrar run'"
+              [carregando]="enviando()"
+              (avancar)="enviar()"
+            />
           </div>
         </mat-step>
       </mat-stepper>

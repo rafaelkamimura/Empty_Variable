@@ -1,6 +1,5 @@
 @for (p of participantes(); track $index; let i = $index) {
-  <fieldset class="linha" [attr.data-participante]="i">
-    <legend>Participante {{ i + 1 }}</legend>
+  <ui-grupo-campos [legenda]="'Participante ' + (i + 1)" larguraCampo="p" [attr.data-participante]="i">
     <ui-campo rotulo="Personagem">
       <select uiCampo (change)="alterar.emit({ i, parte: { personagemId: valor($event) || null } })">
         <option value="" [selected]="p.personagemId === null">Escolha</option>
@@ -46,6 +45,7 @@
     </ui-campo>
     <button
       uiBotao
+      slot="acoes"
       variante="fantasma"
       tamanho="p"
       (click)="remover.emit(i)"
@@ -53,6 +53,6 @@
     >
       Remover
     </button>
-  </fieldset>
+  </ui-grupo-campos>
 }
 <button uiBotao (click)="adicionar.emit()">Adicionar participante</button>

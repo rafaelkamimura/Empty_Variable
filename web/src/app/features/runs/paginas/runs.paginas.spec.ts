@@ -20,6 +20,11 @@ import { RunDetalhePage } from "./run-detalhe.page";
 import { RunsPage } from "./runs.page";
 
 const esperar = () => new Promise((r) => setTimeout(r));
+const passoAtual = (raiz: ParentNode) =>
+  raiz
+    .querySelector("[role=tab][aria-selected=true], .mat-step-header[aria-selected=true]")
+    ?.textContent?.trim()
+    .replace(/^\d+\s*/, "");
 const botao = (raiz: ParentNode, texto: string) =>
   Array.from(raiz.querySelectorAll<HTMLButtonElement>("button")).find(
     (b) => b.textContent?.trim() === texto,
@@ -404,15 +409,19 @@ describe("AssistenteRunPage", () => {
     expect(el.querySelector("h1")?.textContent).toContain("Corrigir run");
     const instancia = Array.from(el.querySelectorAll<HTMLSelectElement>("app-passo-dados select"))[0]!;
     expect(instancia.disabled).toBeTrue();
-    const proximo = el.querySelector<HTMLButtonElement>("app-passo-dados ~ .acoes button")!;
-    expect(proximo.disabled).toBeTrue();
+    const proximo = botao(el.querySelector("app-acoes-passo")!, "Próximo");
+    proximo.click();
+    await esperar();
+    expect(passoAtual(el)).toBe("Dados da run");
     expect(el.textContent).toContain("Informe o motivo da correção.");
 
     const motivo = Array.from(el.querySelectorAll<HTMLInputElement>("app-passo-dados input")).at(-1)!;
     motivo.value = "Rank errado";
     motivo.dispatchEvent(new Event("input"));
     await esperar();
-    expect(proximo.disabled).toBeFalse();
+    proximo.click();
+    await esperar();
+    expect(passoAtual(el)).toBe("Participantes");
 
     botao(el, "Registrar correção").click();
     const req = http.expectOne("/api/runs/run-1/corrigir");

@@ -1,13 +1,12 @@
-<p class="dica">
+<ui-aviso tom="info">
   Itens emprestados por outro jogador. A categoria sugere o percentual; informe um valor só para mudá-lo. Os
   credores somados recebem no máximo {{ teto() }} dos pontos.
-</p>
+</ui-aviso>
 @for (p of participantes(); track $index; let i = $index) {
   <ui-cartao>
     <h2>{{ nomePersonagem()(p) }}</h2>
     @for (e of p.emprestimos; track $index; let j = $index) {
-      <fieldset class="linha">
-        <legend>Empréstimo {{ j + 1 }}</legend>
+      <ui-grupo-campos [legenda]="'Empréstimo ' + (j + 1)" larguraCampo="p">
         <ui-campo rotulo="Emprestado por">
           <select
             uiCampo
@@ -60,6 +59,7 @@
         </ui-campo>
         <button
           uiBotao
+          slot="acoes"
           variante="fantasma"
           tamanho="p"
           (click)="remover.emit({ i, j })"
@@ -67,7 +67,7 @@
         >
           Remover
         </button>
-      </fieldset>
+      </ui-grupo-campos>
     }
     <button uiBotao tamanho="p" (click)="adicionar.emit(i)">Adicionar empréstimo</button>
   </ui-cartao>

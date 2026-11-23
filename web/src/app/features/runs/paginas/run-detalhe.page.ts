@@ -11,6 +11,7 @@ import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estado/estado.component";
 import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
+import { VazioComponent } from "../../../shared/ui/vazio/vazio.component";
 import { TabelaDirective } from "../../../shared/ui/tabela/tabela.directive";
 import { CartaoParticipacaoComponent } from "../componentes/cartao-participacao.component";
 import { DropsRunComponent } from "../componentes/drops-run.component";
@@ -36,6 +37,7 @@ const DATA_RUN = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" });
     EstadoProntoDirective,
     PaginaComponent,
     TabelaDirective,
+    VazioComponent,
     CartaoParticipacaoComponent,
     DropsRunComponent,
   ],
@@ -61,10 +63,6 @@ const DATA_RUN = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" });
       color: var(--texto);
     }
     .linha-resumo {
-      color: var(--texto-suave);
-    }
-    .dica {
-      font-size: var(--fs-s);
       color: var(--texto-suave);
     }
     .acoes {

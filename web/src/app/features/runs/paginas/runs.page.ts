@@ -5,6 +5,7 @@ import { Confirmacao } from "../../../core/confirmacao";
 import { mensagemDeErro } from "../../../core/modelos";
 import type { Instancia } from "../../../shared/dominio/instancias";
 import { type Carregavel, carregando, comErro, pronto } from "../../../shared/utils/carregavel";
+import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estado/estado.component";
@@ -24,6 +25,7 @@ const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as c
   selector: "app-runs-page",
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AvisoComponent,
     RouterLink,
     BotaoComponent,
     CampoComponent,
@@ -41,10 +43,10 @@ const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as c
       @if (rascunhos().length > 0) {
         <section class="secao" data-testid="runs-rascunhos" aria-labelledby="titulo-rascunhos">
           <h2 id="titulo-rascunhos">Rascunhos do nag4eyes</h2>
-          <p class="dica">
+          <ui-aviso tom="info">
             Grupos encerrados no Discord. Revise para registrar a run com os participantes já preenchidos, ou
             descarte se o grupo não deve pontuar.
-          </p>
+          </ui-aviso>
           <app-tabela-rascunhos [rascunhos]="rascunhos()" (descartar)="descartar($event)" />
         </section>
       }
@@ -99,11 +101,6 @@ const STATUS_FILTRO = ["CONCLUIDA", "FALHA_CHEFE", "ABORTADA", "ESTORNADA"] as c
       font-size: var(--fs-l);
       font-weight: 600;
       color: var(--texto-forte);
-    }
-    .dica {
-      margin: 0;
-      font-size: var(--fs-s);
-      color: var(--texto-suave);
     }
     .filtros {
       display: flex;

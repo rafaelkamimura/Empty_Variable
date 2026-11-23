@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from "@angular/core
 import type { Classe } from "../../../shared/dominio/cadastros";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
+import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-campos.component";
 import { type JogadorCadastro, ROTULO_FRACAO, type RascunhoParticipante } from "../data/runs.modelos";
 import { valorDoEvento } from "../../../shared/utils/evento";
 
@@ -11,33 +12,15 @@ const FRACOES = [100, 50, 0] as const;
 @Component({
   selector: "app-passo-participantes",
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BotaoComponent, CampoComponent, CampoControleDirective],
+  imports: [BotaoComponent, CampoComponent, CampoControleDirective, GrupoCamposComponent],
   templateUrl: "./passo-participantes.component.html",
   styles: `
     :host {
       display: grid;
       gap: var(--esp-3);
-      justify-items: start;
+      justify-items: stretch;
     }
-    .linha {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
-      align-items: end;
-      gap: var(--esp-2) var(--esp-3);
-      width: 100%;
-      box-sizing: border-box;
-      margin: 0;
-      padding: var(--esp-3);
-      border: 1px solid var(--borda);
-      border-radius: var(--raio-m);
-    }
-    legend {
-      padding: 0 var(--esp-1);
-      font-size: var(--fs-s);
-      font-weight: 600;
-      color: var(--texto-suave);
-    }
-    .linha button {
+    :host > button {
       justify-self: start;
     }
   `,
