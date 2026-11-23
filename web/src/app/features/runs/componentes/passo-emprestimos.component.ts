@@ -16,7 +16,8 @@ import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo
 import { CartaoComponent } from "../../../shared/ui/cartao/cartao.component";
 import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-campos.component";
 import { campoRun } from "../data/pendencias-run";
-import type { JogadorCadastro, RascunhoEmprestimo, RascunhoParticipante } from "../data/runs.modelos";
+import type { VistaEmprestimos } from "../data/assistente-run.modelos";
+import type { RascunhoEmprestimo } from "../data/runs.modelos";
 import { campoQueSaiu, focarAposRemover, focarDepois, primeiroControle } from "./foco-linhas";
 import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 
@@ -55,12 +56,9 @@ import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
   `,
 })
 export class PassoEmprestimosComponent {
-  readonly participantes = input.required<readonly RascunhoParticipante[]>();
+  /** Cada participante com o nome pronto, os credores possíveis e os empréstimos. */
+  readonly participantes = input.required<readonly VistaEmprestimos[]>();
   readonly itens = input.required<readonly ItemCatalogo[]>();
-  /** "Nome (Jogador)" do participante. */
-  readonly nomePersonagem = input.required<(p: RascunhoParticipante) => string>();
-  /** Quem pode emprestar ao participante: todos menos o dono do personagem (C3). */
-  readonly credoresPara = input.required<(p: RascunhoParticipante) => readonly JogadorCadastro[]>();
   /** Percentual sugerido por categoria ("25%"). */
   readonly sugestoes = input.required<Readonly<Record<CategoriaEmprestimo, string>>>();
   /** Teto dos credores somados ("50%"). */

@@ -37,12 +37,11 @@ import { PassoParticipantesComponent } from "../componentes/passo-participantes.
 import { PendenciasPassoComponent } from "../componentes/pendencias-passo.component";
 import { PreviaRunComponent } from "../componentes/previa-run.component";
 import {
-  credoresDe,
   destinoDoRegistro,
   instanciaInicial,
-  nomeDoParticipante,
   sugestoesPorCategoria,
   textoTeto,
+  vistasEmprestimos,
 } from "../data/assistente-run.modelos";
 import { rascunhoDeRun } from "../data/detalhe-run.modelos";
 import * as edicao from "../data/edicao-run";
@@ -57,7 +56,6 @@ import {
   type JogadorCadastro,
   novoRascunho,
   ROTULO_STATUS,
-  type RascunhoParticipante,
   type RascunhoRun,
 } from "../data/runs.modelos";
 
@@ -179,12 +177,10 @@ export class AssistenteRunPage implements OnInit {
     return `${r.data} · ${instancia} · ${encontro} · ${ROTULO_STATUS[r.status]} · parâmetros v${this.config()?.versao ?? "?"}`;
   });
 
-  /** "Nome (Jogador)" do participante, para o passo dos empréstimos. */
-  protected readonly nomePersonagem = (p: RascunhoParticipante): string =>
-    nomeDoParticipante(this.jogadores(), p);
-  /** O credor não pode ser o próprio jogador do personagem (C3). */
-  protected readonly credoresPara = (p: RascunhoParticipante): JogadorCadastro[] =>
-    credoresDe(this.jogadores(), p);
+  /** Participantes como o passo dos empréstimos mostra (nome e credores prontos). */
+  protected readonly vistasEmprestimos = computed(() =>
+    vistasEmprestimos(this.jogadores(), this.run().participantes),
+  );
 
   constructor() {
     // Os passos ficam lado a lado só quando o conteúdo é largo (container, não a janela: §6.6).

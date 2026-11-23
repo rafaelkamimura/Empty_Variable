@@ -6,6 +6,7 @@ import {
   nomeDoParticipante,
   sugestoesPorCategoria,
   textoTeto,
+  vistasEmprestimos,
 } from "./assistente-run.modelos";
 import type { RascunhoNag4eyes } from "./nag4eyes.modelos";
 import { cat, torre } from "./runs.modelos.spec";
@@ -50,5 +51,18 @@ describe("Regras do assistente de run", () => {
     });
     expect(destinoDoRegistro(null, "", origem)).toEqual({ tipo: "rascunho", rascunhoId: "r-1" });
     expect(destinoDoRegistro(null, "", null)).toEqual({ tipo: "nova" });
+  });
+});
+
+describe("Vista do passo dos empréstimos", () => {
+  it("monta nome, credores (sem o dono) e empréstimos por participante, como dados", () => {
+    const p = { ...novoParticipante(), personagemId: "p-ana2" };
+    const [v] = vistasEmprestimos(cat.jogadores, [p]);
+    expect(v).toEqual({
+      chave: p.chave,
+      nome: "Ana-Magus (Ana)",
+      credores: cat.jogadores.filter((j) => j.apelido !== "Ana"),
+      emprestimos: [],
+    });
   });
 });

@@ -5,7 +5,7 @@
 </ui-aviso>
 @for (p of participantes(); track p.chave; let i = $index) {
   <ui-cartao [attr.data-participante]="p.chave">
-    <h2>{{ nomePersonagem()(p) }}</h2>
+    <h2>{{ p.nome }}</h2>
     @for (e of p.emprestimos; track e.chave; let j = $index) {
       <ui-grupo-campos [legenda]="'Empréstimo ' + (j + 1)" larguraCampo="p" data-linha>
         <ui-campo
@@ -18,7 +18,7 @@
             (change)="alterar.emit({ i, j, parte: { credorJogadorId: valor($event) || null } })"
           >
             <option value="" [selected]="e.credorJogadorId === null">Escolha</option>
-            @for (jg of credoresPara()(p); track jg.id) {
+            @for (jg of p.credores; track jg.id) {
               <option [value]="jg.id" [selected]="e.credorJogadorId === jg.id">{{ jg.apelido }}</option>
             }
           </select>
@@ -78,7 +78,7 @@
           tamanho="p"
           data-acao="remover"
           (click)="aoRemover(p.chave, i, j)"
-          [attr.aria-label]="'Remover empréstimo ' + (j + 1) + ' de ' + nomePersonagem()(p)"
+          [attr.aria-label]="'Remover empréstimo ' + (j + 1) + ' de ' + p.nome"
         >
           Remover
         </button>

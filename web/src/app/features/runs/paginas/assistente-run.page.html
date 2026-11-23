@@ -92,10 +92,8 @@
             <app-passo-emprestimos
               [erros]="validacao.erros()"
               (tocou)="validacao.tocar($event)"
-              [participantes]="r.participantes"
+              [participantes]="vistasEmprestimos()"
               [itens]="itensAtivos()"
-              [nomePersonagem]="nomePersonagem"
-              [credoresPara]="credoresPara"
               [sugestoes]="sugestoes()"
               [teto]="teto()"
               (alterar)="editar(edicao.comEmprestimo, $event.i, $event.j, $event.parte)"

@@ -4,7 +4,7 @@ import type { VersaoParametros } from "../../../shared/dominio/cadastros";
 import type { Instancia } from "../../../shared/dominio/instancias";
 import type { RascunhoNag4eyes } from "./nag4eyes.modelos";
 import type { DestinoRegistro } from "./runs.api";
-import type { JogadorCadastro, RascunhoParticipante } from "./runs.modelos";
+import type { JogadorCadastro, RascunhoEmprestimo, RascunhoParticipante } from "./runs.modelos";
 
 const pct = (bp: number | undefined): string => (bp === undefined ? "" : `${bp / 100}%`);
 
@@ -61,4 +61,26 @@ export function destinoDoRegistro(
   if (correcaoDe !== null) return { tipo: "correcao", runId: correcaoDe, motivo: motivo.trim() };
   if (origem !== null) return { tipo: "rascunho", rascunhoId: origem.id };
   return { tipo: "nova" };
+}
+
+/** Participante como o passo dos empréstimos mostra: nome pronto e quem pode emprestar a ele. */
+export interface VistaEmprestimos {
+  readonly chave: string;
+  /** "Nome (Jogador)". */
+  readonly nome: string;
+  /** Todos os jogadores menos o dono do personagem (C3). */
+  readonly credores: readonly JogadorCadastro[];
+  readonly emprestimos: readonly RascunhoEmprestimo[];
+}
+
+export function vistasEmprestimos(
+  jogadores: readonly JogadorCadastro[],
+  participantes: readonly RascunhoParticipante[],
+): VistaEmprestimos[] {
+  return participantes.map((p) => ({
+    chave: p.chave,
+    nome: nomeDoParticipante(jogadores, p),
+    credores: credoresDe(jogadores, p),
+    emprestimos: p.emprestimos,
+  }));
 }
