@@ -6,6 +6,7 @@ import { ROTAS_CARTEIRA } from "./features/carteira/carteira.routes";
 import { ROTAS_FARM } from "./features/farm/farm.routes";
 import { ROTAS_LOJA } from "./features/loja/loja.routes";
 import { ROTAS_NEBULA } from "./features/nebula/nebula.routes";
+import { ROTAS_GRUPOS } from "./features/grupos/grupos.routes";
 import { ROTAS_RUNS } from "./features/runs/runs.routes";
 import { ROTAS_VINCULO } from "./features/vinculo/vinculo.routes";
 
@@ -51,17 +52,7 @@ const rotasCompletas: Routes = [
     title: "Gestão · Empty Variable",
     loadComponent: () => import("./paginas/gestao-inicio.component").then((m) => m.GestaoInicioComponent),
   },
-  {
-    path: "instancias-programadas",
-    canActivate: [autenticadoGuard],
-    loadComponent: () =>
-      import("./paginas/instancias-programadas.component").then((m) => m.InstanciasProgramadasComponent),
-  },
-  {
-    path: "gestao/grupos",
-    canActivate: [gestorGuard],
-    loadComponent: () => import("./paginas/gestao-grupos.component").then((m) => m.GestaoGruposComponent),
-  },
+  ...ROTAS_GRUPOS,
   ...ROTAS_RUNS,
   {
     path: "gestao/saldos",

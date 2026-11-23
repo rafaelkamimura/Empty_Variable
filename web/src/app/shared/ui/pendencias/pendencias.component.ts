@@ -1,20 +1,27 @@
 import { ChangeDetectionStrategy, Component, computed, input } from "@angular/core";
-import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
-import { type Pendencia, textoPendencia } from "../data/pendencias-run";
+import { type Pendencia, textoPendencia } from "../../utils/pendencias";
+import { AvisoComponent } from "../aviso/aviso.component";
 
 /**
- * Resumo do que falta para avançar no passo. É apoio: o erro de cada campo aparece no próprio
- * campo. Fica num `ui-aviso` informativo (`role="status"`), para o leitor de tela anunciar, e recebe
- * o foco quando a pendência não tem campo (ex.: lista sem participante).
+ * Resumo do que falta num passo de formulário (diretrizes §6.4). É apoio: o erro de cada campo
+ * aparece no próprio `ui-campo`. Fica num `ui-aviso` informativo (`role="status"`), para o leitor
+ * de tela anunciar, e recebe o foco quando a pendência não tem campo (ex.: lista vazia); por isso,
+ * dê a ele um `data-pendencias` com o nome do passo (ver `focarPrimeiraPendencia`).
+ *
+ * ```html
+ * <ui-pendencias [pendencias]="pend().participantes" data-pendencias="participantes" />
+ * ```
+ *
+ * @nivel molecula
  */
 @Component({
-  selector: "app-pendencias-passo",
+  selector: "ui-pendencias",
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AvisoComponent],
   host: { tabindex: "-1" },
   template: `
     @if (textos().length > 0) {
-      <ui-aviso tom="info" titulo="O que falta neste passo">
+      <ui-aviso tom="info" [titulo]="titulo()">
         <ul>
           @for (t of textos(); track $index) {
             <li>{{ t }}</li>
@@ -39,7 +46,8 @@ import { type Pendencia, textoPendencia } from "../data/pendencias-run";
     }
   `,
 })
-export class PendenciasPassoComponent {
+export class PendenciasComponent {
   readonly pendencias = input.required<readonly Pendencia[]>();
+  readonly titulo = input("O que falta neste passo");
   protected readonly textos = computed(() => this.pendencias().map(textoPendencia));
 }

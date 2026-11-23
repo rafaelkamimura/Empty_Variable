@@ -53,11 +53,11 @@ import {
     :host(.clicavel) {
       cursor: pointer;
     }
-    :host(.clicavel:disabled) {
+    :host(.clicavel:is(:disabled, [aria-disabled="true"])) {
       cursor: default;
       opacity: 0.6;
     }
-    :host(.clicavel:not(:disabled):hover),
+    :host(.clicavel:not(:disabled, [aria-disabled="true"]):hover),
     :host(.destaque) {
       border-color: var(--borda-forte);
     }

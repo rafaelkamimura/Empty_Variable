@@ -3,7 +3,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   ElementRef,
   inject,
   Injector,
@@ -16,19 +15,21 @@ import { MatStepper, MatStepperModule } from "@angular/material/stepper";
 import { Router } from "@angular/router";
 import { Acao } from "../../../core/acao";
 import { mensagemDeErro } from "../../../core/modelos";
+import type { ComAlteracaoNaoSalva } from "../../../core/sair-sem-salvar.guard";
 import { paraConfigMotor } from "../../../shared/dominio/cadastros";
 import { recebeRun } from "../../../shared/dominio/instancias";
 import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
+import { estreitoAbaixoDe } from "../../../shared/ui/formulario/estreito";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estado/estado.component";
 import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
 import { type Carregavel, carregando, comErro, pronto } from "../../../shared/utils/carregavel";
-import { AcoesPassoComponent } from "../componentes/acoes-passo.component";
+import { AcoesPassoComponent } from "../../../shared/ui/acoes-passo/acoes-passo.component";
 import { PassoDadosComponent } from "../componentes/passo-dados.component";
 import { PassoDropsComponent } from "../componentes/passo-drops.component";
 import { PassoEmprestimosComponent } from "../componentes/passo-emprestimos.component";
 import { PassoParticipantesComponent } from "../componentes/passo-participantes.component";
-import { PendenciasPassoComponent } from "../componentes/pendencias-passo.component";
+import { PendenciasComponent } from "../../../shared/ui/pendencias/pendencias.component";
 import { PreviaRunComponent } from "../componentes/previa-run.component";
 import {
   destinoDoRegistro,
@@ -43,11 +44,16 @@ import { PASSOS_RUN, type PassoRun, pendencias } from "../data/pendencias-run";
 import { calcularPrevia, montarCorpo } from "../data/previa-run";
 import { RunsApi } from "../data/runs.api";
 import { type Catalogos, novoRascunho, ROTULO_STATUS, type RascunhoRun } from "../data/runs.modelos";
-import type { ComRascunhoNaoSalvo } from "../sair-do-assistente.guard";
-import { focarPrimeiraPendencia, ValidacaoPassos } from "./validacao-passos";
+import { focarPrimeiraPendencia, ValidacaoPassos } from "../../../shared/ui/formulario/validacao-passos";
 
 /** Abaixo desta largura do conteúdo, os passos ficam um embaixo do outro. */
 const LARGURA_PASSOS_LADO_A_LADO = 700;
+const SAIDA = {
+  titulo: "Descartar a run?",
+  descricao: "O que você preencheu ainda não foi registrado e será perdido.",
+  confirmar: "Descartar",
+  perigo: true,
+};
 const SEM_CATALOGOS: Catalogos = { jogadores: [], classes: [], instancias: [], itens: [] };
 
 /**
@@ -72,14 +78,14 @@ const SEM_CATALOGOS: Catalogos = { jogadores: [], classes: [], instancias: [], i
     PassoDropsComponent,
     PassoEmprestimosComponent,
     PassoParticipantesComponent,
-    PendenciasPassoComponent,
+    PendenciasComponent,
     PreviaRunComponent,
   ],
   host: { "(window:beforeunload)": "avisarAntesDeSair($event)" },
   templateUrl: "./assistente-run.page.html",
   styleUrl: "./assistente-run.page.scss",
 })
-export class AssistenteRunPage implements OnInit, ComRascunhoNaoSalvo {
+export class AssistenteRunPage implements OnInit, ComAlteracaoNaoSalva {
   private readonly api = inject(RunsApi);
   private readonly acao = inject(Acao);
   private readonly router = inject(Router);
@@ -96,7 +102,8 @@ export class AssistenteRunPage implements OnInit, ComRascunhoNaoSalvo {
   protected readonly carga = signal<Carregavel<ContextoAssistente>>(carregando());
   protected readonly run = signal<RascunhoRun>(novoRascunho());
   protected readonly motivo = signal("");
-  protected readonly estreito = signal(false);
+  /** Os passos ficam lado a lado só quando o conteúdo é largo. */
+  protected readonly estreito = estreitoAbaixoDe(LARGURA_PASSOS_LADO_A_LADO);
   protected readonly erroEnvio = signal<string | null>(null);
   protected readonly enviando = signal(false);
   /** Erro ao carregar as classes da instância escolhida. */
@@ -142,7 +149,7 @@ export class AssistenteRunPage implements OnInit, ComRascunhoNaoSalvo {
   protected readonly pend = computed(() =>
     pendencias(this.run(), this.catalogos(), this.correcaoDe() === null ? null : this.motivo()),
   );
-  protected readonly validacao = new ValidacaoPassos(this.pend);
+  protected readonly validacao = new ValidacaoPassos(this.pend, PASSOS_RUN);
   protected readonly previa = computed(() => {
     const c = this.config();
     return c === null ? null : calcularPrevia(this.run(), paraConfigMotor(c), this.catalogos());
@@ -169,15 +176,6 @@ export class AssistenteRunPage implements OnInit, ComRascunhoNaoSalvo {
     const inicial = this.inicial();
     return inicial !== null && (JSON.stringify(this.run()) !== inicial || this.motivo().trim() !== "");
   });
-
-  constructor() {
-    // Os passos ficam lado a lado só quando o conteúdo é largo (container, não a janela: §6.6).
-    const observador = new ResizeObserver(([e]) =>
-      this.estreito.set((e?.contentRect.width ?? 0) < LARGURA_PASSOS_LADO_A_LADO),
-    );
-    observador.observe(this.host);
-    inject(DestroyRef).onDestroy(() => observador.disconnect());
-  }
 
   ngOnInit(): void {
     void this.iniciar();
@@ -287,6 +285,8 @@ export class AssistenteRunPage implements OnInit, ComRascunhoNaoSalvo {
       this.enviando.set(false);
     }
   }
+
+  readonly confirmacaoDeSaida = () => SAIDA;
 
   /** Fechar ou recarregar a aba com alteração não registrada: o navegador pergunta. */
   protected avisarAntesDeSair(evento: BeforeUnloadEvent): void {

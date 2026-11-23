@@ -239,8 +239,9 @@ web/src/
     │   └── feedback/       # Acao (snackbar), confirmação
     ├── shared/
     │   ├── ui/             # componentes de apresentação genéricos (§5) — sem domínio
+    │   │   └── formulario/ # comportamento de formulário com Angular: validação em passos, foco em listas
     │   ├── pipes/          # pontos, zeny, datas relativas
-    │   └── utils/          # funções puras sem Angular
+    │   └── utils/          # funções puras sem Angular (ex.: Carregavel, pendencias, evento)
     ├── layout/             # casca: app-shell, menu lateral, topo, troca de painel
     └── features/           # um diretório por domínio
         ├── loja/
@@ -355,7 +356,7 @@ O projeto usa o vocabulário do Atomic Design para decidir **o que um componente
 
 O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no código atual.
 
-**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Na etapa 4 entraram `ui-marca` e o pipe `pontos` (`shared/pipes/pontos.pipe.ts`). Com a loja: `ui-badge`, `ui-campo` (com a diretiva `uiCampo` no controle; `rotuloOculto` entrou com o farm, só para célula de tabela) e `ui-confirmacao` (aberto pelo serviço `Confirmacao`, em `core/confirmacao.ts`). Com as runs: `ui-grupo-campos`. `app-icone`, `app-imagem-item` e `visual.ts` já estão em `shared/dominio/`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
+**Já existem** (etapa 3, com exemplo em `/dev/catalogo`): `ui-pagina`, `button[uiBotao]`, `ui-cartao`, `ui-resumo`, `ui-chips-filtro`, `ui-estado`, `ui-vazio`, `ui-skeleton`, `ui-aviso`, `ui-painel-lateral`, `ui-como-funciona` e `table[uiTabela]`, além do tipo `Carregavel<T>` em `shared/utils/carregavel.ts`. Na etapa 4 entraram `ui-marca` e o pipe `pontos` (`shared/pipes/pontos.pipe.ts`). Com a loja: `ui-badge`, `ui-campo` (com a diretiva `uiCampo` no controle; `rotuloOculto` entrou com o farm, só para célula de tabela) e `ui-confirmacao` (aberto pelo serviço `Confirmacao`, em `core/confirmacao.ts`; a guarda de saída com alteração não salva, `core/sair-sem-salvar.guard.ts`, usa o mesmo serviço). Com as runs: `ui-grupo-campos`. Com os grupos: `ui-acoes-passo` e `ui-pendencias` (vieram do assistente de run), e a validação em passos, o foco em listas e a largura do stepper em `shared/ui/formulario/` (`validacao-passos.ts`, `foco.ts` e `estreito.ts`: usam signals e `afterNextRender`, por isso não ficam em `shared/utils`). Os tipos puros das pendências (`Pendencia`, `textoPendencia`) ficam em `shared/utils/pendencias.ts`, para as regras em `features/x/data` os usarem. `app-icone`, `app-imagem-item` e `visual.ts` já estão em `shared/dominio/`. Os demais da tabela nascem quando a primeira tela precisar deles (§1.1).
 
 | Componente                | Nível | Responsabilidade                                                                  | Substitui hoje                                       |
 | ------------------------- | --------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
@@ -370,6 +371,8 @@ O catálogo abaixo é o ponto de partida. Cada linha indica o que substitui no c
 | `ui-skeleton`             | Átomo | Placeholder animado de linha, cartão ou tabela                                    | "Carregando…"                                        |
 | `ui-aviso`                | Molécula | Mensagem inline com tom `info`, `sucesso`, `alerta` ou `erro`, ícone e `role` correto | `.dica` e `<p role="alert">`                     |
 | `ui-campo`                | Molécula | Rótulo, controle projetado, dica e erro, ligados por `aria-describedby`           | `.campo`, `.campo-largo`                             |
+| `ui-acoes-passo`          | Molécula | Rodapé de um passo do `mat-stepper`: Voltar, principal sempre clicável e Cancelar opcional                     | Rodapés repetidos dos assistentes |
+| `ui-pendencias`           | Molécula | Resumo do que falta num passo, anunciado ao leitor de tela; recebe o foco quando a pendência não tem campo      | Listas soltas de pendências |
 | `ui-grupo-campos`         | Molécula | Fieldset com legenda: os `ui-campo` de um item (participante, empréstimo, drop) numa grade fluida, com slot de ações | `fieldset.linha` repetido no assistente de run |
 | `ui-painel-lateral`       | Organismo | Formulário de criar e editar à direita, com o foco preso e devolvido ao fechar     | `app-painel-lateral` (de `core/layout.ts`)           |
 | `ui-como-funciona`        | Molécula | Explicação recolhida                                                              | `app-como-funciona` (de `core/layout.ts`)            |
@@ -613,12 +616,12 @@ A migração é incremental, sem reescrita geral. Vale a **regra do escoteiro**:
 **Feito**
 
 - **Etapas 1 a 3:** tokens e mapeamento do Material, lint e catálogo, peças base de `shared/ui` e a casca (`layout/`), com o login.
-- **Features em `features/`:** acesso (login), loja, carteira (com a Minha área), farm, Nebula (com a fila do admin em `/admin/nebula`), vínculo (com a fila de aprovações) e runs (lista, assistente, correção e detalhe).
+- **Features em `features/`:** acesso (login), loja, carteira (com a Minha área), farm, Nebula (com a fila do admin em `/admin/nebula`), vínculo (com a fila de aprovações), runs (lista, assistente, correção e detalhe) e grupos (gestão dos grupos de instância e a agenda do membro em `/instancias-programadas`).
 - **Revisões do TL:** cada feature teve um PR de acertos depois da revisão. As pendências que dependem da API estão em 10.3.
 
 **Falta**
 
-- **19 arquivos em `paginas/`**, com cerca de 7.200 linhas. Os maiores: `simulador.component.ts` (1.390), `simulador-hub.component.ts` (682), `gestao-grupos.component.ts` (673) e `admin-estoque.component.ts` (621).
+- **17 arquivos em `paginas/`**, com cerca de 6.200 linhas. Os maiores: `simulador.component.ts` (1.390), `simulador-hub.component.ts` (682) e `admin-estoque.component.ts` (621).
 - **Domínio ainda em `core/`:** `estoque.ts`, `link-simulador.ts` e `painel.ts`. Ao fim da migração, `core/` fica só com singletons (autenticação, guardas, `Acao`, `Confirmacao`, saldo e telas liberadas).
 - **Estilos legados:** `_legado.scss` (cerca de 300 linhas, 29 classes globais), os apelidos dos tokens antigos e o tema `azure-blue.css` no `angular.json`.
 - **Lint:** 63 avisos, todos no código antigo (`paginas/` e `core/`).
@@ -636,9 +639,9 @@ A ordem é pelo uso: primeiro as telas **liberadas em produção** (`core/telas-
 
 4. **Features restantes, uma por vez:**
    - a. **Vínculo e perfil** *(feita: `features/vinculo`, com a fila em `/vinculo/aprovacoes`; a Minha área, `/me`, foi para `features/carteira`, porque mostra o saldo e o extrato. `build.ts`, `grupos-classes.ts` e `icones-classes.ts` foram para `shared/dominio`, e os tipos da build saíram de `core/modelos.ts` para `shared/dominio/build.ts`)*.
-   - b. **Runs e grupos** *(liberado)*: em dois PRs.
+   - b. **Runs e grupos** *(feita)*: em dois PRs.
      - **Runs** *(feita: `features/runs`, com `gestao/runs` (lista, nova, corrigir e detalhe). O assistente foi quebrado em um componente por passo, e o rascunho é editado sem mutação (`data/edicao-run.ts`). `runs.ts` foi dividido em `data/` (`runs.modelos.ts`, `previa-run.ts`, `detalhe-run.modelos.ts` e `nag4eyes.modelos.ts`), e `instancias.ts` e `cadastros.ts` foram para `shared/dominio`. O tipo e os rótulos dos lançamentos saíram da carteira para `shared/dominio/lancamento.ts`, porque o detalhe da run também os mostra)*.
-     - **Grupos:** `gestao/grupos` e `instancias-programadas`.
+     - **Grupos** *(feita: `features/grupos`, com `gestao/grupos` (lista, assistente de grupo novo e escala, com `?grupo=<id>`) e `instancias-programadas`. As rotas e as telas liberadas não mudaram. O assistente usa o mesmo padrão do de run, que foi para `shared`: `ui-acoes-passo`, `ui-pendencias` e `shared/ui/formulario`)*.
    - c. **Estoque e itens** *(o estoque é liberado)*: `admin/estoque` e `admin/itens`, com `estoque.ts`.
    - d. **Simulador** *(liberado)*: `simulador` (hub) e `simulador/estimativa`, com `link-simulador.ts`. Pelo tamanho, deve sair em 2 ou 3 PRs, como o farm.
    - e. **Gestão** *(não liberada)*: início da gestão, `gestao/instancias` (lista e detalhe), saldos, jogadores, classes, parâmetros e receitas da Nebula, com `painel.ts`.

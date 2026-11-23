@@ -129,6 +129,22 @@ export const ENTRADAS_CATALOGO: readonly EntradaCatalogo[] = [
     carregar: () => import("../../shared/ui/campo/campo.catalogo").then((m) => m.CampoCatalogoComponent),
   },
   {
+    id: "acoes-passo",
+    nome: "ui-acoes-passo",
+    nivel: "molecula",
+    descricao: "Rodapé de um passo do mat-stepper: Voltar, o botão principal sempre clicável e Cancelar.",
+    carregar: () =>
+      import("../../shared/ui/acoes-passo/acoes-passo.catalogo").then((m) => m.AcoesPassoCatalogoComponent),
+  },
+  {
+    id: "pendencias",
+    nome: "ui-pendencias",
+    nivel: "molecula",
+    descricao: "Resumo do que falta num passo de formulário, anunciado ao leitor de tela.",
+    carregar: () =>
+      import("../../shared/ui/pendencias/pendencias.catalogo").then((m) => m.PendenciasCatalogoComponent),
+  },
+  {
     id: "grupo-campos",
     nome: "ui-grupo-campos",
     nivel: "molecula",

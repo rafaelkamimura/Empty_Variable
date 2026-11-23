@@ -294,7 +294,14 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   await page
     .getByRole("combobox", { name: "Instância", exact: true })
     .selectOption({ label: "Torre da Constelação" });
-  const continuarGrupo = page.getByRole("button", { name: "Continuar" });
+  // Assistente em passos (mat-stepper): espera a transição antes de procurar o "Próximo" do passo.
+  const continuarGrupo = {
+    click: async () => {
+      await page.waitForTimeout(400);
+      await page.getByRole("button", { name: "Próximo" }).click();
+      await page.waitForTimeout(400);
+    },
+  };
   const adicionarVaga = page.getByRole("button", { name: "Adicionar vaga" });
   await continuarGrupo.click();
   await adicionarVaga.click();
@@ -318,7 +325,7 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   await page.getByLabel("Data e hora (São Paulo)").fill(amanha);
   await continuarGrupo.click();
   await expect(page.getByRole("heading", { name: "Revisão" })).toBeVisible();
-  await expect(page.getByText("10 de 12 vagas")).toBeVisible();
+  await expect(page.getByText("10 de 12 vagas", { exact: true })).toBeVisible();
   const novaRun = page.waitForResponse(
     (resposta) => resposta.request().method() === "POST" && resposta.url().endsWith("/api/gestao/grupos"),
   );
@@ -327,7 +334,9 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   expect(respostaGrupo.status()).toBe(201);
   const grupo = (await respostaGrupo.json()) as { id: string; vagas: { personagemId: string | null }[] };
   const fecharGrupo = page.getByRole("button", { name: "Fechar grupo" });
-  await expect(fecharGrupo).toBeDisabled();
+  // Sem a obrigatória preenchida, "Fechar grupo" não fecha: avisa quantas faltam (o botão não fica desabilitado).
+  await fecharGrupo.click();
+  await expect(page.getByText("Preencha 1 vaga(s) obrigatória(s) para fechar o grupo.")).toBeVisible();
   const fechamentoVazio = await page.request.patch("/api/gestao/grupos/" + grupo.id, {
     headers,
     data: {
@@ -355,11 +364,11 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   });
   expect(escalaAntiga.status()).toBe(409);
   await page.goto("/gestao/grupos");
-  await page.getByRole("button", { name: /Torre da Constela.*Aberto/ }).click();
+  await page.getByRole("link", { name: /Torre da Constela.*Aberto/ }).click();
   await fecharGrupo.click();
-  await expect(page.getByRole("button", { name: /Torre da Constela.*Fechado/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Torre da Constela.*Fechado/ })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("button", { name: /Torre da Constela.*Fechado/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Torre da Constela.*Fechado/ })).toBeVisible();
   await login(membroId);
   await page.goto("/loja");
   await page.getByRole("button", { name: "Menu do perfil" }).click();

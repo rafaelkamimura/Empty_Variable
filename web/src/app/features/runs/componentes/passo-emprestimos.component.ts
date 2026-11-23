@@ -18,7 +18,12 @@ import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-camp
 import { campoRun } from "../data/pendencias-run";
 import type { VistaEmprestimos } from "../data/assistente-run.modelos";
 import type { RascunhoEmprestimo } from "../data/runs.modelos";
-import { campoQueSaiu, focarAposRemover, focarDepois, primeiroControle } from "./foco-linhas";
+import {
+  campoQueSaiu,
+  focarAposRemover,
+  focarDepois,
+  primeiroControle,
+} from "../../../shared/ui/formulario/foco";
 import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 
 /**

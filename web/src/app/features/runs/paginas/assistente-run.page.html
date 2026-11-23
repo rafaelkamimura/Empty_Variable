@@ -63,8 +63,8 @@
                 </button>
               </ui-aviso>
             }
-            <app-pendencias-passo [pendencias]="p.dados" data-pendencias="dados" />
-            <app-acoes-passo [voltar]="false" (avancar)="avancar('dados')" />
+            <ui-pendencias [pendencias]="p.dados" data-pendencias="dados" />
+            <ui-acoes-passo [voltar]="false" cancelarPara="/gestao/runs" (avancar)="avancar('dados')" />
           </div>
         </mat-step>
 
@@ -81,8 +81,8 @@
               (adicionar)="editar(edicao.comNovoParticipante)"
               (remover)="editar(edicao.semParticipante, $event)"
             />
-            <app-pendencias-passo [pendencias]="p.participantes" data-pendencias="participantes" />
-            <app-acoes-passo (avancar)="avancar('participantes')" />
+            <ui-pendencias [pendencias]="p.participantes" data-pendencias="participantes" />
+            <ui-acoes-passo cancelarPara="/gestao/runs" (avancar)="avancar('participantes')" />
           </div>
         </mat-step>
 
@@ -99,8 +99,8 @@
               (adicionar)="editar(edicao.comNovoEmprestimo, $event)"
               (remover)="editar(edicao.semEmprestimo, $event.i, $event.j)"
             />
-            <app-pendencias-passo [pendencias]="p.emprestimos" data-pendencias="emprestimos" />
-            <app-acoes-passo (avancar)="avancar('emprestimos')" />
+            <ui-pendencias [pendencias]="p.emprestimos" data-pendencias="emprestimos" />
+            <ui-acoes-passo cancelarPara="/gestao/runs" (avancar)="avancar('emprestimos')" />
           </div>
         </mat-step>
 
@@ -115,8 +115,8 @@
               (adicionar)="editar(edicao.comNovoDrop)"
               (remover)="editar(edicao.semDrop, $event)"
             />
-            <app-pendencias-passo [pendencias]="p.drops" data-pendencias="drops" />
-            <app-acoes-passo (avancar)="avancar('drops')" />
+            <ui-pendencias [pendencias]="p.drops" data-pendencias="drops" />
+            <ui-acoes-passo cancelarPara="/gestao/runs" (avancar)="avancar('drops')" />
           </div>
         </mat-step>
 
@@ -130,7 +130,8 @@
               @if (erroEnvio(); as e) {
                 <ui-aviso tom="erro">{{ e }}</ui-aviso>
               }
-              <app-acoes-passo
+              <ui-acoes-passo
+                cancelarPara="/gestao/runs"
                 [rotulo]="correcaoDe() ? 'Registrar correção' : 'Registrar run'"
                 [carregando]="enviando()"
                 (avancar)="enviar()"

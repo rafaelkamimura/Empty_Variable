@@ -1,7 +1,7 @@
 // Rotas das runs (diretrizes §3.1). As antigas /admin/runs/... redirecionam para cá (app.routes.ts).
 import type { Routes } from "@angular/router";
 import { gestorGuard } from "../../core/guardas";
-import { sairDoAssistenteGuard } from "./sair-do-assistente.guard";
+import { sairSemSalvarGuard } from "../../core/sair-sem-salvar.guard";
 
 const assistente = () => import("./paginas/assistente-run.page").then((m) => m.AssistenteRunPage);
 
@@ -17,14 +17,14 @@ export const ROTAS_RUNS: Routes = [
     canActivate: [gestorGuard],
     title: "Nova run · Empty Variable",
     loadComponent: assistente,
-    canDeactivate: [sairDoAssistenteGuard],
+    canDeactivate: [sairSemSalvarGuard],
   },
   {
     path: "gestao/runs/:id/corrigir",
     canActivate: [gestorGuard],
     title: "Corrigir run · Empty Variable",
     loadComponent: assistente,
-    canDeactivate: [sairDoAssistenteGuard],
+    canDeactivate: [sairSemSalvarGuard],
   },
   {
     path: "gestao/runs/:id",

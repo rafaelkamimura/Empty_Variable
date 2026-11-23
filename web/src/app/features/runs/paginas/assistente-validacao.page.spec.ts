@@ -18,7 +18,7 @@ async function noPassoParticipantes(): Promise<{ f: ComponentFixture<AssistenteR
   await esperar();
   http.expectOne((r) => r.url === "/api/classes").flush(classes);
   await esperar();
-  botao(el.querySelector("app-acoes-passo")!, "Próximo").click();
+  botao(el.querySelector("ui-acoes-passo")!, "Próximo").click();
   await esperar();
   expect(passoAtual(el)).toBe("Participantes");
   return { f, el };
@@ -26,7 +26,7 @@ async function noPassoParticipantes(): Promise<{ f: ComponentFixture<AssistenteR
 
 const participantes = (el: HTMLElement) => el.querySelector<HTMLElement>("app-passo-participantes")!;
 const proximoDe = (passo: HTMLElement) =>
-  botao(passo.closest(".passo")!.querySelector("app-acoes-passo")!, "Próximo");
+  botao(passo.closest(".passo")!.querySelector("ui-acoes-passo")!, "Próximo");
 const selectPersonagem = (el: HTMLElement, linha = 0) =>
   participantes(el).querySelectorAll<HTMLSelectElement>("[data-linha]")[linha]!.querySelector("select")!;
 

@@ -1,14 +1,16 @@
 import { TestBed } from "@angular/core/testing";
 import type { ActivatedRouteSnapshot, RouterStateSnapshot } from "@angular/router";
-import { Confirmacao } from "../../core/confirmacao";
-import { sairDoAssistenteGuard } from "./sair-do-assistente.guard";
+import { Confirmacao } from "./confirmacao";
+import { sairSemSalvarGuard } from "./sair-sem-salvar.guard";
+
+const pergunta = { titulo: "Descartar?", descricao: "Será perdido.", confirmar: "Descartar", perigo: true };
 
 function sair(alterado: boolean, confirma: boolean) {
   const perguntar = jasmine.createSpy("perguntar").and.resolveTo(confirma);
   TestBed.configureTestingModule({ providers: [{ provide: Confirmacao, useValue: { perguntar } }] });
   const resultado = TestBed.runInInjectionContext(() =>
-    sairDoAssistenteGuard(
-      { alterado: () => alterado },
+    sairSemSalvarGuard(
+      { alterado: () => alterado, confirmacaoDeSaida: () => pergunta },
       {} as ActivatedRouteSnapshot,
       {} as RouterStateSnapshot,
       {} as RouterStateSnapshot,
@@ -17,18 +19,16 @@ function sair(alterado: boolean, confirma: boolean) {
   return { resultado, perguntar };
 }
 
-describe("Guarda de saída do assistente de run", () => {
+describe("Guarda de saída sem salvar", () => {
   it("sem alteração, sai sem perguntar", () => {
     const { resultado, perguntar } = sair(false, false);
     expect(resultado).toBeTrue();
     expect(perguntar).not.toHaveBeenCalled();
   });
 
-  it("com alteração, pergunta se descarta; a resposta decide", async () => {
+  it("com alteração, faz a pergunta da tela; a resposta decide", async () => {
     const { resultado, perguntar } = sair(true, false);
     expect(await resultado).toBeFalse();
-    expect(perguntar).toHaveBeenCalledWith(
-      jasmine.objectContaining({ confirmar: "Descartar", perigo: true }),
-    );
+    expect(perguntar).toHaveBeenCalledWith(pergunta);
   });
 });
