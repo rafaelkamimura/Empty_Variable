@@ -1,26 +1,28 @@
 <ui-pagina [titulo]="correcaoDe() ? 'Corrigir run' : 'Nova run'" [subtitulo]="subtitulo()">
   @if (origemRascunho(); as o) {
-  <ui-aviso
-    tom="info"
-    [titulo]="'Rascunho do nag4eyes' + (o.partyId ? ' (grupo ' + o.partyId + ')' : '')"
-    data-testid="runs-origem-rascunho"
-  >
-    Data e participantes vieram do grupo encerrado no Discord. Confira, escolha o resultado e o encontro e
-    informe empréstimos e drops: nada pontua até o registro. @if (o.instancia === null && o.instanciaOrigem) {
-    A instância "{{ o.instanciaOrigem.nome }}" não foi encontrada aqui; escolha-a. } @if
-    (pendentesRascunho().length > 0) {
-    <p>Não entraram automaticamente (inclua à mão, se for o caso):</p>
-    <ul>
-      @for (x of pendentesRascunho(); track $index) {
-      <li>
-        {{ x.personagem }}{{ x.classe ? " · " + x.classe : "" }} {{ x.jogador ? "(" + x.jogador + ")" :
-        "(Discord " + x.discordId + ")" }}:
-        <strong>{{ x.motivo }}</strong>
-      </li>
+    <ui-aviso
+      tom="info"
+      [titulo]="'Rascunho do nag4eyes' + (o.partyId ? ' (grupo ' + o.partyId + ')' : '')"
+      data-testid="runs-origem-rascunho"
+    >
+      Data e participantes vieram do grupo encerrado no Discord. Confira, escolha o resultado e o encontro e
+      informe empréstimos e drops: nada pontua até o registro.
+      @if (o.instancia === null && o.instanciaOrigem) {
+        A instância "{{ o.instanciaOrigem.nome }}" não foi encontrada aqui; escolha-a.
       }
-    </ul>
-    }
-  </ui-aviso>
+      @if (pendentesRascunho().length > 0) {
+        <p>Não entraram automaticamente (inclua à mão, se for o caso):</p>
+        <ul>
+          @for (x of pendentesRascunho(); track $index) {
+            <li>
+              {{ x.personagem }}{{ x.classe ? " · " + x.classe : "" }}
+              {{ x.jogador ? "(" + x.jogador + ")" : "(Discord " + x.discordId + ")" }}:
+              <strong>{{ x.motivo }}</strong>
+            </li>
+          }
+        </ul>
+      }
+    </ui-aviso>
   }
 
   <ui-estado [valor]="carga()" (tentarNovamente)="iniciar()">
@@ -49,14 +51,16 @@
               (motivoChange)="motivo.set($event)"
             />
             @if (erroClasses(); as e) {
-            <ui-aviso
-              tom="erro"
-              titulo="Não deu para carregar as classes desta instância"
-              data-testid="runs-erro-classes"
-            >
-              {{ e }}
-              <button slot="acoes" uiBotao tamanho="p" (click)="recarregarClasses()">Tentar novamente</button>
-            </ui-aviso>
+              <ui-aviso
+                tom="erro"
+                titulo="Não deu para carregar as classes desta instância"
+                data-testid="runs-erro-classes"
+              >
+                {{ e }}
+                <button slot="acoes" uiBotao tamanho="p" (click)="recarregarClasses()">
+                  Tentar novamente
+                </button>
+              </ui-aviso>
             }
             <app-pendencias-passo [pendencias]="p[1]" />
             <div class="acoes">
@@ -133,9 +137,10 @@
         <mat-step label="Revisão">
           <div class="passo">
             @if (previa(); as pv) {
-            <app-previa-run [previa]="pv" [resumo]="resumoRevisao()" />
-            } @if (erroEnvio(); as e) {
-            <ui-aviso tom="erro">{{ e }}</ui-aviso>
+              <app-previa-run [previa]="pv" [resumo]="resumoRevisao()" />
+            }
+            @if (erroEnvio(); as e) {
+              <ui-aviso tom="erro">{{ e }}</ui-aviso>
             }
             <div class="acoes">
               <button uiBotao variante="fantasma" matStepperPrevious>Voltar</button>
