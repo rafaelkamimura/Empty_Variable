@@ -71,11 +71,11 @@ export interface RascunhoDrop {
 
 /** Dados de apoio carregados da API. */
 export interface Catalogos {
-  jogadores: JogadorCadastro[];
+  readonly jogadores: readonly JogadorCadastro[];
   /** Classes com as funções da versão vigente da instância escolhida (D45). */
-  classes: Classe[];
-  instancias: Instancia[];
-  itens: ItemCatalogo[];
+  readonly classes: readonly Classe[];
+  readonly instancias: readonly Instancia[];
+  readonly itens: readonly ItemCatalogo[];
 }
 
 export function hojeIso(agora = new Date()): string {
@@ -177,7 +177,7 @@ export function ajustarAVersaoVigente(
 }
 
 /** Dono (jogador) de cada personagem. */
-export function indicePersonagens(jogadores: JogadorCadastro[]) {
+export function indicePersonagens(jogadores: readonly JogadorCadastro[]) {
   const m = new Map<string, { nome: string; ativo: boolean; jogadorId: string; apelido: string }>();
   for (const j of jogadores) {
     for (const p of j.personagens)

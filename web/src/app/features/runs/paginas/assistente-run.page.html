@@ -1,32 +1,31 @@
 <ui-pagina [titulo]="correcaoDe() ? 'Corrigir run' : 'Nova run'" [subtitulo]="subtitulo()">
-  @if (origemRascunho(); as o) {
-    <ui-aviso
-      tom="info"
-      [titulo]="'Rascunho do nag4eyes' + (o.partyId ? ' (grupo ' + o.partyId + ')' : '')"
-      data-testid="runs-origem-rascunho"
-    >
-      Data e participantes vieram do grupo encerrado no Discord. Confira, escolha o resultado e o encontro e
-      informe empréstimos e drops: nada pontua até o registro.
-      @if (o.instancia === null && o.instanciaOrigem) {
-        A instância "{{ o.instanciaOrigem.nome }}" não foi encontrada aqui; escolha-a.
-      }
-      @if (pendentesRascunho().length > 0) {
-        <p>Não entraram automaticamente (inclua à mão, se for o caso):</p>
-        <ul>
-          @for (x of pendentesRascunho(); track $index) {
-            <li>
-              {{ x.personagem }}{{ x.classe ? " · " + x.classe : "" }}
-              {{ x.jogador ? "(" + x.jogador + ")" : "(Discord " + x.discordId + ")" }}:
-              <strong>{{ x.motivo }}</strong>
-            </li>
-          }
-        </ul>
-      }
-    </ui-aviso>
-  }
-
   <ui-estado [valor]="carga()" (tentarNovamente)="iniciar()">
-    <ng-template uiEstadoPronto [tipo]="carga()">
+    <ng-template uiEstadoPronto [tipo]="carga()" let-ctx>
+      @if (ctx.origem; as o) {
+        <ui-aviso
+          tom="info"
+          [titulo]="'Rascunho do nag4eyes' + (o.partyId ? ' (grupo ' + o.partyId + ')' : '')"
+          data-testid="runs-origem-rascunho"
+        >
+          Data e participantes vieram do grupo encerrado no Discord. Confira, escolha o resultado e o encontro
+          e informe empréstimos e drops: nada pontua até o registro.
+          @if (o.instancia === null && o.instanciaOrigem) {
+            A instância "{{ o.instanciaOrigem.nome }}" não foi encontrada aqui; escolha-a.
+          }
+          @if (pendentesRascunho().length > 0) {
+            <p>Não entraram automaticamente (inclua à mão, se for o caso):</p>
+            <ul>
+              @for (x of pendentesRascunho(); track $index) {
+                <li>
+                  {{ x.personagem }}{{ x.classe ? " · " + x.classe : "" }}
+                  {{ x.jogador ? "(" + x.jogador + ")" : "(Discord " + x.discordId + ")" }}:
+                  <strong>{{ x.motivo }}</strong>
+                </li>
+              }
+            </ul>
+          }
+        </ui-aviso>
+      }
       @let r = run(); @let p = pend();
       <mat-stepper
         linear
@@ -75,7 +74,7 @@
               [erros]="validacao.erros()"
               (tocou)="validacao.tocar($event)"
               [participantes]="r.participantes"
-              [jogadores]="jogadores()"
+              [jogadores]="ctx.jogadores"
               [classes]="classesAtivas()"
               (alterar)="editar(edicao.comParticipante, $event.i, $event.parte)"
               (classe)="escolherClasse($event.i, $event.classeId)"

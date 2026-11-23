@@ -54,6 +54,41 @@ describe("AssistenteRunPage", () => {
     expect(navegar).toHaveBeenCalledWith(["/gestao/runs", "run-9"]);
   });
 
+  it("alteração não registrada: marca a tela como alterada e o beforeunload avisa; depois de registrar, não", async () => {
+    const { http } = configurar();
+    spyOn(TestBed.inject(Router), "navigate").and.resolveTo(true);
+    const f = TestBed.createComponent(AssistenteRunPage);
+    f.componentRef.setInput("rascunho", "r-1");
+    f.autoDetectChanges();
+    const el = f.nativeElement as HTMLElement;
+    catalogos(http);
+    await esperar();
+    http.expectOne("/api/rascunhos-run/r-1").flush(rascunhoNag4eyes);
+    await esperar();
+    http.expectOne((r) => r.url === "/api/classes").flush(classes);
+    await esperar();
+    expect(f.componentInstance.alterado()).toBeFalse();
+
+    const observacao = Array.from(el.querySelectorAll<HTMLInputElement>("app-passo-dados input")).find(
+      (i) => i.maxLength === 500,
+    )!;
+    observacao.value = "Teste";
+    observacao.dispatchEvent(new Event("input"));
+    await esperar();
+    expect(f.componentInstance.alterado()).toBeTrue();
+    // O handler do host (window:beforeunload); disparar o evento de verdade recarregaria o Karma.
+    const evento = new Event("beforeunload", { cancelable: true }) as BeforeUnloadEvent;
+    (f.componentInstance as unknown as { avisarAntesDeSair(e: BeforeUnloadEvent): void }).avisarAntesDeSair(
+      evento,
+    );
+    expect(evento.defaultPrevented).toBeTrue();
+
+    botao(el, "Registrar run").click();
+    http.expectOne("/api/rascunhos-run/r-1/confirmar").flush({ runId: "run-9", avisosReducao: [] });
+    await esperar();
+    expect(f.componentInstance.alterado()).toBeFalse();
+  });
+
   it("trocar de instância: só as classes do pedido mais recente valem", async () => {
     const { http } = configurar();
     const a: Instancia = { ...torreComFuncoes, id: "i-a", codigo: "A", nome: "Instância A" };
