@@ -1,6 +1,6 @@
-import { DatePipe } from "@angular/common";
+import { DatePipe, Location } from "@angular/common";
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from "@angular/core";
-import { RouterLink } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { Acao } from "../../../core/acao";
 import { AuthService } from "../../../core/auth.service";
 import { mensagemDeErro } from "../../../core/modelos";
@@ -17,6 +17,7 @@ import { CartaoParticipacaoComponent } from "../componentes/cartao-participacao.
 import { DropsRunComponent } from "../componentes/drops-run.component";
 import type { DetalheRun, ResultadoDropsRun } from "../data/detalhe-run.modelos";
 import { ROTULO_TIPO_LANCAMENTO } from "../../../shared/dominio/lancamento";
+import { enderecoDaLista } from "../data/filtro-runs";
 import { RunsApi } from "../data/runs.api";
 import { ROTULO_STATUS } from "../data/runs.modelos";
 
@@ -90,6 +91,8 @@ export class RunDetalhePage {
   /** Id da run, vindo da rota. */
   readonly id = input.required<string>();
   protected readonly rotuloStatus = ROTULO_STATUS;
+  /** A lista com os filtros de onde a pessoa veio (estado da navegação), ou a lista sem filtros. */
+  protected readonly voltarLista = inject(Router).parseUrl(enderecoDaLista(inject(Location).getState()));
   protected readonly rotuloTipo = ROTULO_TIPO_LANCAMENTO;
   protected readonly estado = signal<Carregavel<DetalheRun>>(carregando());
   protected readonly lancando = signal(false);

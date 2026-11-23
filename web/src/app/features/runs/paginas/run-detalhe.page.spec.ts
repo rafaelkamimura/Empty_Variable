@@ -1,8 +1,23 @@
+import { Location } from "@angular/common";
 import { TestBed } from "@angular/core/testing";
 import { RunDetalhePage } from "./run-detalhe.page";
 import { botao, configurar, detalhe, esperar } from "./runs-teste.spec";
 
 describe("RunDetalhePage", () => {
+  it("Voltar à lista leva à lista com os filtros de onde a pessoa veio", async () => {
+    const { http } = configurar();
+    spyOn(TestBed.inject(Location), "getState").and.returnValue({ lista: "/gestao/runs?status=ESTORNADA" });
+    const f = TestBed.createComponent(RunDetalhePage);
+    f.componentRef.setInput("id", "run-1");
+    f.autoDetectChanges();
+    http.expectOne("/api/runs/run-1").flush(detalhe());
+    await esperar();
+    const voltar = Array.from((f.nativeElement as HTMLElement).querySelectorAll("a")).find(
+      (a) => a.textContent?.trim() === "Voltar à lista",
+    )!;
+    expect(voltar.getAttribute("href")).toBe("/gestao/runs?status=ESTORNADA");
+  });
+
   it("mostra a run e lança os drops no estoque uma vez", async () => {
     const { http, avisar } = configurar();
     const f = TestBed.createComponent(RunDetalhePage);

@@ -27,7 +27,9 @@ import { ROTULO_STATUS } from "../data/runs.modelos";
         @for (r of runs(); track r.id) {
           <tr [class.estornada]="r.status === 'ESTORNADA'">
             <td>
-              <a [routerLink]="['/gestao/runs', r.id]">{{ r.data | date: "dd/MM/yyyy" : "UTC" }}</a>
+              <a [routerLink]="['/gestao/runs', r.id]" [state]="{ lista: enderecoLista() }">{{
+                r.data | date: "dd/MM/yyyy" : "UTC"
+              }}</a>
             </td>
             <td>
               {{ r.versaoInstancia.instancia.nome }}
@@ -66,6 +68,8 @@ import { ROTULO_STATUS } from "../data/runs.modelos";
   `,
 })
 export class TabelaRunsComponent {
+  /** Endereço da lista com os filtros, levado ao detalhe para o "Voltar à lista". */
+  readonly enderecoLista = input("/gestao/runs");
   readonly runs = input.required<readonly RunResumo[]>();
   protected readonly rotulos = ROTULO_STATUS;
 }

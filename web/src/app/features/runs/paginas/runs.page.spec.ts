@@ -1,4 +1,5 @@
 import { TestBed } from "@angular/core/testing";
+import { Router } from "@angular/router";
 import type { TestRequest } from "@angular/common/http/testing";
 import { RunsPage } from "./runs.page";
 import {
@@ -53,21 +54,47 @@ describe("RunsPage", () => {
     http.expectNone("/api/rascunhos-run/r-1/descartar");
   });
 
-  it("filtrar: só a resposta do pedido mais recente vale", async () => {
+  it("filtrar grava os filtros na URL, sem criar entrada no histórico", async () => {
     const { http } = configurar();
+    const navegar = spyOn(TestBed.inject(Router), "navigate").and.resolveTo(true);
     const f = TestBed.createComponent(RunsPage);
     f.autoDetectChanges();
     const el = f.nativeElement as HTMLElement;
     http.expectOne("/api/instancias").flush([]);
     http.expectOne((r) => r.url === "/api/rascunhos-run").flush([]);
-    const primeiro = pedidoRuns(http);
+    pedidoRuns(http).flush([]);
 
     const status = Array.from(el.querySelectorAll<HTMLSelectElement>("form select")).at(-1)!;
     status.value = "ESTORNADA";
     status.dispatchEvent(new Event("change"));
     botao(el, "Filtrar").click();
+    expect(navegar).toHaveBeenCalledWith(
+      [],
+      jasmine.objectContaining({
+        queryParams: { dataDe: null, dataAte: null, instanciaId: null, status: "ESTORNADA" },
+        replaceUrl: true,
+      }),
+    );
+  });
+
+  it("filtros da URL: carregam a lista, e só a resposta do pedido mais recente vale", async () => {
+    const { http } = configurar();
+    const f = TestBed.createComponent(RunsPage);
+    f.componentRef.setInput("status", "CONCLUIDA");
+    f.autoDetectChanges();
+    const el = f.nativeElement as HTMLElement;
+    http.expectOne("/api/instancias").flush([]);
+    http.expectOne((r) => r.url === "/api/rascunhos-run").flush([]);
+    const primeiro: TestRequest = pedidoRuns(http);
+    expect(primeiro.request.params.get("status")).toBe("CONCLUIDA");
+
+    // A URL mudou (ex.: voltar do detalhe com outro filtro).
+    f.componentRef.setInput("status", "ESTORNADA");
+    await esperar();
     const segundo: TestRequest = pedidoRuns(http);
     expect(segundo.request.params.get("status")).toBe("ESTORNADA");
+    const select = Array.from(el.querySelectorAll<HTMLSelectElement>("form select")).at(-1)!;
+    expect(select.value).toBe("ESTORNADA");
 
     segundo.flush([
       resumo("run-2", { status: "ESTORNADA", encontro: { nome: "Betelgeuse 50", codigo: null } }),
@@ -78,5 +105,8 @@ describe("RunsPage", () => {
     const lista = el.querySelector("[data-testid='runs-lista']")!.textContent!;
     expect(lista).toContain("Betelgeuse 50");
     expect(lista).not.toContain("Naght Sieger 25");
+    // O link do detalhe leva o endereço da lista com o filtro, para o "Voltar à lista".
+    const link = el.querySelector<HTMLAnchorElement>("[data-testid='runs-lista'] a")!;
+    expect(link.getAttribute("href")).toBe("/gestao/runs/run-2");
   });
 });

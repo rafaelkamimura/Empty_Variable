@@ -3,7 +3,7 @@
     @if (podeCorrigir()) {
       <a uiBotao variante="principal" [routerLink]="['/gestao/runs', id(), 'corrigir']">Corrigir</a>
     }
-    <a uiBotao variante="fantasma" routerLink="/gestao/runs">Voltar à lista</a>
+    <a uiBotao variante="fantasma" [routerLink]="voltarLista">Voltar à lista</a>
   </span>
 
   <ui-estado [valor]="estado()" (tentarNovamente)="carregar(id())">
