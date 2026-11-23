@@ -9,7 +9,9 @@ import {
 } from "@angular/core";
 import { Router, RouterLink } from "@angular/router";
 import { Acao } from "../../../core/acao";
+import { Confirmacao } from "../../../core/confirmacao";
 import { mensagemDeErro } from "../../../core/modelos";
+import type { ComAlteracaoNaoSalva } from "../../../core/sair-sem-salvar.guard";
 import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estado/estado.component";
@@ -17,6 +19,7 @@ import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
 import { VazioComponent } from "../../../shared/ui/vazio/vazio.component";
 import { type Carregavel, carregando, comErro, pronto } from "../../../shared/utils/carregavel";
 import { EscalaGrupoComponent } from "../componentes/escala-grupo.component";
+import { LinkConfirmavelDirective } from "../componentes/link-confirmavel.directive";
 import { ListaGruposComponent } from "../componentes/lista-grupos.component";
 import { NovoGrupoComponent } from "../componentes/novo-grupo.component";
 import { GruposApi } from "../data/grupos.api";
@@ -50,9 +53,11 @@ interface DadosGrupos {
     PaginaComponent,
     VazioComponent,
     EscalaGrupoComponent,
+    LinkConfirmavelDirective,
     ListaGruposComponent,
     NovoGrupoComponent,
   ],
+  host: { "(window:beforeunload)": "avisarAntesDeSair($event)" },
   templateUrl: "./gestao-grupos.page.html",
   styles: `
     .secao {
@@ -71,10 +76,14 @@ interface DadosGrupos {
     }
   `,
 })
-export class GestaoGruposPage implements OnInit {
+export class GestaoGruposPage implements OnInit, ComAlteracaoNaoSalva {
   private readonly api = inject(GruposApi);
   private readonly acao = inject(Acao);
   private readonly router = inject(Router);
+  private readonly confirmacao = inject(Confirmacao);
+  /** Alteração não salva, como os componentes avisam (escala aberta ou grupo novo). */
+  protected readonly escalaAlterada = signal(false);
+  protected readonly novoAlterado = signal(false);
 
   /** Grupo aberto (query param ?grupo=); sem ele, o assistente de grupo novo. */
   readonly grupo = input<string | undefined>();
@@ -88,6 +97,26 @@ export class GestaoGruposPage implements OnInit {
     const id = this.grupo();
     return c.estado === "pronto" && id ? (c.dados.grupos.find((g) => g.id === id) ?? null) : null;
   });
+
+  /** Há escala ou grupo novo com alteração não salva. */
+  readonly alterado = computed(() => (this.grupo() ? this.escalaAlterada() : this.novoAlterado()));
+
+  confirmacaoDeSaida() {
+    const g = this.selecionado();
+    return g
+      ? {
+          titulo: "Descartar as mudanças na escala?",
+          descricao: `As mudanças na escala de ${g.instancia.nome} serão perdidas.`,
+          confirmar: "Descartar mudanças",
+          perigo: true,
+        }
+      : {
+          titulo: "Descartar o grupo novo?",
+          descricao: "O grupo que você está montando ainda não foi criado e será perdido.",
+          confirmar: "Descartar grupo",
+          perigo: true,
+        };
+  }
 
   ngOnInit(): void {
     void this.carregar();
@@ -104,9 +133,22 @@ export class GestaoGruposPage implements OnInit {
     }
   }
 
-  protected abrir(id: string): void {
+  /**
+   * Abre um grupo (ou o assistente de grupo novo, com null). Trocar só o ?grupo= reaproveita a
+   * página, e a guarda de rota não roda: por isso, com alteração não salva, pergunta aqui.
+   */
+  protected async irPara(grupo: string | null): Promise<void> {
+    if (this.salvando()) return;
+    if (this.alterado() && !(await this.confirmacao.perguntar(this.confirmacaoDeSaida()))) return;
+    await this.navegarPara(grupo);
+  }
+
+  private async navegarPara(grupo: string | null): Promise<void> {
     this.erroEscala.set(null);
-    void this.router.navigate(["/gestao/grupos"], { queryParams: { grupo: id } });
+    // O componente que sai não avisa mais; o que entra avisa o próprio estado ao aparecer.
+    this.escalaAlterada.set(false);
+    this.novoAlterado.set(false);
+    await this.router.navigate(["/gestao/grupos"], { queryParams: { grupo } });
   }
 
   protected async criar(r: RascunhoGrupo): Promise<void> {
@@ -117,7 +159,8 @@ export class GestaoGruposPage implements OnInit {
       const salvo = await this.api.criar(corpoNovoGrupo(r));
       this.atualizarNaLista(salvo, r.instanciaId);
       this.acao.avisar("Grupo criado. Agora escale os personagens.");
-      this.abrir(salvo.id);
+      // Criado: o rascunho não precisa de confirmação para sair.
+      await this.navegarPara(salvo.id);
     } catch (e) {
       this.erroCriacao.set(mensagemDeErro(e));
     } finally {
@@ -139,6 +182,11 @@ export class GestaoGruposPage implements OnInit {
     } finally {
       this.salvando.set(false);
     }
+  }
+
+  /** Fechar ou recarregar a aba com alteração não salva: o navegador pergunta. */
+  protected avisarAntesDeSair(evento: BeforeUnloadEvent): void {
+    if (this.alterado()) evento.preventDefault();
   }
 
   /** Põe o grupo salvo no topo da lista, com a instância (a resposta vem sem ela). */

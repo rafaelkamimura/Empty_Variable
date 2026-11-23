@@ -5,6 +5,7 @@ import { TestBed } from "@angular/core/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { Acao } from "../../../core/acao";
+import { Confirmacao } from "../../../core/confirmacao";
 import { comVaga, type Grupo, type OpcoesGrupos, vagasIniciais } from "../data/grupos.modelos";
 import { classesGrupo, personagensGrupo } from "../data/grupos.modelos.spec";
 
@@ -30,7 +31,15 @@ export const grupoAberto: Grupo = {
   vagas: comVaga(vagasIniciais(), 0, { tipo: "OBRIGATORIA", classeId: "c-mtk", importancia: 5 }),
 };
 
-export function configurar() {
+/** Outro grupo, para trocar de um para outro. */
+export const outroGrupo: Grupo = {
+  ...grupoAberto,
+  id: "g-0",
+  instancia: { id: "i-torre", nome: "Torre (ontem)" },
+};
+
+export function configurar(confirma = true) {
+  const perguntar = jasmine.createSpy("perguntar").and.resolveTo(confirma);
   const avisar = jasmine.createSpy("avisar");
   const executar = jasmine
     .createSpy("executar")
@@ -50,7 +59,8 @@ export function configurar() {
       provideHttpClientTesting(),
       provideNoopAnimations(),
       { provide: Acao, useValue: { executar, avisar } },
+      { provide: Confirmacao, useValue: { perguntar } },
     ],
   });
-  return { http: TestBed.inject(HttpTestingController), avisar };
+  return { http: TestBed.inject(HttpTestingController), avisar, perguntar };
 }

@@ -20,6 +20,10 @@ import { CartaoComponent } from "./cartao.component";
       <strong>Cartão clicável (link)</strong>
       <span class="meta">Leva a outra tela.</span>
     </a>
+    <a uiCartao href="#exemplo" aria-disabled="true" (click)="$event.preventDefault()">
+      <strong>Link bloqueado (aria-disabled)</strong>
+      <span class="meta">Enquanto a tela salva; quem usa impede o clique.</span>
+    </a>
     <ui-cartao [destaque]="true"
       ><strong>Selecionado</strong><span class="meta">Borda no acento.</span></ui-cartao
     >

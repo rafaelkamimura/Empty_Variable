@@ -4,7 +4,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
+  effect,
   ElementRef,
   inject,
   Injector,
@@ -16,6 +16,7 @@ import {
 import { MatStepper, MatStepperModule } from "@angular/material/stepper";
 import { AcoesPassoComponent } from "../../../shared/ui/acoes-passo/acoes-passo.component";
 import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
+import { estreitoAbaixoDe } from "../../../shared/ui/formulario/estreito";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { PendenciasComponent } from "../../../shared/ui/pendencias/pendencias.component";
 import { valorDoEvento } from "../../../shared/utils/evento";
@@ -46,6 +47,7 @@ import { ReservasGrupoComponent } from "./reservas-grupo.component";
 
 /** Abaixo desta largura do conteúdo, os passos ficam um embaixo do outro. */
 const LARGURA_PASSOS_LADO_A_LADO = 700;
+const VAZIO = JSON.stringify(novoRascunhoGrupo());
 
 /**
  * Assistente de criação de grupo: instância → obrigatórias → secundárias → data e hora → revisão.
@@ -124,12 +126,17 @@ export class NovoGrupoComponent {
   protected readonly campo = campoGrupo;
   protected readonly totalVagas = TOTAL_VAGAS;
   protected readonly valor = valorDoEvento;
-  protected readonly estreito = signal(false);
+  /** Os passos ficam lado a lado só quando o conteúdo é largo. */
+  protected readonly estreito = estreitoAbaixoDe(LARGURA_PASSOS_LADO_A_LADO);
   protected readonly rascunho = signal<RascunhoGrupo>(novoRascunhoGrupo());
   /** Relógio das pendências (data no futuro): atualizado a cada tentativa de avançar. */
   private readonly agora = signal(Date.now());
   protected readonly pend = computed(() => pendenciasGrupo(this.rascunho(), this.agora()));
   protected readonly validacao = new ValidacaoPassos(this.pend, PASSOS_GRUPO);
+  /** A pessoa já preencheu algo (para perguntar antes de descartar). */
+  readonly alterado = computed(() => JSON.stringify(this.rascunho()) !== VAZIO);
+  /** Avisa quem usa quando passa a ter (ou deixa de ter) alteração não salva. */
+  readonly alteracao = output<boolean>();
   protected readonly partida = computed(() => partidaDe(this.rascunho().horario));
   protected readonly nomeInstancia = computed(
     () => this.opcoes().instancias.find((i) => i.id === this.rascunho().instanciaId)?.nome ?? "—",
@@ -145,12 +152,7 @@ export class NovoGrupoComponent {
   protected readonly livres = computed(() => vagasLivres(this.rascunho()));
 
   constructor() {
-    // Os passos ficam lado a lado só quando o conteúdo é largo (container, não a janela: §6.6).
-    const observador = new ResizeObserver(([e]) =>
-      this.estreito.set((e?.contentRect.width ?? 0) < LARGURA_PASSOS_LADO_A_LADO),
-    );
-    observador.observe(this.host);
-    inject(DestroyRef).onDestroy(() => observador.disconnect());
+    effect(() => this.alteracao.emit(this.alterado()));
   }
 
   protected mudar(parte: Partial<RascunhoGrupo>): void {

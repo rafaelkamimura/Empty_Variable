@@ -9,6 +9,7 @@ import { CartaoComponent } from "./cartao.component";
     <ui-cartao id="simples"><b slot="cabecalho">Topo</b>Corpo</ui-cartao>
     <button uiCartao id="botao">Clique</button>
     <a uiCartao id="link" href="#x" [destaque]="true">Ir</a>
+    <a uiCartao id="bloqueado" href="#x" aria-disabled="true">Bloqueado</a>
   `,
 })
 class HospedeiroComponent {}
@@ -28,5 +29,13 @@ describe("CartaoComponent", () => {
     expect(link.classList).toContain("clicavel");
     expect(link.classList).toContain("destaque");
     expect(link.hasAttribute("type")).toBeFalse();
+  });
+
+  it("link com aria-disabled fica com a aparência de desabilitado", () => {
+    const fixture = TestBed.createComponent(HospedeiroComponent);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(getComputedStyle(el.querySelector("#bloqueado")!).opacity).toBe("0.6");
+    expect(getComputedStyle(el.querySelector("#link")!).opacity).toBe("1");
   });
 });

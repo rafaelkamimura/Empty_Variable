@@ -1,7 +1,7 @@
 import { TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 import { GestaoGruposPage } from "./gestao-grupos.page";
-import { botao, configurar, esperar, grupoAberto, opcoes } from "./grupos-teste.spec";
+import { botao, configurar, esperar, grupoAberto, opcoes, outroGrupo } from "./grupos-teste.spec";
 
 const passoAtual = (el: HTMLElement) =>
   el
@@ -15,17 +15,22 @@ const proximoDoPasso = (el: HTMLElement) => {
   return acoes.querySelector<HTMLButtonElement>("button:not([matStepperPrevious])")!;
 };
 
-function iniciar(grupo?: string) {
-  const ctx = configurar();
+function iniciar(grupo?: string, confirma = true) {
+  const ctx = configurar(confirma);
   const f = TestBed.createComponent(GestaoGruposPage);
   if (grupo) f.componentRef.setInput("grupo", grupo);
   const el = f.nativeElement as HTMLElement;
   document.body.appendChild(el);
   f.autoDetectChanges();
-  ctx.http.expectOne("/api/gestao/grupos").flush([grupoAberto]);
+  ctx.http.expectOne("/api/gestao/grupos").flush([grupoAberto, outroGrupo]);
   ctx.http.expectOne("/api/gestao/grupos/opcoes").flush(opcoes);
   return { ...ctx, f, el };
 }
+
+const linkDoGrupo = (el: HTMLElement, nome: string) =>
+  Array.from(el.querySelectorAll<HTMLAnchorElement>("[data-testid='grupos-lista'] a")).find((a) =>
+    a.textContent?.includes(nome),
+  )!;
 
 describe("GestaoGruposPage", () => {
   afterEach(() => document.querySelectorAll("app-gestao-grupos-page").forEach((e) => e.remove()));
@@ -200,5 +205,93 @@ describe("GestaoGruposPage", () => {
     http.expectOne("/api/gestao/grupos/opcoes").flush(opcoes);
     await esperar();
     expect(el.querySelector<HTMLSelectElement>("[data-vaga='1']")!.value).toBe("");
+  });
+
+  it("lista de grupos: links com aria-current; sem alteração, navega sem perguntar", async () => {
+    const { el, perguntar } = iniciar("g-1");
+    const navegar = spyOn(TestBed.inject(Router), "navigateByUrl").and.resolveTo(true);
+    await esperar();
+    const atual = linkDoGrupo(el, "Torre da Constelação");
+    const outro = linkDoGrupo(el, "Torre (ontem)");
+    expect(atual.getAttribute("aria-current")).toBe("page");
+    expect(outro.getAttribute("aria-current")).toBeNull();
+    expect(outro.getAttribute("href")).toBe("/gestao/grupos?grupo=g-0");
+    outro.click();
+    await esperar();
+    expect(perguntar).not.toHaveBeenCalled();
+    expect(navegar).toHaveBeenCalled();
+  });
+
+  it("escala alterada: trocar de grupo pergunta; recusando, fica no grupo com as escolhas", async () => {
+    const { el, perguntar } = iniciar("g-1", false);
+    const router = TestBed.inject(Router);
+    const navegarUrl = spyOn(router, "navigateByUrl").and.resolveTo(true);
+    const navegar = spyOn(router, "navigate").and.resolveTo(true);
+    await esperar();
+    const vaga2 = el.querySelector<HTMLSelectElement>("[data-vaga='1']")!;
+    vaga2.value = "p-beto";
+    vaga2.dispatchEvent(new Event("change"));
+    await esperar();
+
+    linkDoGrupo(el, "Torre (ontem)").click();
+    await esperar();
+    expect(perguntar).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        descricao: "As mudanças na escala de Torre da Constelação serão perdidas.",
+        confirmar: "Descartar mudanças",
+      }),
+    );
+    expect(navegarUrl).not.toHaveBeenCalled();
+    expect(navegar).not.toHaveBeenCalled();
+    expect(el.querySelector<HTMLSelectElement>("[data-vaga='1']")!.value).toBe("p-beto");
+
+    // Também pelo "Novo grupo".
+    botao(el, "Novo grupo").click();
+    await esperar();
+    expect(perguntar).toHaveBeenCalledTimes(2);
+    expect(navegarUrl).not.toHaveBeenCalled();
+  });
+
+  it("escala alterada: o beforeunload avisa; aceitando a pergunta, troca de grupo", async () => {
+    const { el, f, perguntar } = iniciar("g-1", true);
+    const navegar = spyOn(TestBed.inject(Router), "navigate").and.resolveTo(true);
+    await esperar();
+    const antesDeSair = (e: BeforeUnloadEvent) =>
+      (f.componentInstance as unknown as { avisarAntesDeSair(e: BeforeUnloadEvent): void }).avisarAntesDeSair(
+        e,
+      );
+    const semAlteracao = new Event("beforeunload", { cancelable: true }) as BeforeUnloadEvent;
+    antesDeSair(semAlteracao);
+    expect(semAlteracao.defaultPrevented).toBeFalse();
+
+    const vaga2 = el.querySelector<HTMLSelectElement>("[data-vaga='1']")!;
+    vaga2.value = "p-beto";
+    vaga2.dispatchEvent(new Event("change"));
+    await esperar();
+    // Disparar o evento de verdade recarregaria o Karma: chama o handler do host.
+    const comAlteracao = new Event("beforeunload", { cancelable: true }) as BeforeUnloadEvent;
+    antesDeSair(comAlteracao);
+    expect(comAlteracao.defaultPrevented).toBeTrue();
+
+    linkDoGrupo(el, "Torre (ontem)").click();
+    await esperar();
+    expect(perguntar).toHaveBeenCalled();
+    expect(navegar).toHaveBeenCalledWith(["/gestao/grupos"], { queryParams: { grupo: "g-0" } });
+  });
+
+  it("enquanto salva, os links da lista ficam aria-disabled e não navegam", async () => {
+    const { el, http } = iniciar("g-1");
+    const navegarUrl = spyOn(TestBed.inject(Router), "navigateByUrl").and.resolveTo(true);
+    await esperar();
+    botao(el, "Salvar escala").click();
+    await esperar();
+    const outro = linkDoGrupo(el, "Torre (ontem)");
+    expect(outro.getAttribute("aria-disabled")).toBe("true");
+    outro.click();
+    await esperar();
+    expect(navegarUrl).not.toHaveBeenCalled();
+    http.expectOne((r) => r.method === "PATCH").flush(grupoAberto);
+    await esperar();
+    expect(outro.getAttribute("aria-disabled")).toBeNull();
   });
 });

@@ -3,7 +3,17 @@
   subtitulo="Monte a composição de um grupo e escale os personagens nas 12 vagas."
 >
   @if (grupo()) {
-    <a slot="acao" uiBotao variante="principal" routerLink="/gestao/grupos">Novo grupo</a>
+    <a
+      slot="acao"
+      uiBotao
+      variante="principal"
+      routerLink="/gestao/grupos"
+      [appLinkConfirmavel]="alterado()"
+      [bloqueado]="salvando()"
+      (interceptado)="irPara(null)"
+    >
+      Novo grupo
+    </a>
   }
 
   <ui-estado [valor]="carga()" (tentarNovamente)="carregar()">
@@ -18,7 +28,8 @@
             [grupos]="c.grupos"
             [selecionado]="grupo() ?? null"
             [bloqueado]="salvando()"
-            (abrir)="abrir($event)"
+            [confirmarAntes]="alterado()"
+            (abrir)="irPara($event)"
           />
         }
       </section>
@@ -37,6 +48,7 @@
             [opcoes]="c.opcoes"
             [salvando]="salvando()"
             (salvar)="salvarEscala(g, $event.vagas, $event.fechar)"
+            (alteracao)="escalaAlterada.set($event)"
           />
         } @else {
           @if (grupo()) {
@@ -50,6 +62,7 @@
               [salvando]="salvando()"
               [erroEnvio]="erroCriacao()"
               (criar)="criar($event)"
+              (alteracao)="novoAlterado.set($event)"
             />
           }
         }

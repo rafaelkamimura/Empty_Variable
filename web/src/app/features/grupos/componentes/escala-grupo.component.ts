@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   Injector,
@@ -150,6 +151,10 @@ export class EscalaGrupoComponent {
   /** Cópia editável da escala; volta à do grupo quando ele muda (outro grupo ou salvo). */
   protected readonly vagas = linkedSignal<readonly Vaga[]>(() => this.grupo().vagas);
   protected readonly tentouFechar = linkedSignal(() => (this.grupo(), false));
+  /** Há escolha diferente da escala salva (para perguntar antes de descartar). */
+  readonly alterado = computed(() => JSON.stringify(this.vagas()) !== JSON.stringify(this.grupo().vagas));
+  /** Avisa quem usa quando passa a ter (ou deixa de ter) alteração não salva. */
+  readonly alteracao = output<boolean>();
   protected readonly fechado = computed(() => this.grupo().fechadoEm !== null);
   protected readonly total = computed(() => preenchidas(this.vagas()));
   protected readonly faltam = computed(() => faltamObrigatorias(this.vagas()));
@@ -158,6 +163,10 @@ export class EscalaGrupoComponent {
   private readonly candidatosPorVaga = computed(() =>
     this.vagas().map((_, i) => candidatos(this.vagas(), i, this.opcoes().personagens)),
   );
+
+  constructor() {
+    effect(() => this.alteracao.emit(this.alterado()));
+  }
 
   protected nomeClasse(id: string): string {
     return this.nomes().get(id) ?? "Classe indisponível";

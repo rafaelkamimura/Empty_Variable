@@ -364,11 +364,11 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
   });
   expect(escalaAntiga.status()).toBe(409);
   await page.goto("/gestao/grupos");
-  await page.getByRole("button", { name: /Torre da Constela.*Aberto/ }).click();
+  await page.getByRole("link", { name: /Torre da Constela.*Aberto/ }).click();
   await fecharGrupo.click();
-  await expect(page.getByRole("button", { name: /Torre da Constela.*Fechado/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Torre da Constela.*Fechado/ })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("button", { name: /Torre da Constela.*Fechado/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Torre da Constela.*Fechado/ })).toBeVisible();
   await login(membroId);
   await page.goto("/loja");
   await page.getByRole("button", { name: "Menu do perfil" }).click();
