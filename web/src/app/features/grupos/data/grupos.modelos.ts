@@ -72,22 +72,6 @@ export function vagasIniciais(): Vaga[] {
   return Array.from({ length: TOTAL_VAGAS }, vagaLivre);
 }
 
-/** Índices (na escala de 12) das vagas de um tipo, na ordem. */
-export function indicesDoTipo(vagas: readonly Vaga[], tipo: TipoVaga): number[] {
-  return vagas.flatMap((v, i) => (v.tipo === tipo ? [i] : []));
-}
-
-/** Transforma a primeira vaga livre numa reserva do tipo; sem livre, não muda nada. */
-export function comReserva(vagas: readonly Vaga[], tipo: TipoReserva): readonly Vaga[] {
-  const i = vagas.findIndex((v) => v.tipo === "LIVRE");
-  return i < 0 ? vagas : comVaga(vagas, i, { tipo });
-}
-
-/** Devolve a vaga `i` a livre. */
-export function semReserva(vagas: readonly Vaga[], i: number): readonly Vaga[] {
-  return vagas.map((v, j) => (j === i ? vagaLivre() : v));
-}
-
 export function comVaga(vagas: readonly Vaga[], i: number, parte: Partial<Vaga>): readonly Vaga[] {
   return vagas.map((v, j) => (j === i ? { ...v, ...parte } : v));
 }
@@ -119,7 +103,7 @@ export function candidatos(
 
 /** "Mestre Celestial (importância 5), Animista (importância 2)" ou "Nenhuma". */
 export function resumoReservas(
-  vagas: readonly Vaga[],
+  vagas: readonly Pick<Vaga, "tipo" | "classeId" | "importancia">[],
   tipo: TipoReserva,
   classes: readonly ClasseGrupo[],
 ): string {

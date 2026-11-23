@@ -11,27 +11,21 @@ import {
 import { agruparClasses } from "../../../shared/dominio/grupos-classes";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
-import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-campos.component";
-import { valorDoEvento } from "../../../shared/utils/evento";
 import {
   campoQueSaiu,
   focarAposRemover,
   focarDepois,
   primeiroControle,
 } from "../../../shared/ui/formulario/foco";
-import {
-  type ClasseGrupo,
-  indicesDoTipo,
-  TOTAL_VAGAS,
-  type TipoReserva,
-  type Vaga,
-} from "../data/grupos.modelos";
-import { campoGrupo } from "../data/novo-grupo.modelos";
+import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-campos.component";
+import { valorDoEvento } from "../../../shared/utils/evento";
+import { type ClasseGrupo, TOTAL_VAGAS, type TipoReserva } from "../data/grupos.modelos";
+import { campoGrupo, type ReservaRascunho } from "../data/novo-grupo.modelos";
 import { ImportanciaComponent } from "./importancia.component";
 
 /**
  * Reservas de um tipo (obrigatórias ou secundárias) no assistente de grupo: classe e importância
- * de cada uma. Cada reserva ocupa uma das 12 vagas; as que sobram ficam livres.
+ * de cada uma, na ordem em que foram adicionadas. Cada reserva ocupa uma das 12 vagas.
  */
 @Component({
   selector: "app-reservas-grupo",
@@ -54,30 +48,29 @@ import { ImportanciaComponent } from "./importancia.component";
       }}
       {{ livres() }} de {{ totalVagas }} vagas ainda livres.
     </p>
-    @for (i of indices(); track i; let n = $index) {
-      @let v = vagas()[i]!;
-      <ui-grupo-campos [legenda]="'Reserva ' + (n + 1)" data-linha>
-        <ui-campo rotulo="Classe" [erro]="e.get(campo.classe(i))">
+    @for (r of reservas(); track r.chave; let n = $index) {
+      <ui-grupo-campos [legenda]="'Reserva ' + (n + 1)" [attr.data-chave]="r.chave" data-linha>
+        <ui-campo rotulo="Classe" [erro]="e.get(campo.classe(r.chave))">
           <select
             uiCampo
-            [attr.data-campo]="campo.classe(i)"
-            (change)="alterar.emit({ i, parte: { classeId: valor($event) || null } })"
+            [attr.data-campo]="campo.classe(r.chave)"
+            (change)="alterar.emit({ chave: r.chave, parte: { classeId: valor($event) || null } })"
           >
-            <option value="" [selected]="v.classeId === null">Escolha</option>
+            <option value="" [selected]="r.classeId === null">Escolha</option>
             @for (g of gruposDeClasses(); track g.nome) {
               <optgroup [label]="g.nome">
                 @for (c of g.classes; track c.id) {
-                  <option [value]="c.id" [selected]="v.classeId === c.id">{{ c.nomeOficial }}</option>
+                  <option [value]="c.id" [selected]="r.classeId === c.id">{{ c.nomeOficial }}</option>
                 }
               </optgroup>
             }
           </select>
         </ui-campo>
         <app-importancia
-          [valor]="v.importancia"
-          [campo]="campo.importancia(i)"
-          [erro]="e.get(campo.importancia(i))"
-          (mudar)="alterar.emit({ i, parte: { importancia: $event } })"
+          [valor]="r.importancia"
+          [campo]="campo.importancia(r.chave)"
+          [erro]="e.get(campo.importancia(r.chave))"
+          (mudar)="alterar.emit({ chave: r.chave, parte: { importancia: $event } })"
         />
         <button
           uiBotao
@@ -86,7 +79,7 @@ import { ImportanciaComponent } from "./importancia.component";
           tamanho="p"
           data-acao="remover"
           [attr.aria-label]="'Remover reserva ' + (n + 1)"
-          (click)="aoRemover(i, n)"
+          (click)="aoRemover(r.chave, n)"
         >
           Remover
         </button>
@@ -111,34 +104,38 @@ import { ImportanciaComponent } from "./importancia.component";
   `,
 })
 export class ReservasGrupoComponent {
-  readonly vagas = input.required<readonly Vaga[]>();
+  /** As reservas deste tipo, na ordem de inclusão. */
+  readonly reservas = input.required<readonly ReservaRascunho[]>();
   readonly tipo = input.required<TipoReserva>();
+  /** Vagas ainda livres no grupo (de todos os tipos). */
+  readonly livres = input.required<number>();
   readonly classes = input.required<readonly ClasseGrupo[]>();
   /** Erros visíveis por campo (`campoGrupo`). */
   readonly erros = input<ReadonlyMap<string, string>>(new Map());
   readonly tocou = output<string>();
-  readonly alterar = output<{ i: number; parte: Partial<Vaga> }>();
+  readonly alterar = output<{ chave: string; parte: Partial<ReservaRascunho> }>();
   readonly adicionar = output();
-  readonly remover = output<number>();
+  readonly remover = output<string>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly injector = inject(Injector);
   protected readonly campo = campoGrupo;
   protected readonly totalVagas = TOTAL_VAGAS;
   protected readonly valor = valorDoEvento;
-  protected readonly indices = computed(() => indicesDoTipo(this.vagas(), this.tipo()));
-  protected readonly livres = computed(() => indicesDoTipo(this.vagas(), "LIVRE").length);
   protected readonly gruposDeClasses = computed(() => agruparClasses(this.classes()));
 
-  /** Nova reserva: o foco vai para a classe dela. */
+  /** Nova reserva: o foco vai para a classe dela (a linha cuja chave não existia antes). */
   protected aoAdicionar(): void {
+    const antes = new Set(this.reservas().map((r) => r.chave));
     this.adicionar.emit();
-    focarDepois(this.injector, () => primeiroControle(this.linhas().at(-1)));
+    focarDepois(this.injector, () =>
+      primeiroControle(this.linhas().find((l) => !antes.has(l.getAttribute("data-chave") ?? ""))),
+    );
   }
 
   /** Reserva removida: foco no "Remover" da seguinte ou em "Adicionar vaga". */
-  protected aoRemover(i: number, n: number): void {
-    this.remover.emit(i);
+  protected aoRemover(chave: string, n: number): void {
+    this.remover.emit(chave);
     focarAposRemover(
       this.injector,
       () => this.linhas(),

@@ -1,17 +1,15 @@
 import {
   candidatos,
   type ClasseGrupo,
-  comReserva,
   comVaga,
   corpoEscala,
   faltamObrigatorias,
   type Grupo,
-  indicesDoTipo,
   partidaDe,
   type PersonagemGrupo,
   preenchidas,
   resumoReservas,
-  semReserva,
+  type Vaga,
   vagasIniciais,
 } from "./grupos.modelos";
 
@@ -26,26 +24,12 @@ export const personagensGrupo: PersonagemGrupo[] = [
   { id: "p-beto", nome: "Beto-MTK", classeId: "c-mtk", jogadorId: "j-beto", jogador: { apelido: "Beto" } },
 ];
 
+/** As 12 vagas com uma obrigatória na vaga `i` (sem classe nem importância). */
+const comObrigatoria = (vagas: readonly Vaga[], i: number) => comVaga(vagas, i, { tipo: "OBRIGATORIA" });
+
 describe("Regras dos grupos de instância", () => {
-  it("reserva a primeira vaga livre e devolve a vaga a livre ao remover, sem mutar", () => {
-    const vagas = vagasIniciais();
-    const com = comReserva(vagas, "OBRIGATORIA");
-    expect(vagas[0]!.tipo).toBe("LIVRE");
-    expect(indicesDoTipo(com, "OBRIGATORIA")).toEqual([0]);
-    const duas = comReserva(com, "SECUNDARIA");
-    expect(indicesDoTipo(duas, "SECUNDARIA")).toEqual([1]);
-    const sem = semReserva(comVaga(duas, 0, { classeId: "c-mtk", importancia: 5 }), 0);
-    expect(sem[0]).toEqual({ tipo: "LIVRE", classeId: null, importancia: null, personagemId: null });
-  });
-
-  it("sem vaga livre, não reserva", () => {
-    let vagas = vagasIniciais() as ReturnType<typeof comReserva>;
-    for (let i = 0; i < 12; i++) vagas = comReserva(vagas, "SECUNDARIA");
-    expect(comReserva(vagas, "OBRIGATORIA")).toBe(vagas);
-  });
-
   it("candidatos: classe da reserva, um personagem por jogador, e o ocupante atual sempre", () => {
-    let vagas = comVaga(comReserva(vagasIniciais(), "OBRIGATORIA"), 0, { classeId: "c-mtk", importancia: 5 });
+    let vagas = comVaga(comObrigatoria(vagasIniciais(), 0), 0, { classeId: "c-mtk", importancia: 5 });
     expect(candidatos(vagas, 0, personagensGrupo).map((p) => p.id)).toEqual(["p-ana", "p-beto"]);
     vagas = comVaga(vagas, 1, { personagemId: "p-ana2" });
     // Ana já está na vaga 2: só o Beto serve na obrigatória.
@@ -56,7 +40,7 @@ describe("Regras dos grupos de instância", () => {
   });
 
   it("conta preenchidas e obrigatórias faltando", () => {
-    const vagas = comVaga(comReserva(comReserva(vagasIniciais(), "OBRIGATORIA"), "OBRIGATORIA"), 0, {
+    const vagas = comVaga(comObrigatoria(comObrigatoria(vagasIniciais(), 0), 1), 0, {
       personagemId: "p-ana",
     });
     expect(preenchidas(vagas)).toBe(1);
@@ -64,7 +48,7 @@ describe("Regras dos grupos de instância", () => {
   });
 
   it("resumo das reservas e partida com o fuso de São Paulo", () => {
-    const vagas = comVaga(comReserva(vagasIniciais(), "OBRIGATORIA"), 0, {
+    const vagas = comVaga(comObrigatoria(vagasIniciais(), 0), 0, {
       classeId: "c-mtk",
       importancia: 5,
     });

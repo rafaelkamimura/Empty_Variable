@@ -29,11 +29,12 @@
     <div class="passo">
       <app-reservas-grupo
         tipo="OBRIGATORIA"
-        [vagas]="r.vagas"
+        [reservas]="reservasObrigatorias()"
+        [livres]="livres()"
         [classes]="opcoes().classes"
         [erros]="e"
         (tocou)="validacao.tocar($event)"
-        (alterar)="alterarVaga($event.i, $event.parte)"
+        (alterar)="alterarReserva($event.chave, $event.parte)"
         (adicionar)="adicionarReserva('OBRIGATORIA')"
         (remover)="removerReserva($event)"
       />
@@ -51,11 +52,12 @@
       }
       <app-reservas-grupo
         tipo="SECUNDARIA"
-        [vagas]="r.vagas"
+        [reservas]="reservasSecundarias()"
+        [livres]="livres()"
         [classes]="opcoes().classes"
         [erros]="e"
         (tocou)="validacao.tocar($event)"
-        (alterar)="alterarVaga($event.i, $event.parte)"
+        (alterar)="alterarReserva($event.chave, $event.parte)"
         (adicionar)="adicionarReserva('SECUNDARIA')"
         (remover)="removerReserva($event)"
       />

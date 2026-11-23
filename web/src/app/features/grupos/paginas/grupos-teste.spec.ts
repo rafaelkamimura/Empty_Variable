@@ -5,7 +5,7 @@ import { TestBed } from "@angular/core/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { Acao } from "../../../core/acao";
-import { comReserva, comVaga, type Grupo, type OpcoesGrupos, vagasIniciais } from "../data/grupos.modelos";
+import { comVaga, type Grupo, type OpcoesGrupos, vagasIniciais } from "../data/grupos.modelos";
 import { classesGrupo, personagensGrupo } from "../data/grupos.modelos.spec";
 
 export const esperar = () => new Promise((r) => setTimeout(r));
@@ -27,7 +27,7 @@ export const grupoAberto: Grupo = {
   instancia: { id: "i-torre", nome: "Torre da Constelação" },
   agendadoEm: "2026-11-24T23:30:00.000Z",
   fechadoEm: null,
-  vagas: comVaga(comReserva(vagasIniciais(), "OBRIGATORIA"), 0, { classeId: "c-mtk", importancia: 5 }),
+  vagas: comVaga(vagasIniciais(), 0, { tipo: "OBRIGATORIA", classeId: "c-mtk", importancia: 5 }),
 };
 
 export function configurar() {

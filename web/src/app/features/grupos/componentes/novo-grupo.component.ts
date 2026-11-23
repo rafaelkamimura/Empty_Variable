@@ -22,24 +22,25 @@ import { valorDoEvento } from "../../../shared/utils/evento";
 import { campoQueSaiu } from "../../../shared/ui/formulario/foco";
 import { focarPrimeiraPendencia, ValidacaoPassos } from "../../../shared/ui/formulario/validacao-passos";
 import {
-  comReserva,
-  comVaga,
-  indicesDoTipo,
   type OpcoesGrupos,
   partidaDe,
   resumoReservas,
-  semReserva,
   TOTAL_VAGAS,
   type TipoReserva,
-  type Vaga,
 } from "../data/grupos.modelos";
 import {
   campoGrupo,
+  comNovaReserva,
+  comReserva,
   novoRascunhoGrupo,
   PASSOS_GRUPO,
   type PassoGrupo,
   pendenciasGrupo,
   type RascunhoGrupo,
+  type ReservaRascunho,
+  reservasDoTipo,
+  semReserva,
+  vagasLivres,
 } from "../data/novo-grupo.modelos";
 import { ReservasGrupoComponent } from "./reservas-grupo.component";
 
@@ -133,13 +134,15 @@ export class NovoGrupoComponent {
   protected readonly nomeInstancia = computed(
     () => this.opcoes().instancias.find((i) => i.id === this.rascunho().instanciaId)?.nome ?? "—",
   );
+  protected readonly reservasObrigatorias = computed(() => reservasDoTipo(this.rascunho(), "OBRIGATORIA"));
+  protected readonly reservasSecundarias = computed(() => reservasDoTipo(this.rascunho(), "SECUNDARIA"));
   protected readonly obrigatorias = computed(() =>
-    resumoReservas(this.rascunho().vagas, "OBRIGATORIA", this.opcoes().classes),
+    resumoReservas(this.reservasObrigatorias(), "OBRIGATORIA", this.opcoes().classes),
   );
   protected readonly secundarias = computed(() =>
-    resumoReservas(this.rascunho().vagas, "SECUNDARIA", this.opcoes().classes),
+    resumoReservas(this.reservasSecundarias(), "SECUNDARIA", this.opcoes().classes),
   );
-  protected readonly livres = computed(() => indicesDoTipo(this.rascunho().vagas, "LIVRE").length);
+  protected readonly livres = computed(() => vagasLivres(this.rascunho()));
 
   constructor() {
     // Os passos ficam lado a lado só quando o conteúdo é largo (container, não a janela: §6.6).
@@ -154,16 +157,16 @@ export class NovoGrupoComponent {
     this.rascunho.update((r) => ({ ...r, ...parte }));
   }
 
-  protected alterarVaga(i: number, parte: Partial<Vaga>): void {
-    this.rascunho.update((r) => ({ ...r, vagas: comVaga(r.vagas, i, parte) }));
+  protected alterarReserva(chave: string, parte: Partial<ReservaRascunho>): void {
+    this.rascunho.update((r) => comReserva(r, chave, parte));
   }
 
   protected adicionarReserva(tipo: TipoReserva): void {
-    this.rascunho.update((r) => ({ ...r, vagas: comReserva(r.vagas, tipo) }));
+    this.rascunho.update((r) => comNovaReserva(r, tipo));
   }
 
-  protected removerReserva(i: number): void {
-    this.rascunho.update((r) => ({ ...r, vagas: semReserva(r.vagas, i) }));
+  protected removerReserva(chave: string): void {
+    this.rascunho.update((r) => semReserva(r, chave));
   }
 
   protected sairDoHorario(evento: FocusEvent): void {

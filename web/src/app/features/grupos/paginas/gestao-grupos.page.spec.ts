@@ -96,6 +96,57 @@ describe("GestaoGruposPage", () => {
     expect(navegar).toHaveBeenCalledWith(["/gestao/grupos"], { queryParams: { grupo: "g-2" } });
   });
 
+  it("reservas: remover do meio e adicionar mantém a ordem, foca a nova e não herda o erro de outra", async () => {
+    const { el } = iniciar();
+    await esperar();
+    const instancia = el.querySelector<HTMLSelectElement>("app-novo-grupo select")!;
+    instancia.value = "i-torre";
+    instancia.dispatchEvent(new Event("change"));
+    proximoDoPasso(el).click();
+    await esperar();
+    const obrigatorias = () => el.querySelectorAll("app-reservas-grupo")[0]!;
+    const linhas = () => Array.from(obrigatorias().querySelectorAll<HTMLElement>("[data-linha]"));
+    const adicionar = () => botao(obrigatorias(), "Adicionar vaga");
+    for (let i = 0; i < 3; i++) {
+      adicionar().click();
+      await esperar();
+    }
+    const [a, b, c] = linhas().map((l) => l.getAttribute("data-chave"));
+    // A pessoa mexe na 2ª e sai do campo: o erro dela aparece.
+    const classeB = linhas()[1]!.querySelector("select")!;
+    classeB.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    await esperar();
+    expect(linhas()[1]!.textContent).toContain("Escolha a classe.");
+
+    botao(linhas()[1]!, "Remover").click();
+    await esperar();
+    adicionar().click();
+    await esperar();
+    const chaves = linhas().map((l) => l.getAttribute("data-chave"));
+    expect(chaves.slice(0, 2)).toEqual([a, c]);
+    expect(chaves[2]).not.toBe(b);
+    expect(linhas().map((l) => l.querySelector("legend")?.textContent)).toEqual([
+      "Reserva 1",
+      "Reserva 2",
+      "Reserva 3",
+    ]);
+    // Foco no primeiro campo da reserva nova, que nasce sem erro.
+    expect(document.activeElement).toBe(linhas()[2]!.querySelector("select"));
+    expect(linhas()[2]!.querySelector(".ui-campo-erro")).toBeNull();
+
+    // Uma obrigatória removida e uma secundária adicionada não compartilham o estado "tocado".
+    botao(linhas()[0]!, "Remover").click();
+    botao(linhas()[0]!, "Remover").click();
+    botao(linhas()[0]!, "Remover").click();
+    await esperar();
+    proximoDoPasso(el).click();
+    await esperar();
+    const secundarias = el.querySelectorAll("app-reservas-grupo")[1]!;
+    botao(secundarias, "Adicionar vaga").click();
+    await esperar();
+    expect(secundarias.querySelector(".ui-campo-erro")).toBeNull();
+  });
+
   it("escala: Fechar grupo sem a obrigatória mostra o erro e foca a vaga; com ela, salva e fecha", async () => {
     const { http, el, avisar } = iniciar("g-1");
     await esperar();
