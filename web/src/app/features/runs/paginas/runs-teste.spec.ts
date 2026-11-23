@@ -19,6 +19,17 @@ export const passoAtual = (raiz: ParentNode) =>
     .querySelector("[role=tab][aria-selected=true], .mat-step-header[aria-selected=true]")
     ?.textContent?.trim()
     .replace(/^\d+\s*/, "");
+/** Clica em "Próximo" até chegar à Revisão (o conteúdo dela só existe quando o passo abre). */
+export async function irParaRevisao(el: HTMLElement): Promise<void> {
+  for (let i = 0; i < 4 && passoAtual(el) !== "Revisão"; i++) {
+    const cabecalhos = Array.from(el.querySelectorAll(".mat-step-header"));
+    const atual = cabecalhos.findIndex((c) => c.getAttribute("aria-selected") === "true");
+    botao(el.querySelectorAll("app-acoes-passo")[atual]!, "Próximo").click();
+    await esperar();
+  }
+  expect(passoAtual(el)).toBe("Revisão");
+}
+
 export const botao = (raiz: ParentNode, texto: string) =>
   Array.from(raiz.querySelectorAll<HTMLButtonElement>("button")).find(
     (b) => b.textContent?.trim() === texto,

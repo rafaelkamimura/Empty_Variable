@@ -9,6 +9,7 @@ import {
   configurar,
   detalhe,
   esperar,
+  irParaRevisao,
   parametros,
   passoAtual,
   rascunhoNag4eyes,
@@ -43,8 +44,11 @@ describe("AssistenteRunPage", () => {
     const origem = el.querySelector("[data-testid='runs-origem-rascunho']")!;
     expect(origem.textContent).toContain("grupo 42");
     expect(origem.textContent).toContain("Usuário sem vínculo com um jogador");
-    expect(el.querySelector("[data-testid='runs-ganho-por-jogador']")?.textContent).toContain("Ana");
+    // A prévia só é criada quando a Revisão abre.
+    expect(el.querySelector("app-previa-run")).toBeNull();
 
+    await irParaRevisao(el);
+    expect(el.querySelector("[data-testid='runs-ganho-por-jogador']")?.textContent).toContain("Ana");
     botao(el, "Registrar run").click();
     const req = http.expectOne("/api/rascunhos-run/r-1/confirmar");
     expect(req.request.body.participantes.length).toBe(1);
@@ -83,6 +87,7 @@ describe("AssistenteRunPage", () => {
     );
     expect(evento.defaultPrevented).toBeTrue();
 
+    await irParaRevisao(el);
     botao(el, "Registrar run").click();
     http.expectOne("/api/rascunhos-run/r-1/confirmar").flush({ runId: "run-9", avisosReducao: [] });
     await esperar();
@@ -190,6 +195,7 @@ describe("AssistenteRunPage", () => {
     await esperar();
     expect(passoAtual(el)).toBe("Participantes");
 
+    await irParaRevisao(el);
     botao(el, "Registrar correção").click();
     const req = http.expectOne("/api/runs/run-1/corrigir");
     expect(req.request.body.motivo).toBe("Rank errado");

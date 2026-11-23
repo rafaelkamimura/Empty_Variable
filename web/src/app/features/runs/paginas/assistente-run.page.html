@@ -121,19 +121,22 @@
         </mat-step>
 
         <mat-step label="Revisão">
-          <div class="passo">
-            @if (previa(); as pv) {
-              <app-previa-run [previa]="pv" [resumo]="resumoRevisao()" />
-            }
-            @if (erroEnvio(); as e) {
-              <ui-aviso tom="erro">{{ e }}</ui-aviso>
-            }
-            <app-acoes-passo
-              [rotulo]="correcaoDe() ? 'Registrar correção' : 'Registrar run'"
-              [carregando]="enviando()"
-              (avancar)="enviar()"
-            />
-          </div>
+          <!-- Só renderiza (e calcula a prévia) quando o passo é aberto. -->
+          <ng-template matStepContent>
+            <div class="passo">
+              @if (previa(); as pv) {
+                <app-previa-run [previa]="pv" [resumo]="resumoRevisao()" />
+              }
+              @if (erroEnvio(); as e) {
+                <ui-aviso tom="erro">{{ e }}</ui-aviso>
+              }
+              <app-acoes-passo
+                [rotulo]="correcaoDe() ? 'Registrar correção' : 'Registrar run'"
+                [carregando]="enviando()"
+                (avancar)="enviar()"
+              />
+            </div>
+          </ng-template>
         </mat-step>
       </mat-stepper>
     </ng-template>
