@@ -31,42 +31,42 @@ export interface JogadorCadastro {
 
 export interface RascunhoEmprestimo {
   /** Identidade da linha na tela (track e foco). Só existe no front: não vai para a API. */
-  chave: string;
-  credorJogadorId: string | null;
-  itemId: string | null;
-  itemDescricao: string;
-  categoria: CategoriaEmprestimo;
+  readonly chave: string;
+  readonly credorJogadorId: string | null;
+  readonly itemId: string | null;
+  readonly itemDescricao: string;
+  readonly categoria: CategoriaEmprestimo;
   /** % digitado pelo admin (ex.: 25). null = usa a sugestão da categoria. */
-  percentualInformado: number | null;
+  readonly percentualInformado: number | null;
 }
 
 export interface RascunhoParticipante {
   /** Identidade da linha na tela (track e foco). Só existe no front: não vai para a API. */
-  chave: string;
-  personagemId: string | null;
-  classeId: string | null;
-  funcaoId: string | null;
-  fracaoCentesimos: 100 | 50 | 0;
-  emprestimos: RascunhoEmprestimo[];
+  readonly chave: string;
+  readonly personagemId: string | null;
+  readonly classeId: string | null;
+  readonly funcaoId: string | null;
+  readonly fracaoCentesimos: 100 | 50 | 0;
+  readonly emprestimos: readonly RascunhoEmprestimo[];
 }
 
 export interface RascunhoRun {
-  data: string;
+  readonly data: string;
   /** Épico IV (D44): instância e encontro da run. */
-  instanciaId: string | null;
-  encontroId: string | null;
-  status: StatusRun;
-  pontuacaoBetelgeuse: number | null;
-  observacao: string;
-  participantes: RascunhoParticipante[];
-  drops: RascunhoDrop[];
+  readonly instanciaId: string | null;
+  readonly encontroId: string | null;
+  readonly status: StatusRun;
+  readonly pontuacaoBetelgeuse: number | null;
+  readonly observacao: string;
+  readonly participantes: readonly RascunhoParticipante[];
+  readonly drops: readonly RascunhoDrop[];
 }
 
 export interface RascunhoDrop {
   /** Identidade da linha na tela (track e foco). Só existe no front: não vai para a API. */
-  chave: string;
-  itemId: string | null;
-  quantidade: number | null;
+  readonly chave: string;
+  readonly itemId: string | null;
+  readonly quantidade: number | null;
 }
 
 /** Dados de apoio carregados da API. */

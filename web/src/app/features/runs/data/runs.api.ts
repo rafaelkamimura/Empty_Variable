@@ -6,6 +6,7 @@ import type { Instancia } from "../../../shared/dominio/instancias";
 import type { DetalheRun, ResultadoDropsRun, RunResumo } from "./detalhe-run.modelos";
 import type { RascunhoNag4eyes, ResumoRascunhoNag4eyes } from "./nag4eyes.modelos";
 import type { JogadorCadastro } from "./runs.modelos";
+import type { CorpoRegistroRun } from "./previa-run";
 
 export interface FiltroRuns {
   dataDe?: string;
@@ -72,7 +73,7 @@ export class RunsApi {
     return firstValueFrom(this.http.get<Classe[]>("/api/classes", { params: { instanciaId } }));
   }
 
-  registrar(destino: DestinoRegistro, corpo: unknown): Promise<RespostaRegistro> {
+  registrar(destino: DestinoRegistro, corpo: CorpoRegistroRun): Promise<RespostaRegistro> {
     switch (destino.tipo) {
       case "correcao":
         return firstValueFrom(

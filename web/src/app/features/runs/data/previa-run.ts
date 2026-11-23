@@ -1,7 +1,48 @@
 // Prévia da run pelo mesmo motor da API (@betel/scoring) e o corpo enviado para registrá-la.
-import { type ConfigPontuacao, calcularParticipacao, dividirEmprestimos, ErroDominio } from "@betel/scoring";
+import {
+  type CategoriaEmprestimo,
+  type ConfigPontuacao,
+  calcularParticipacao,
+  dividirEmprestimos,
+  ErroDominio,
+  type StatusRun,
+} from "@betel/scoring";
 import { paraCentesimos } from "../../../shared/dominio/cadastros";
 import { type Catalogos, encontroDe, funcaoDe, indicePersonagens, type RascunhoRun } from "./runs.modelos";
+
+/**
+ * Corpo de POST /api/runs (e da correção e da confirmação de rascunho), como o backend lê em
+ * backend/src/runs/entrada-run.ts. Campos opcionais só vão quando têm valor. As pendências do
+ * assistente garantem que os ids estão preenchidos antes do envio; o backend valida de novo.
+ */
+export interface CorpoRegistroRun {
+  readonly data: string;
+  readonly instanciaId: string | null;
+  readonly encontroId: string | null;
+  readonly status: StatusRun;
+  readonly pontuacaoBetelgeuse?: number;
+  readonly observacao?: string;
+  readonly participantes: readonly CorpoParticipanteRun[];
+  readonly drops: readonly { readonly itemId: string | null; readonly quantidade: number | null }[];
+}
+
+export interface CorpoParticipanteRun {
+  readonly personagemId: string | null;
+  /** A função exercida; sem ela, o backend usa a função padrão da `classeId`. */
+  readonly funcaoId?: string;
+  readonly classeId?: string | null;
+  readonly fracaoCentesimos: 100 | 50 | 0;
+  readonly emprestimos: readonly CorpoEmprestimoRun[];
+}
+
+export interface CorpoEmprestimoRun {
+  readonly credorJogadorId: string | null;
+  readonly categoria: CategoriaEmprestimo;
+  readonly itemId?: string;
+  readonly itemDescricao?: string;
+  /** Pontos-base (2550 = 25,5%). Sem ele, vale a sugestão da categoria. */
+  readonly percentualInformadoBp?: number | null;
+}
 
 export interface LinhaPrevia {
   personagem: string;
@@ -96,7 +137,7 @@ export function calcularPrevia(r: RascunhoRun, config: ConfigPontuacao, cat: Cat
 }
 
 /** Corpo de POST /api/runs (ou do campo `run` na correção). */
-export function montarCorpo(r: RascunhoRun, cat: Catalogos) {
+export function montarCorpo(r: RascunhoRun, cat: Catalogos): CorpoRegistroRun {
   return {
     data: r.data,
     instanciaId: r.instanciaId,
