@@ -53,7 +53,9 @@ import { VagaProgramadaComponent } from "./vaga-programada.component";
                 [personagens]="elegiveisDe(i)"
                 [enviando]="enviando()"
                 [bloqueado]="bloqueado()"
+                [erroEnvio]="erroDa(i)"
                 (participar)="participar.emit({ vaga: i + 1, personagemId: $event })"
+                (cancelou)="cancelou.emit()"
               />
             </li>
           }
@@ -98,7 +100,10 @@ export class GrupoProgramadoComponent {
   readonly aberto = input(false);
   readonly enviando = input(false);
   readonly bloqueado = input(false);
+  /** Erro do último envio: em qual vaga (1 a 12) e a mensagem. */
+  readonly erro = input<{ vaga: number; mensagem: string } | null>(null);
   readonly alternar = output();
+  readonly cancelou = output();
   readonly participar = output<{ vaga: number; personagemId: string }>();
 
   protected readonly totalVagas = TOTAL_VAGAS;
@@ -110,6 +115,10 @@ export class GrupoProgramadoComponent {
     this.grupo().vagas.map((v) => elegiveis(v, this.personagens())),
   );
 
+  protected erroDa(i: number): string | null {
+    const e = this.erro();
+    return e !== null && e.vaga === i + 1 ? e.mensagem : null;
+  }
   protected situacao(i: number) {
     return this.situacoes()[i] ?? "indisponivel";
   }

@@ -5,9 +5,11 @@ import {
   inject,
   Injector,
   input,
+  linkedSignal,
   output,
   signal,
 } from "@angular/core";
+import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BadgeComponent } from "../../../shared/ui/badge/badge.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
@@ -23,7 +25,7 @@ import type { MeuPersonagem, SituacaoVaga, VagaProgramada } from "../data/progra
 @Component({
   selector: "app-vaga-programada",
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BadgeComponent, BotaoComponent, CampoComponent, CampoControleDirective],
+  imports: [AvisoComponent, BadgeComponent, BotaoComponent, CampoComponent, CampoControleDirective],
   template: `
     @let v = vaga();
     <div class="requisito">
@@ -37,7 +39,10 @@ import type { MeuPersonagem, SituacaoVaga, VagaProgramada } from "../data/progra
     </div>
     @switch (situacao()) {
       @case ("minha") {
-        <ui-badge tom="sucesso">Você · {{ v.meuPersonagem }}</ui-badge>
+        <!-- Recebe o foco depois de confirmar a vaga, para o leitor de tela anunciar. -->
+        <span class="selo" tabindex="-1" data-vaga-minha>
+          <ui-badge tom="sucesso">Você · {{ v.meuPersonagem }}</ui-badge>
+        </span>
       }
       @case ("ocupada") {
         <ui-badge>Ocupada</ui-badge>
@@ -79,6 +84,9 @@ import type { MeuPersonagem, SituacaoVaga, VagaProgramada } from "../data/progra
         }
       }
     }
+    @if (erroEnvio(); as e) {
+      <ui-aviso class="erro" tom="erro" titulo="A vaga não foi confirmada">{{ e }}</ui-aviso>
+    }
   `,
   styles: `
     :host {
@@ -112,6 +120,14 @@ import type { MeuPersonagem, SituacaoVaga, VagaProgramada } from "../data/progra
       gap: var(--esp-2);
       min-width: 0;
     }
+    .erro {
+      flex-basis: 100%;
+    }
+    .selo:focus-visible {
+      outline: 2px solid var(--foco);
+      outline-offset: 2px;
+      border-radius: var(--raio-p);
+    }
     .acoes {
       display: flex;
       flex-wrap: wrap;
@@ -130,13 +146,17 @@ export class VagaProgramadaComponent {
   readonly enviando = input(false);
   /** Outra ação em andamento na tela: não abre a escolha. */
   readonly bloqueado = input(false);
+  /** Erro do último envio nesta vaga; fica até tentar de novo ou cancelar. */
+  readonly erroEnvio = input<string | null>(null);
   readonly participar = output<string>();
+  readonly cancelou = output();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly injector = inject(Injector);
   protected readonly rotuloTipo = ROTULO_TIPO_VAGA;
   protected readonly valor = valorDoEvento;
-  protected readonly escolhendo = signal(false);
+  /** A escolha volta ao estado inicial quando a situação da vaga muda (ex.: confirmada). */
+  protected readonly escolhendo = linkedSignal({ source: this.situacao, computation: () => false });
   protected readonly personagemId = signal("");
   protected readonly erro = signal<string | undefined>(undefined);
 
@@ -165,6 +185,7 @@ export class VagaProgramadaComponent {
 
   protected cancelar(): void {
     this.escolhendo.set(false);
+    this.cancelou.emit();
     focarDepois(this.injector, () => this.host.querySelector<HTMLElement>("[data-acao=entrar]"));
   }
 }

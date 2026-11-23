@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject, type OnInit, signal } from "@angular/core";
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  Injector,
+  type OnInit,
+  signal,
+} from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { Acao } from "../../../core/acao";
 import { mensagemDeErro } from "../../../core/modelos";
@@ -45,12 +54,15 @@ import type { AgendaProgramada } from "../data/programadas.modelos";
           <div class="agenda" data-testid="programadas-agenda">
             @for (g of a.grupos; track g.id) {
               <app-grupo-programado
+                [attr.data-grupo]="g.id"
                 [grupo]="g"
                 [personagens]="a.personagens"
                 [aberto]="aberto() === g.id"
                 [enviando]="enviando()"
                 [bloqueado]="enviando()"
+                [erro]="erro()?.grupoId === g.id ? erro() : null"
                 (alternar)="alternar(g.id)"
+                (cancelou)="erro.set(null)"
                 (participar)="participar(g.id, $event)"
               />
             }
@@ -69,11 +81,15 @@ import type { AgendaProgramada } from "../data/programadas.modelos";
 export class InstanciasProgramadasPage implements OnInit {
   private readonly api = inject(GruposApi);
   private readonly acao = inject(Acao);
+  private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   protected readonly agenda = signal<Carregavel<AgendaProgramada>>(carregando());
   /** Grupo com as vagas abertas. */
   protected readonly aberto = signal<string | null>(null);
   protected readonly enviando = signal(false);
+  /** Erro do último envio, mostrado na própria vaga até tentar de novo ou cancelar. */
+  protected readonly erro = signal<{ grupoId: string; vaga: number; mensagem: string } | null>(null);
   protected readonly vazia = (a: AgendaProgramada): boolean => a.grupos.length === 0;
   private versao = 0;
 
@@ -100,12 +116,24 @@ export class InstanciasProgramadasPage implements OnInit {
   protected async participar(grupoId: string, e: { vaga: number; personagemId: string }): Promise<void> {
     if (this.enviando()) return;
     this.enviando.set(true);
+    this.erro.set(null);
     try {
-      await this.acao.executar(
-        () => this.api.participar(grupoId, e.vaga, e.personagemId),
-        "Vaga confirmada.",
+      await this.api.participar(grupoId, e.vaga, e.personagemId);
+      this.acao.avisar("Vaga confirmada.");
+      await this.carregar();
+      // O botão some (vira o selo "Você · …"): o foco vai para o selo, que o leitor de tela lê.
+      afterNextRender(
+        () =>
+          this.host
+            .querySelector<HTMLElement>(
+              `[data-grupo="${CSS.escape(grupoId)}"] li:nth-child(${e.vaga}) [data-vaga-minha]`,
+            )
+            ?.focus(),
+        { injector: this.injector },
       );
-      // Com sucesso ou erro (vaga tomada por outro, por exemplo), a escala pode ter mudado.
+    } catch (erro) {
+      this.erro.set({ grupoId, vaga: e.vaga, mensagem: mensagemDeErro(erro) });
+      // A escala pode ter mudado (ex.: outra pessoa pegou a vaga): recarrega sem fechar a escolha.
       await this.carregar();
     } finally {
       this.enviando.set(false);

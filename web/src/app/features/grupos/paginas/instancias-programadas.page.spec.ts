@@ -76,6 +76,13 @@ describe("InstanciasProgramadasPage", () => {
     await esperar();
     expect(el.textContent).toContain("Você · Ana-MTK");
     expect(el.textContent).toContain("1/12 preenchidas");
+    // O botão sumiu: o foco vai para o selo da vaga confirmada, e a escolha fechou.
+    const selo = el.querySelector<HTMLElement>(
+      "[aria-label='Vagas do grupo'] > li:nth-child(1) [data-vaga-minha]",
+    )!;
+    expect(document.activeElement).toBe(selo);
+    expect(selo.textContent).toContain("Você · Ana-MTK");
+    expect(el.querySelector("[aria-label='Vagas do grupo'] select")).toBeNull();
   });
 
   it("sem personagem vinculado, avisa e mostra o caminho para o vínculo; sem grupos, o vazio", async () => {
@@ -92,5 +99,36 @@ describe("InstanciasProgramadasPage", () => {
     http.expectOne("/api/instancias-programadas").flush({ grupos: [], personagens: [] });
     await esperar();
     expect((f2.nativeElement as HTMLElement).textContent).toContain("Nenhuma instância programada.");
+  });
+
+  it("erro no envio (500): o aviso fica na vaga, a escolha continua aberta; cancelar limpa", async () => {
+    const { http } = configurar();
+    const f = TestBed.createComponent(InstanciasProgramadasPage);
+    const el = f.nativeElement as HTMLElement;
+    document.body.appendChild(el);
+    f.autoDetectChanges();
+    http.expectOne("/api/instancias-programadas").flush(agenda);
+    await esperar();
+    botao(el, "Ver vagas").click();
+    await esperar();
+    const vaga = () => el.querySelectorAll("[aria-label='Vagas do grupo'] > li")[1]!;
+    botao(vaga(), "Entrar na vaga").click();
+    await esperar();
+    const select = vaga().querySelector("select")!;
+    select.value = "p-ana";
+    select.dispatchEvent(new Event("change"));
+    botao(vaga(), "Confirmar vaga").click();
+    http
+      .expectOne("/api/instancias-programadas/g-1/participar")
+      .flush({ mensagem: "Erro interno." }, { status: 500, statusText: "Erro" });
+    await esperar();
+    http.expectOne("/api/instancias-programadas").flush(agenda);
+    await esperar();
+
+    expect(vaga().querySelector("ui-aviso")?.textContent).toContain("A vaga não foi confirmada");
+    expect(vaga().querySelector("select")).not.toBeNull();
+    botao(vaga(), "Cancelar").click();
+    await esperar();
+    expect(vaga().querySelector("ui-aviso")).toBeNull();
   });
 });
