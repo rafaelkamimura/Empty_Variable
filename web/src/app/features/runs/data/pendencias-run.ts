@@ -2,6 +2,7 @@
 // Puro (sem Angular). O `campo` liga a mensagem ao controle da tela (atributo data-campo), para o
 // erro aparecer no próprio campo e o foco ir até ele (diretrizes §6.4 e §7).
 import { paraCentesimos } from "../../../shared/dominio/cadastros";
+import type { Pendencia, PendenciasPorPasso } from "../../../shared/utils/validacao-passos";
 import { type Catalogos, encontroDe, funcaoDe, indicePersonagens, type RascunhoRun } from "./runs.modelos";
 
 /** Passos do assistente que têm campos (a revisão só mostra a prévia). */
@@ -9,16 +10,7 @@ export type PassoRun = "dados" | "participantes" | "emprestimos" | "drops";
 
 export const PASSOS_RUN: readonly PassoRun[] = ["dados", "participantes", "emprestimos", "drops"];
 
-export interface Pendencia {
-  /** Campo com o problema (ver `campoRun`), ou o nome da lista quando não há campo (ex.: "participantes"). */
-  campo: string;
-  /** Como corrigir, para aparecer junto do campo ("Escolha o personagem."). */
-  mensagem: string;
-  /** De qual linha é ("Participante 2"), para o resumo do passo. */
-  contexto?: string;
-}
-
-export type PendenciasRun = Readonly<Record<PassoRun, readonly Pendencia[]>>;
+export type PendenciasRun = PendenciasPorPasso<PassoRun>;
 
 /** Ids dos campos do assistente. Viram o atributo `data-campo` do controle. */
 export const campoRun = {
@@ -33,12 +25,6 @@ export const campoRun = {
   ) => `participantes.${chaveParticipante}.emprestimos.${chave}.${campo}`,
   drop: (chave: string, campo: "itemId" | "quantidade") => `drops.${chave}.${campo}`,
 };
-
-/** Texto da pendência no resumo do passo: "Participante 2: escolha a classe." */
-export function textoPendencia(p: Pendencia): string {
-  if (p.contexto === undefined) return p.mensagem;
-  return `${p.contexto}: ${p.mensagem.charAt(0).toLowerCase()}${p.mensagem.slice(1)}`;
-}
 
 /**
  * Pendências que impedem avançar, por passo. Na correção (US-07), `motivo` é o motivo digitado:

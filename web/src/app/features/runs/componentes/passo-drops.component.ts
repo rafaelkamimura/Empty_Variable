@@ -15,7 +15,7 @@ import { GrupoCamposComponent } from "../../../shared/ui/grupo-campos/grupo-camp
 import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 import { campoRun } from "../data/pendencias-run";
 import type { RascunhoDrop } from "../data/runs.modelos";
-import { campoQueSaiu, focarAposRemover, focarDepois, primeiroControle } from "./foco-linhas";
+import { campoQueSaiu, focarAposRemover, focarDepois, primeiroControle } from "../../../shared/utils/foco";
 
 /** Passo 4 do assistente: itens obtidos na run (não mudam a pontuação). */
 @Component({

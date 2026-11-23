@@ -181,7 +181,7 @@ describe("AssistenteRunPage", () => {
     expect(el.querySelector("h1")?.textContent).toContain("Corrigir run");
     const instancia = Array.from(el.querySelectorAll<HTMLSelectElement>("app-passo-dados select"))[0]!;
     expect(instancia.disabled).toBeTrue();
-    const proximo = botao(el.querySelector("app-acoes-passo")!, "Próximo");
+    const proximo = botao(el.querySelector("ui-acoes-passo")!, "Próximo");
     proximo.click();
     await esperar();
     expect(passoAtual(el)).toBe("Dados da run");

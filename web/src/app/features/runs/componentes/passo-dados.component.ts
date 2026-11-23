@@ -8,7 +8,7 @@ import {
 import { CampoComponent, CampoControleDirective } from "../../../shared/ui/campo/campo.component";
 import { campoRun } from "../data/pendencias-run";
 import { ROTULO_STATUS, type RascunhoRun } from "../data/runs.modelos";
-import { campoQueSaiu } from "./foco-linhas";
+import { campoQueSaiu } from "../../../shared/utils/foco";
 import { numeroDoEvento, valorDoEvento } from "../../../shared/utils/evento";
 
 /** Passo 1 do assistente: data, instância, encontro, resultado e, na correção, o motivo. */

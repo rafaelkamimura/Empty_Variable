@@ -23,12 +23,12 @@ import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estado/estado.component";
 import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
 import { type Carregavel, carregando, comErro, pronto } from "../../../shared/utils/carregavel";
-import { AcoesPassoComponent } from "../componentes/acoes-passo.component";
+import { AcoesPassoComponent } from "../../../shared/ui/acoes-passo/acoes-passo.component";
 import { PassoDadosComponent } from "../componentes/passo-dados.component";
 import { PassoDropsComponent } from "../componentes/passo-drops.component";
 import { PassoEmprestimosComponent } from "../componentes/passo-emprestimos.component";
 import { PassoParticipantesComponent } from "../componentes/passo-participantes.component";
-import { PendenciasPassoComponent } from "../componentes/pendencias-passo.component";
+import { PendenciasComponent } from "../../../shared/ui/pendencias/pendencias.component";
 import { PreviaRunComponent } from "../componentes/previa-run.component";
 import {
   destinoDoRegistro,
@@ -44,7 +44,7 @@ import { calcularPrevia, montarCorpo } from "../data/previa-run";
 import { RunsApi } from "../data/runs.api";
 import { type Catalogos, novoRascunho, ROTULO_STATUS, type RascunhoRun } from "../data/runs.modelos";
 import type { ComRascunhoNaoSalvo } from "../sair-do-assistente.guard";
-import { focarPrimeiraPendencia, ValidacaoPassos } from "./validacao-passos";
+import { focarPrimeiraPendencia, ValidacaoPassos } from "../../../shared/utils/validacao-passos";
 
 /** Abaixo desta largura do conteúdo, os passos ficam um embaixo do outro. */
 const LARGURA_PASSOS_LADO_A_LADO = 700;
@@ -72,7 +72,7 @@ const SEM_CATALOGOS: Catalogos = { jogadores: [], classes: [], instancias: [], i
     PassoDropsComponent,
     PassoEmprestimosComponent,
     PassoParticipantesComponent,
-    PendenciasPassoComponent,
+    PendenciasComponent,
     PreviaRunComponent,
   ],
   host: { "(window:beforeunload)": "avisarAntesDeSair($event)" },
@@ -142,7 +142,7 @@ export class AssistenteRunPage implements OnInit, ComRascunhoNaoSalvo {
   protected readonly pend = computed(() =>
     pendencias(this.run(), this.catalogos(), this.correcaoDe() === null ? null : this.motivo()),
   );
-  protected readonly validacao = new ValidacaoPassos(this.pend);
+  protected readonly validacao = new ValidacaoPassos(this.pend, PASSOS_RUN);
   protected readonly previa = computed(() => {
     const c = this.config();
     return c === null ? null : calcularPrevia(this.run(), paraConfigMotor(c), this.catalogos());

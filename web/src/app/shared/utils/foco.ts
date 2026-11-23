@@ -1,5 +1,5 @@
-// Foco nas listas editáveis do assistente (diretrizes §7): quando uma linha some ou aparece, o foco
-// vai para o próximo item lógico, e não se perde no topo da página.
+// Foco em listas editáveis (diretrizes §7): quando uma linha some ou aparece, o foco vai para o
+// próximo item lógico, e não se perde no topo da página.
 import { afterNextRender, type Injector } from "@angular/core";
 
 /** Depois do próximo render, foca o elemento que `encontrar` devolver (se houver). */

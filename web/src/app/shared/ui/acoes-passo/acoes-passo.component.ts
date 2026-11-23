@@ -1,14 +1,22 @@
 import { booleanAttribute, ChangeDetectionStrategy, Component, input, output } from "@angular/core";
 import { MatStepperModule } from "@angular/material/stepper";
 import { RouterLink } from "@angular/router";
-import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
+import { BotaoComponent } from "../botao/botao.component";
 
 /**
- * Rodapé de um passo do assistente: Voltar, o botão principal (Próximo ou Registrar) e Cancelar.
- * O principal fica sempre clicável: quem usa decide, no `avancar`, se há pendência (§6.4).
+ * Rodapé de um passo dentro de um `mat-stepper`: Voltar, o botão principal (Próximo, Criar,
+ * Registrar…) e, opcionalmente, Cancelar. O principal fica sempre clicável: quem usa decide, no
+ * `avancar`, se há pendência, e mostra os erros em vez de desabilitar o botão (diretrizes §6.4).
+ * Só funciona dentro de um `mat-stepper` (o Voltar usa `matStepperPrevious`).
+ *
+ * ```html
+ * <ui-acoes-passo [voltar]="false" cancelarPara="/gestao/runs" (avancar)="avancar('dados')" />
+ * ```
+ *
+ * @nivel molecula
  */
 @Component({
-  selector: "app-acoes-passo",
+  selector: "ui-acoes-passo",
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatStepperModule, RouterLink, BotaoComponent],
   template: `
@@ -18,7 +26,9 @@ import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
     <button uiBotao variante="principal" type="button" [carregando]="carregando()" (click)="avancar.emit()">
       {{ rotulo() }}
     </button>
-    <a uiBotao variante="fantasma" routerLink="/gestao/runs">Cancelar</a>
+    @if (cancelarPara(); as destino) {
+      <a uiBotao variante="fantasma" [routerLink]="destino">Cancelar</a>
+    }
   `,
   styles: `
     :host {
@@ -33,7 +43,9 @@ export class AcoesPassoComponent {
   readonly voltar = input(true, { transform: booleanAttribute });
   /** Texto do botão principal. */
   readonly rotulo = input("Próximo");
-  /** Envio em andamento (só no último passo). */
+  /** Envio em andamento (no último passo). */
   readonly carregando = input(false);
+  /** Para onde o "Cancelar" leva; sem valor, não há "Cancelar". */
+  readonly cancelarPara = input<string | null>(null);
   readonly avancar = output();
 }

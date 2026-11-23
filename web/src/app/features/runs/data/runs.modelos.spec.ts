@@ -3,7 +3,8 @@ import type { Classe } from "../../../shared/dominio/cadastros";
 import type { Instancia } from "../../../shared/dominio/instancias";
 import { type DetalheRun, rascunhoDeRun } from "./detalhe-run.modelos";
 import { pendentesDoRascunho, type RascunhoNag4eyes, rascunhoDeNag4eyes } from "./nag4eyes.modelos";
-import { pendencias, textoPendencia } from "./pendencias-run";
+import { textoPendencia } from "../../../shared/utils/validacao-passos";
+import { pendencias } from "./pendencias-run";
 import { calcularPrevia, montarCorpo } from "./previa-run";
 import {
   ajustarAVersaoVigente,
