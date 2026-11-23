@@ -256,7 +256,8 @@ describe("RunDetalhePage", () => {
     http.expectOne("/api/runs/run-1").flush(detalhe());
     await esperar();
     expect(el.querySelector("[data-testid='runs-participacoes']")?.textContent).toContain("Ana-MTK");
-    expect(el.querySelector("[data-testid='runs-lancamentos']")?.textContent).toContain("250");
+    expect(el.querySelector("[data-testid='runs-lancamentos']")?.textContent).toContain("+250 pts");
+    expect(el.textContent).toContain("Soma: 250 pts");
 
     const lancar = botao(el, "Lançar drops no estoque");
     lancar.click();

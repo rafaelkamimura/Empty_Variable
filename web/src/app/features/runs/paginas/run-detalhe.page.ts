@@ -6,6 +6,7 @@ import { AuthService } from "../../../core/auth.service";
 import { mensagemDeErro } from "../../../core/modelos";
 import { telaLiberada } from "../../../core/telas-liberadas";
 import { type Carregavel, carregando, comErro, pronto } from "../../../shared/utils/carregavel";
+import { PontosPipe } from "../../../shared/pipes/pontos.pipe";
 import { AvisoComponent } from "../../../shared/ui/aviso/aviso.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estado/estado.component";
@@ -24,6 +25,7 @@ import { ROTULO_STATUS } from "../data/runs.modelos";
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe,
+    PontosPipe,
     RouterLink,
     AvisoComponent,
     BotaoComponent,

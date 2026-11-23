@@ -34,17 +34,17 @@ import type { Previa } from "../data/previa-run";
             <td>{{ l.jogador }}</td>
             <td>{{ l.funcao }}</td>
             <td class="numero">{{ l.rank }}</td>
-            <td class="numero">{{ l.pontos }}</td>
+            <td class="numero">{{ l.pontos | pontos }}</td>
             <td>
               @for (pc of l.parcelas; track $index) {
-                <div>{{ pc.credor }}: {{ pc.pontos }}</div>
+                <div>{{ pc.credor }}: {{ pc.pontos | pontos }}</div>
               }
               @if (l.reducao) {
                 <!-- D9a: os credores somados passam do teto. -->
                 <div class="aviso">Reduzido ao teto dos credores</div>
               }
             </td>
-            <td class="numero">{{ l.pontosTomador }}</td>
+            <td class="numero">{{ l.pontosTomador | pontos }}</td>
           </tr>
         }
       </tbody>

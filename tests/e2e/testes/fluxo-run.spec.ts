@@ -85,7 +85,7 @@ test.describe.serial("Fluxo completo de uma run", () => {
     await expect(page).toHaveURL(/\/gestao\/runs\/[0-9a-f-]{36}$/);
     runId = page.url().split("/").pop() ?? "";
     await expect(page.getByTestId("runs-participacoes")).toContainText("Ana-MTK");
-    await expect(page.getByText("Soma: 500")).toBeVisible();
+    await expect(page.getByText("Soma: 500 pts")).toBeVisible();
   });
 
   test("membro vê o próprio saldo e o histórico detalhado (T-22, D14)", async ({ page }) => {

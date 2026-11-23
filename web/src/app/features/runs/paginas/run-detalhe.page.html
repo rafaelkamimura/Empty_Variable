@@ -74,14 +74,14 @@
                   <td>{{ l.jogador.apelido }}</td>
                   <td>{{ rotuloTipo[l.tipo] }}</td>
                   <td class="numero" [class.negativo]="l.valor < 0">
-                    {{ l.valor > 0 ? "+" : "" }}{{ l.valor }}
+                    {{ l.valor > 0 ? "+" : "" }}{{ l.valor | pontos }}
                   </td>
                 </tr>
               }
             </tbody>
           </table>
           <p>
-            Soma: <strong>{{ somaLancamentos() }}</strong>
+            Soma: <strong>{{ somaLancamentos() | pontos }}</strong>
           </p>
         }
       </section>
