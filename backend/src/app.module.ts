@@ -3,6 +3,7 @@ import { APP_FILTER } from "@nestjs/core";
 import { AuditoriaModule } from "./auditoria/auditoria.service.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { CadastrosModule } from "./cadastros/cadastros.module.js";
+import { DatamineModule } from "./datamine/datamine.controller.js";
 import { EstoqueModule } from "./estoque/estoque.module.js";
 import { FarmModule } from "./farm/farm.controller.js";
 import { LojaModule } from "./loja/loja.module.js";
@@ -55,6 +56,7 @@ export class ConfiguracaoModule {}
     GruposProgramadosIntegracaoModule,
     ConsultasIntegracaoModule,
     FarmModule,
+    DatamineModule,
   ],
   controllers: [SaudeController],
   providers: [

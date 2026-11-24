@@ -28,8 +28,12 @@ services:
       INTEGRACAO_TOKEN: ${INTEGRACAO_TOKEN:-}
       DIVINE_PRIDE_API_KEY: ${DIVINE_PRIDE_API_KEY:-}
       DIVINE_PRIDE_SERVER: ${DIVINE_PRIDE_SERVER:-LATAM}
+      # D63: relatórios dos patches minerados (um subdiretório por patch), gravados no volume abaixo.
+      DATAMINE_DIR: /dados/datamine
       # Login simulado nunca em produção (e a API também o recusa com NODE_ENV=production).
       AUTH_DEV_LOGIN: "false"
+    volumes:
+      - ${DATAMINE_DIR:-./datamine}:/dados/datamine
     networks:
       # O nginx do serviço web procura a API por "api", só na rede desta stack.
       default: { aliases: [api] }

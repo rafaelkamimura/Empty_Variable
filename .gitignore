@@ -7,5 +7,7 @@ coverage/
 test-results/
 playwright-report/
 backups/
+# D63: relatórios publicados pelo rolatam-dm (só a pasta da raiz; backend/src/datamine é código)
+/datamine/
 .env.producao
 .env.vps

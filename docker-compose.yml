@@ -21,6 +21,8 @@ services:
   api:
     build: { context: ., dockerfile: backend/Dockerfile }
     environment:
+      # D63: relatórios dos patches minerados.
+      DATAMINE_DIR: /dados/datamine
       # O Compose local usa o Postgres desta stack. Use uma senha segura para URL.
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       PORT: "3000"
@@ -39,6 +41,8 @@ services:
       AUTH_DEV_LOGIN: ${AUTH_DEV_LOGIN:-false}
     depends_on:
       postgres: { condition: service_healthy }
+    volumes:
+      - ${DATAMINE_DIR:-./datamine}:/dados/datamine
 
   web:
     build: { context: ., dockerfile: web/Dockerfile }

@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 /** Configuração lida do ambiente (ver .env.example). Injetada pelo token CONFIGURACAO. */
 export interface Configuracao {
   /** Origem pública do sistema (ex.: https://betel.exemplo.com). Usada no redirect pós-login e na checagem de Origin. */
@@ -26,6 +28,11 @@ export interface Configuracao {
    * pelo ID (D41) não precisam de chave.
    */
   divinePride: { chave: string; servidor: string } | null;
+  /**
+   * D63: pasta onde ficam os relatórios dos patches minerados (DATAMINE_DIR), um subdiretório por
+   * patch. Padrão: `datamine/` na pasta de trabalho da API. Criada quando o primeiro patch chega.
+   */
+  datamineDir: string;
 }
 
 export const CONFIGURACAO = Symbol("CONFIGURACAO");
@@ -82,5 +89,6 @@ export function carregarConfiguracao(env: NodeJS.ProcessEnv = process.env): Conf
     tokenIntegracao: tokenIntegracao === "" ? null : tokenIntegracao,
     guildId: guildId === "" ? null : guildId,
     divinePride: chaveDivinePride === "" ? null : { chave: chaveDivinePride, servidor: servidorDivinePride },
+    datamineDir: resolve((env["DATAMINE_DIR"] ?? "").trim() || "datamine"),
   };
 }

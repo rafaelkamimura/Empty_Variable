@@ -21,6 +21,8 @@ export const TELAS_LIBERADAS: ReadonlySet<string> = new Set([
   "gestao/runs/:id",
   "instancias-programadas",
   "farm",
+  "datamine",
+  "datamine/:id",
   "simulador",
   "simulador/estimativa",
   "admin/estoque",

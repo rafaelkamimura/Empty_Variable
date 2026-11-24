@@ -30,3 +30,5 @@
 | US-23 | Ver os totais farmados por dia, semana e mês | V | Implementada (Diário de farm) | — |
 | US-24 | Buscar itens pelo nome ou pelo ID da Divine Pride | V | Implementada (Diário de farm) | — |
 | US-25 | Importar o backup do artefato Diário de Instâncias | V | Implementada (Diário de farm) | — |
+| US-26 | Ver o que cada patch do cliente trouxe (itens, caixas, monstros, mapas, quests) | VI | Implementada, fase 1 (D63): publicação pelo rolatam-dm e telas /datamine | — |
+| US-27 | Minerar o patch na própria VPS, sem a máquina do dono | VI | Planejada (D63, fase 2) | Formato `.gpf` 0x200 não verificado; rebase de cliente completo |
