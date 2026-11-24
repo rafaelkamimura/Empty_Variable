@@ -50,10 +50,15 @@ Com sessão, como o resto do sistema:
 
 - `GET /api/datamine/patches`: todos, do mais recente para o mais antigo (`id`, `chave`, `titulo`, `dataPatch`, `patches`, `resumo`, `bytesHtml`, `bytesJson`, `publicadoEm`, `atualizadoEm`).
 - `GET /api/datamine/patches/:id`: um patch.
-- `GET /api/datamine/patches/:id/relatorio`: o `report.html`, para o iframe da tela. Vem com
+- `GET /api/datamine/patches/:id/dados`: o `report.json`. É o que a tela `/datamine/:id` usa: ela pede o
+  arquivo quando a página do patch abre e monta as abas (itens, caixas, monstros, skills, mapas, quests,
+  GRF, tabelas Lua e textos) com os componentes do sistema. O formato que a tela lê está em
+  `web/src/app/features/datamine/data/relatorio.modelos.ts`; campo ausente ou de tipo errado vira o valor
+  neutro, e campo novo é ignorado.
+- `GET /api/datamine/patches/:id/relatorio`: o `report.html`. A tela não usa mais (até a UI nativa, ela o
+  emoldurava num iframe); a rota continua para quem quiser abrir o relatório original. Vem com
   `Content-Security-Policy: … frame-ancestors 'self'; sandbox allow-scripts` e `X-Frame-Options: SAMEORIGIN`:
   só páginas deste domínio o emolduram, e ele roda numa origem opaca, sem a sessão nem o storage do sistema.
-- `GET /api/datamine/patches/:id/dados`: o `report.json`.
 
 ## Onde fica
 
