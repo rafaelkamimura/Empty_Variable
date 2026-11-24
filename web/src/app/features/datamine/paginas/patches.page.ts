@@ -10,15 +10,17 @@ import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
 import { TabelaDirective } from "../../../shared/ui/tabela/tabela.directive";
 import { DatamineApi } from "../data/datamine.api";
 import {
-  INDICADORES_DA_LISTA,
-  indicadoresDe,
+  indicadoresDaLista,
   type Indicador,
   type PatchResumido,
+  temContagens,
 } from "../data/datamine.modelos";
 
 interface LinhaPatch {
   patch: PatchResumido;
   indicadores: Indicador[];
+  /** O patch foi publicado sem contagens (diferente de ter todas em zero). */
+  semResumo: boolean;
 }
 
 /** Lista dos patches do cliente minerados (D63): o que cada atualização do RO LATAM trouxe. */
@@ -83,7 +85,9 @@ interface LinhaPatch {
                       @for (i of l.indicadores; track i.chave) {
                         <ui-badge tom="neutro">{{ i.valor | number: "1.0-0" }} {{ i.rotulo }}</ui-badge>
                       } @empty {
-                        <span class="chave">Sem resumo</span>
+                        <span class="chave">{{
+                          l.semResumo ? "Sem resumo" : "Nenhuma mudança contada"
+                        }}</span>
                       }
                     </span>
                   </td>
@@ -134,9 +138,8 @@ export class PatchesPage {
         pronto(
           patches.map((patch) => ({
             patch,
-            indicadores: indicadoresDe(patch.resumo)
-              .filter((i) => INDICADORES_DA_LISTA.includes(i.chave))
-              .map((i) => ({ ...i, rotulo: i.rotulo.toLowerCase() })),
+            indicadores: indicadoresDaLista(patch.resumo),
+            semResumo: !temContagens(patch.resumo),
           })),
         ),
       );
