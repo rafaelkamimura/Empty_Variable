@@ -72,6 +72,13 @@ html {
   --mat-toolbar-container-text-color: var(--texto);
 }
 
+/* Foco visível nas abas (diretrizes §7): o Material tira o contorno do rótulo e deixa só uma
+ * camada de 12% de opacidade, que não chega ao contraste de 3:1. */
+.mat-mdc-tab-header .mdc-tab:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -2px;
+}
+
 /* Abas no celular: o Material reserva 24 px de cada lado do rótulo, e três abas já não cabem em
  * 360 px (aparecem as setas de rolagem). Aqui a folga cai para --esp-3. */
 @media (max-width: 600px) {
