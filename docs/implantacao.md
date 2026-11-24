@@ -224,3 +224,17 @@ O usuário do runner precisa estar no grupo `docker`. A VPS não precisa de Node
 **Repositório público:** o workflow de um PR vindo de um fork é o do próprio fork, então a condição `if` do `ci.yml` não basta para impedir que código de terceiros rode na VPS. Em **Settings → Actions → General → Fork pull request workflows**, marque **Require approval for all external contributors** antes de registrar o runner.
 
 O CI sobe as stacks com nome de projeto e portas próprios de cada execução e as derruba no fim, para não encostar na stack de produção que divide o mesmo Docker.
+
+### 8.5 Datamine dos patches (D63)
+
+Os relatórios dos patches do cliente publicados pelo `rolatam-dm` ficam em `DATAMINE_DIR` (`.env`; padrão `./datamine` no clone, melhor uma pasta fora dele, como os backups), montada em `/dados/datamine` na API. Cada patch é um subdiretório com `report.html` e `report.json` (uns 3 MB). O banco guarda só a identificação e o resumo (`patch_cliente`), então a pasta entra no plano de backup junto com o `BACKUP_DIR`.
+
+A publicação usa `POST /api/integracao/datamine/patches` com o `INTEGRACAO_TOKEN`. Como o snippet do nginx responde 404 para `/api/integracao` vindo de fora, a máquina que minera abre um túnel até o contêiner web e publica por ele:
+
+```bash
+ssh -N -L 4200:127.0.0.1:4200 <vps>      # em outro terminal
+BETEL_URL=http://127.0.0.1:4200 BETEL_TOKEN=<INTEGRACAO_TOKEN> python publish.py out/<stamp>
+```
+
+O snippet (`deploy/nginx/emptyvariable.conf`) ganhou uma `location` para `/api/datamine/`, sem os cabeçalhos gerais: o relatório abre num iframe da tela `/datamine/:id` e a própria API manda a política dele (`frame-ancestors 'self'`, `sandbox`). Depois de atualizar o clone, rode `deploy/vps-nginx.sh <site>` de novo para reinstalar o snippet. O contrato do endpoint está em `docs/integracao-datamine.md`.
+

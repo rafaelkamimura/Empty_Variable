@@ -3,6 +3,7 @@ import { adminGuard, anonimoGuard, autenticadoGuard, gestorGuard, inicioGuard } 
 import { TELAS_LIBERADAS } from "./core/telas-liberadas";
 import { ROTAS_DEV } from "./dev/dev.routes";
 import { ROTAS_CARTEIRA } from "./features/carteira/carteira.routes";
+import { ROTAS_DATAMINE } from "./features/datamine/datamine.routes";
 import { ROTAS_FARM } from "./features/farm/farm.routes";
 import { ROTAS_LOJA } from "./features/loja/loja.routes";
 import { ROTAS_NEBULA } from "./features/nebula/nebula.routes";
@@ -30,6 +31,7 @@ const rotasCompletas: Routes = [
   ...ROTAS_CARTEIRA,
   ...ROTAS_FARM,
   ...ROTAS_NEBULA,
+  ...ROTAS_DATAMINE,
   {
     path: "simulador",
     canActivate: [autenticadoGuard],

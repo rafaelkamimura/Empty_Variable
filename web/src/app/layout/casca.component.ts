@@ -13,6 +13,7 @@ const ITENS_MENU: readonly ItemMenu[] = [
   { rota: "/instancias-programadas", rotulo: "Instâncias", icone: "usuarios" },
   { rota: "/farm", rotulo: "Diário de farm", icone: "ampulheta" },
   { rota: "/simulador", rotulo: "Simulação de dano", icone: "espadas" },
+  { rota: "/datamine", rotulo: "Patches do cliente", icone: "caixa" },
 ];
 
 /**

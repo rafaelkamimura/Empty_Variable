@@ -1,4 +1,7 @@
 import "reflect-metadata";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
@@ -33,6 +36,8 @@ export const CONFIG_TESTE: Configuracao = {
   tokenIntegracao: null,
   guildId: "guild-1",
   divinePride: null,
+  // D63: cada execução dos testes grava os relatórios numa pasta temporária própria.
+  datamineDir: mkdtempSync(join(tmpdir(), "betel-datamine-")),
 };
 
 /** Token de serviço usado nos testes das rotas /api/integracao. */
@@ -177,7 +182,7 @@ export async function criarApp(config: Partial<Configuracao> = {}): Promise<Cont
     await prisma.$transaction([
       prisma.$executeRawUnsafe("SET LOCAL session_replication_role = replica"),
       prisma.$executeRawUnsafe(
-        `TRUNCATE chefe_instancia, monstro, farm_checkin_drop, farm_checkin, farm_instancia_drop, farm_instancia_personagem, farm_instancia, farm_item, nome_item_divine_pride, notificacao, rascunho_run_participante, rascunho_run, transferencia_pontos, imagem_cache, receita_peca, receita_componente, preco_receita, solicitacao_nebula, receita,
+        `TRUNCATE patch_cliente, chefe_instancia, monstro, farm_checkin_drop, farm_checkin, farm_instancia_drop, farm_instancia_personagem, farm_instancia, farm_item, nome_item_divine_pride, notificacao, rascunho_run_participante, rascunho_run, transferencia_pontos, imagem_cache, receita_peca, receita_componente, preco_receita, solicitacao_nebula, receita,
          movimento_estoque, compra_lote, compra, lote_estoque, oferta_venda, preco_item, config_loja,
          lancamento_pontos, emprestimo, drop_run, participacao, run, config_pontuacao, funcao_classe, encontro, versao_instancia, instancia, classe,
          item_catalogo, solicitacao_vinculo, personagem, jogador, sessao, auditoria, usuario CASCADE`,

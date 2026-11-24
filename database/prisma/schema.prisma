@@ -1133,3 +1133,29 @@ model ChefeInstancia {
   @@unique([instanciaId, idMonstro])
   @@map("chefe_instancia")
 }
+
+// ---------------------------------------------------------------------------
+// D63: datamine dos patches do cliente RO LATAM, publicado pelo rolatam-dm.
+// ---------------------------------------------------------------------------
+
+/// Um patch do cliente minerado. O relatório (report.html e report.json) fica em disco, em
+/// DATAMINE_DIR/<id>/; aqui ficam a identificação e o resumo que a lista mostra.
+model PatchCliente {
+  id           String   @id @default(uuid()) @db.Uuid
+  /// Nome do último arquivo do patch.txt coberto (ex.: 2026-11-24_live_client_2170_2171_1795480754.rgz).
+  /// Identifica o patch: publicar de novo a mesma chave substitui o relatório em vez de duplicar.
+  chave        String   @unique
+  titulo       String
+  dataPatch    DateTime @map("data_patch") @db.Date
+  /// Arquivos do patch.txt aplicados entre os dois snapshots (lista de nomes).
+  patches      Json     @db.JsonB
+  /// Contagens e destaques (itens, monstros, mapas, caixas...), montados pelo rolatam-dm.
+  resumo       Json     @db.JsonB
+  bytesHtml    Int      @map("bytes_html")
+  bytesJson    Int      @map("bytes_json")
+  publicadoEm  DateTime @default(now()) @map("publicado_em") @db.Timestamptz(3)
+  atualizadoEm DateTime @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  @@index([dataPatch])
+  @@map("patch_cliente")
+}
