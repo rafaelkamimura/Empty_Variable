@@ -55,11 +55,34 @@ describe("PatchesPage", () => {
     expect(badges).toEqual([
       "230 itens novos",
       "122 itens alterados",
-      "24 monstros e npcs",
+      "24 monstros e NPCs",
       "3 mapas",
       "31 caixas e ovos",
     ]);
     expect(linha.querySelector("td.numero")?.textContent?.trim()).toBe("2");
+  });
+
+  it("patch pequeno, sem itens, monstros, mapas nem caixas, mostra o que mudou em vez de parecer vazio", async () => {
+    const { http, el } = montar();
+    http.expectOne("/api/datamine/patches").flush([
+      patch({
+        id: "a",
+        resumo: { contagens: { itensNovos: 0, monstros: 0, caixas: 0, tabelasLua: 3, grfAlterados: 5 } },
+      }),
+      patch({ id: "b", resumo: { contagens: { itensNovos: 0, tabelasLua: 0 } } }),
+      patch({ id: "c", resumo: {} }),
+    ]);
+    await esperar();
+
+    const linhas = Array.from(el.querySelectorAll("[data-testid=datamine-lista] tbody tr"));
+    const oQueMudou = (tr: Element) =>
+      tr.querySelector(".indicadores")?.textContent?.replace(/\s+/g, " ").trim();
+    expect(Array.from(linhas[0]!.querySelectorAll("ui-badge")).map((b) => b.textContent?.trim())).toEqual([
+      "5 alterados no GRF",
+      "3 tabelas Lua",
+    ]);
+    expect(oQueMudou(linhas[1]!)).toBe("Nenhuma mudança contada");
+    expect(oQueMudou(linhas[2]!)).toBe("Sem resumo");
   });
 
   it("sem patches, mostra o estado vazio", async () => {

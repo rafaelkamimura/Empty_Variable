@@ -74,6 +74,32 @@ export const INDICADORES_DA_LISTA: readonly string[] = [
   "caixas",
 ];
 
+/** Rótulos mais curtos para a lista, onde o selo não quebra linha e precisa caber no celular. */
+const ROTULO_CURTO: Readonly<Record<string, string>> = {
+  grfNovos: "novos no GRF",
+  grfAlterados: "alterados no GRF",
+};
+
+/** Rótulo para o meio de uma frase ("3 tabelas Lua"): só a primeira letra cai, as siglas ficam. */
+const emFrase = (i: Indicador): string =>
+  ROTULO_CURTO[i.chave] ?? i.rotulo.charAt(0).toLowerCase() + i.rotulo.slice(1);
+
+/**
+ * O que a linha de um patch mostra na lista. Normalmente, só os indicadores curtos. Num patch
+ * pequeno, em que todos eles são zero (um hotfix que só mexe em tabelas Lua ou em arquivos do GRF),
+ * entram os demais, para a linha dizer o que mudou em vez de parecer vazia.
+ */
+export function indicadoresDaLista(resumo: ResumoPatch | null | undefined): Indicador[] {
+  const todos = indicadoresDe(resumo);
+  const curtos = todos.filter((i) => INDICADORES_DA_LISTA.includes(i.chave));
+  return (curtos.length > 0 ? curtos : todos).map((i) => ({ ...i, rotulo: emFrase(i) }));
+}
+
+/** O resumo trouxe alguma contagem (mesmo que todas sejam zero). */
+export function temContagens(resumo: ResumoPatch | null | undefined): boolean {
+  return Object.values(resumo?.contagens ?? {}).some((v) => typeof v === "number");
+}
+
 /** Só os nomes de arquivo .gpf/.rgz, sem o número de sequência do patch.txt. */
 export function nomesDosPatches(patches: readonly string[]): string[] {
   return patches.map((p) => p.trim().split(/\s+/).pop() ?? p).filter((p) => p !== "");
