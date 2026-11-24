@@ -122,6 +122,16 @@ export const ENTRADAS_CATALOGO: readonly EntradaCatalogo[] = [
     carregar: () => import("../../shared/ui/badge/badge.catalogo").then((m) => m.BadgeCatalogoComponent),
   },
   {
+    id: "texto-colorido",
+    nome: "ui-texto-colorido",
+    nivel: "atomo",
+    descricao: "Linha de texto em trechos com a cor que veio dos dados, ajustada para ficar legível.",
+    carregar: () =>
+      import("../../shared/ui/texto-colorido/texto-colorido.catalogo").then(
+        (m) => m.TextoColoridoCatalogoComponent,
+      ),
+  },
+  {
     id: "campo",
     nome: "ui-campo",
     nivel: "molecula",

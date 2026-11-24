@@ -1,20 +1,33 @@
-import { DatePipe, DecimalPipe, DOCUMENT } from "@angular/common";
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from "@angular/core";
-import { DomSanitizer, type SafeResourceUrl } from "@angular/platform-browser";
+import { DatePipe, DecimalPipe } from "@angular/common";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { mensagemDeErro } from "../../../core/modelos";
 import { type Carregavel, carregando, comErro, pronto } from "../../../shared/utils/carregavel";
+import { BadgeComponent } from "../../../shared/ui/badge/badge.component";
 import { BotaoComponent } from "../../../shared/ui/botao/botao.component";
 import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estado/estado.component";
 import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
 import { ResumoComponent } from "../../../shared/ui/resumo/resumo.component";
+import { ArquivosPatchComponent } from "../componentes/arquivos-patch.component";
+import { RelatorioPatchComponent } from "../componentes/relatorio-patch.component";
 import { DatamineApi } from "../data/datamine.api";
-import { indicadoresDe, nomesDosPatches, type PatchResumido, urlDoRelatorio } from "../data/datamine.modelos";
+import { indicadoresDe, nomesDosPatches, type PatchResumido } from "../data/datamine.modelos";
+import { DatamineStore } from "../data/datamine.store";
+import { relatorioVazio } from "../data/relatorio.modelos";
 
 /**
- * Um patch do cliente (D63): os números do resumo e, embaixo, o relatório completo gerado pelo
- * rolatam-dm num iframe em `sandbox` (origem opaca: ele não enxerga a sessão nem o storage do
- * sistema). A API serve o HTML com a política que só permite emoldurá-lo por este domínio.
+ * Um patch do cliente (D63): os números do resumo e o relatório completo em abas (itens, caixas,
+ * monstros, skills, mapas, quests, arquivos do GRF, tabelas Lua e textos). O resumo chega primeiro;
+ * o relatório, que é grande, é pedido em paralelo e tem o próprio estado de carregamento.
  */
 @Component({
   selector: "app-patch-page",
@@ -22,11 +35,14 @@ import { indicadoresDe, nomesDosPatches, type PatchResumido, urlDoRelatorio } fr
   imports: [
     DecimalPipe,
     RouterLink,
+    BadgeComponent,
     BotaoComponent,
     EstadoComponent,
     EstadoProntoDirective,
     PaginaComponent,
     ResumoComponent,
+    ArquivosPatchComponent,
+    RelatorioPatchComponent,
   ],
   providers: [DatePipe],
   template: `
@@ -34,124 +50,113 @@ import { indicadoresDe, nomesDosPatches, type PatchResumido, urlDoRelatorio } fr
       <a uiBotao variante="fantasma" slot="acao" routerLink="/datamine">Todos os patches</a>
       <ui-estado [valor]="estado()" (tentarNovamente)="carregar()">
         <ng-template uiEstadoPronto [tipo]="estado()" let-patch>
-          @if (indicadores().length) {
+          @if (selos().length > 0) {
+            <ul class="selos" aria-label="Destaques do patch" data-testid="datamine-selos">
+              @for (selo of selos(); track selo) {
+                <li>
+                  <ui-badge tom="acento">{{ selo }}</ui-badge>
+                </li>
+              }
+            </ul>
+          }
+          @if (indicadores().length > 0) {
             <section class="indicadores" aria-label="Resumo do patch" data-testid="datamine-indicadores">
               @for (i of indicadores(); track i.chave) {
                 <ui-resumo [rotulo]="i.rotulo" [valor]="(i.valor | number: '1.0-0') ?? ''" />
               }
             </section>
           }
-          <details class="arquivos">
-            <summary>{{ patch.patches.length }} arquivos do patch.txt aplicados</summary>
-            <ul>
-              @for (nome of nomes(); track nome) {
-                <li>{{ nome }}</li>
-              }
-            </ul>
-          </details>
-          <section class="relatorio" aria-labelledby="titulo-relatorio">
-            <h2 id="titulo-relatorio">Relatório completo</h2>
-            <p class="dica">
-              Itens com descrição, probabilidades das caixas, monstros, skills, mapas, quests, arquivos do GRF
-              e tabelas Lua. As abas e a busca ficam dentro do quadro.
-              <a [href]="urlRelatorio()" target="_blank" rel="noopener">Abrir em outra aba</a>.
-            </p>
-            <iframe
-              class="quadro"
-              [src]="urlSegura()"
-              sandbox="allow-scripts"
-              referrerpolicy="no-referrer"
-              loading="lazy"
-              [title]="'Relatório do ' + patch.titulo"
-              data-testid="datamine-relatorio"
-            ></iframe>
+          <app-arquivos-patch [patches]="nomes()" [meta]="meta()" />
+          <section aria-label="Relatório completo" data-testid="datamine-relatorio">
+            <ui-estado
+              [valor]="relatorio()"
+              formatoCarregando="tabela"
+              [quantidadeCarregando]="6"
+              textoCarregando="Carregando o relatório do patch"
+              tituloErro="Não foi possível carregar o relatório do patch."
+              mensagemVazio="O relatório deste patch veio sem nenhuma mudança para mostrar."
+              [estaVazio]="vazio"
+              (tentarNovamente)="recarregarRelatorio()"
+            >
+              <ng-template uiEstadoPronto [tipo]="relatorio()" let-dados>
+                <app-relatorio-patch [relatorio]="dados" />
+              </ng-template>
+            </ui-estado>
           </section>
         </ng-template>
       </ui-estado>
     </ui-pagina>
   `,
   styles: `
+    .selos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--esp-2);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
     .indicadores {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
       gap: var(--esp-3);
+      margin-top: var(--esp-3);
     }
-    .arquivos {
+    app-arquivos-patch {
+      margin-top: var(--esp-3);
+    }
+    section[data-testid="datamine-relatorio"] {
       margin-top: var(--esp-4);
-      color: var(--texto-suave);
-      font-size: var(--fs-s);
-    }
-    .arquivos summary {
-      cursor: pointer;
-      padding: var(--esp-2) 0;
-    }
-    .arquivos summary:focus-visible {
-      outline: 2px solid var(--foco);
-      outline-offset: 2px;
-    }
-    .arquivos ul {
-      margin: 0;
-      padding-left: var(--esp-5);
-      font-family: var(--fonte-mono);
-      font-size: var(--fs-xs);
-      overflow-wrap: anywhere;
-    }
-    .relatorio {
-      margin-top: var(--esp-5);
-    }
-    .relatorio h2 {
-      margin: 0 0 var(--esp-2);
-      font-size: var(--fs-xl);
-      font-weight: 700;
-      color: var(--texto-forte);
-    }
-    .dica {
-      margin: 0 0 var(--esp-3);
-      color: var(--texto-suave);
-      max-width: 80ch;
-    }
-    .quadro {
-      display: block;
-      width: 100%;
-      min-height: 75dvh;
-      border: 1px solid var(--borda);
-      border-radius: var(--raio-g);
-      background: var(--cartao);
+      min-width: 0;
     }
   `,
 })
 export class PatchPage {
   private readonly api = inject(DatamineApi);
-  private readonly sanitizer = inject(DomSanitizer);
-  private readonly documento = inject(DOCUMENT);
+  private readonly store = inject(DatamineStore);
   private readonly data = inject(DatePipe);
 
   /** Vem da rota `datamine/:id` (withComponentInputBinding). */
   readonly id = input.required<string>();
 
   protected readonly estado = signal<Carregavel<PatchResumido>>(carregando());
-  protected readonly patch = computed(() => {
+  protected readonly relatorio = this.store.relatorio;
+  protected readonly vazio = relatorioVazio;
+
+  private readonly patch = computed(() => {
     const e = this.estado();
     return e.estado === "pronto" ? e.dados : null;
+  });
+  /** A meta do relatório, quando ele já carregou (os arquivos principais e os selos saem dela). */
+  protected readonly meta = computed(() => {
+    const r = this.relatorio();
+    return r.estado === "pronto" ? r.dados.meta : null;
   });
   protected readonly titulo = computed(() => this.patch()?.titulo ?? "Patch do cliente");
   protected readonly subtitulo = computed(() => {
     const p = this.patch();
     if (p === null) return "O que esta atualização do RO LATAM trouxe.";
-    return `Patch de ${this.data.transform(p.dataPatch, "dd/MM/yyyy")}${p.resumo.ragexe ? ", com Ragexe novo" : ""}.`;
+    return `Patch de ${this.data.transform(p.dataPatch, "dd/MM/yyyy")}: o que mudou no cliente do RO LATAM.`;
+  });
+  /** Destaques do cabeçalho. Valem o resumo publicado e, quando chega, a meta do relatório. */
+  protected readonly selos = computed(() => {
+    const resumo = this.patch()?.resumo;
+    const meta = this.meta();
+    const selos: string[] = [];
+    if (resumo?.ragexe === true || meta?.ragexeNovo === true) selos.push("Ragexe novo");
+    if (resumo?.grfReempacotado === true || meta?.grfReempacotado === true) selos.push("GRF reempacotado");
+    return selos;
   });
   protected readonly indicadores = computed(() => indicadoresDe(this.patch()?.resumo));
   protected readonly nomes = computed(() => nomesDosPatches(this.patch()?.patches ?? []));
-  protected readonly urlRelatorio = computed(() => urlDoRelatorio(this.documento.baseURI, this.id()));
-  /** Montada aqui, da base da aplicação e do id da rota: nada vem de fora, por isso pode ser confiada. */
-  protected readonly urlSegura = computed<SafeResourceUrl>(() =>
-    this.sanitizer.bypassSecurityTrustResourceUrl(this.urlRelatorio()),
-  );
 
   constructor() {
     effect(() => {
-      this.id();
-      void this.carregar();
+      const id = this.id();
+      untracked(() => {
+        void this.carregar();
+        void this.store.carregarRelatorio(id);
+      });
     });
   }
 
@@ -164,5 +169,9 @@ export class PatchPage {
     } catch (erro) {
       if (this.id() === id) this.estado.set(comErro(mensagemDeErro(erro)));
     }
+  }
+
+  protected recarregarRelatorio(): void {
+    void this.store.carregarRelatorio(this.id(), true);
   }
 }
