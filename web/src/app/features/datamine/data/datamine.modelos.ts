@@ -13,6 +13,8 @@ export interface ResumoPatch {
   destaques?: DestaquesPatch;
   /** O Ragexe.exe mudou neste patch. */
   ragexe?: boolean;
+  /** A tabela de arquivos do GRF mudou de lugar neste patch. */
+  grfReempacotado?: boolean;
 }
 
 /** Resposta de GET /api/datamine/patches e /api/datamine/patches/:id. */
@@ -49,6 +51,7 @@ export const ROTULO_CONTAGEM: readonly (readonly [chave: string, rotulo: string]
   ["grfNovos", "Arquivos novos no GRF"],
   ["grfAlterados", "Arquivos alterados no GRF"],
   ["tabelasLua", "Tabelas Lua"],
+  ["textos", "Arquivos de texto"],
 ];
 
 /** Indicadores do resumo com valor maior que zero, na ordem de ROTULO_CONTAGEM. Contagens desconhecidas ficam de fora. */
@@ -70,11 +73,6 @@ export const INDICADORES_DA_LISTA: readonly string[] = [
   "mapas",
   "caixas",
 ];
-
-/** Endereço do report.html para o iframe, resolvido a partir da base da aplicação (sub-rota incluída). */
-export function urlDoRelatorio(baseURI: string, id: string): string {
-  return new URL(`api/datamine/patches/${encodeURIComponent(id)}/relatorio`, baseURI).href;
-}
 
 /** Só os nomes de arquivo .gpf/.rgz, sem o número de sequência do patch.txt. */
 export function nomesDosPatches(patches: readonly string[]): string[] {

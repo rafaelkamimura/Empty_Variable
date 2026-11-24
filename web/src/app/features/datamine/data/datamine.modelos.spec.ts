@@ -1,4 +1,4 @@
-import { indicadoresDe, nomesDosPatches, urlDoRelatorio } from "./datamine.modelos";
+import { indicadoresDe, nomesDosPatches } from "./datamine.modelos";
 
 describe("datamine.modelos", () => {
   it("indicadoresDe segue a ordem conhecida e ignora zeros e chaves estranhas", () => {
@@ -12,15 +12,6 @@ describe("datamine.modelos", () => {
   it("indicadoresDe aceita resumo vazio ou ausente", () => {
     expect(indicadoresDe(null)).toEqual([]);
     expect(indicadoresDe({})).toEqual([]);
-  });
-
-  it("urlDoRelatorio respeita a sub-rota da base", () => {
-    expect(urlDoRelatorio("https://eyes.exemplo.com/emptyvariable/", "abc-1")).toBe(
-      "https://eyes.exemplo.com/emptyvariable/api/datamine/patches/abc-1/relatorio",
-    );
-    expect(urlDoRelatorio("http://localhost:4200/", "x")).toBe(
-      "http://localhost:4200/api/datamine/patches/x/relatorio",
-    );
   });
 
   it("nomesDosPatches tira o número de sequência do patch.txt", () => {
