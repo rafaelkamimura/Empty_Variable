@@ -40,9 +40,14 @@ Publicar de novo a mesma `chave` substitui os arquivos e o resumo (`criado: fals
     "monstros": [{ "id": 21633, "sprite": "VR_AGNES" }],
     "caixas": [{ "id": 108642, "nome": "Artefato Oval Invernal" }]
   },
-  "ragexe": true
+  "ragexe": true,
+  "grfReempacotado": true
 }
 ```
+
+`ragexe` diz se o Ragexe.exe mudou (sha1 diferente entre os dois snapshots) e `grfReempacotado` se a tabela do
+`data.grf` trocou de lugar (o patcher reescreveu o arquivo). A tela usa os dois nos selos do cabeçalho, antes de o
+`report.json` chegar; o `report.json` repete a informação em `meta.ragexe` e `meta.grf`.
 
 ## Ler
 
