@@ -2,7 +2,8 @@ import { inject, Injectable, signal } from "@angular/core";
 import { mensagemDeErro } from "../../../core/modelos";
 import { type Carregavel, carregando, comErro, pronto } from "../../../shared/utils/carregavel";
 import { DatamineApi } from "./datamine.api";
-import { mapearRelatorio, type RelatorioPatch } from "./relatorio.modelos";
+import { mapearRelatorio } from "./relatorio.mapear";
+import type { RelatorioPatch } from "./relatorio.modelos";
 
 /**
  * O relatório completo do patch aberto (diretrizes §4.5). O report.json passa de 1 MB, então só é

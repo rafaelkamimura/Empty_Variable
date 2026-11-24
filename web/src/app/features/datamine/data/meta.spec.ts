@@ -1,6 +1,6 @@
 import { dataHoraBr, linhasDoCliente } from "./meta";
 import { RELATORIO_EXEMPLO } from "./relatorio.exemplo";
-import { mapearRelatorio } from "./relatorio.modelos";
+import { mapearRelatorio } from "./relatorio.mapear";
 
 describe("meta", () => {
   it("dataHoraBr converte a data do snapshot e devolve o resto como veio", () => {

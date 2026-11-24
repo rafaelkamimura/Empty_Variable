@@ -6,7 +6,7 @@ import {
   urlDoItemNaDivinePride,
 } from "./itens";
 import { RELATORIO_EXEMPLO } from "./relatorio.exemplo";
-import { mapearRelatorio } from "./relatorio.modelos";
+import { mapearRelatorio } from "./relatorio.mapear";
 
 const relatorio = mapearRelatorio(RELATORIO_EXEMPLO);
 const novo = (id: number) => relatorio.itensNovos.find((i) => i.id === id)!;

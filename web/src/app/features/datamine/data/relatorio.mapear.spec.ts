@@ -1,12 +1,6 @@
 import { RELATORIO_EXEMPLO } from "./relatorio.exemplo";
-import {
-  emTexto,
-  formatarBytes,
-  mapearRelatorio,
-  relatorioVazio,
-  rotuloDoCampo,
-  rotuloDoTipoGrf,
-} from "./relatorio.modelos";
+import { emTexto, mapearRelatorio } from "./relatorio.mapear";
+import { formatarBytes, relatorioVazio, rotuloDoCampo, rotuloDoTipoGrf } from "./relatorio.modelos";
 
 describe("mapearRelatorio", () => {
   it("entrada vazia, nula ou de tipo errado vira um relatório vazio, sem lançar", () => {
