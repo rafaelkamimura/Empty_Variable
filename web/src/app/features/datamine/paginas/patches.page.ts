@@ -9,7 +9,12 @@ import { EstadoComponent, EstadoProntoDirective } from "../../../shared/ui/estad
 import { PaginaComponent } from "../../../shared/ui/pagina/pagina.component";
 import { TabelaDirective } from "../../../shared/ui/tabela/tabela.directive";
 import { DatamineApi } from "../data/datamine.api";
-import { INDICADORES_DA_LISTA, indicadoresDe, type Indicador, type PatchResumido } from "../data/datamine.modelos";
+import {
+  INDICADORES_DA_LISTA,
+  indicadoresDe,
+  type Indicador,
+  type PatchResumido,
+} from "../data/datamine.modelos";
 
 interface LinhaPatch {
   patch: PatchResumido;
@@ -38,9 +43,9 @@ interface LinhaPatch {
     >
       <ui-como-funciona>
         <p>
-          A cada patch, os arquivos do cliente são comparados com os do patch anterior e o resultado é publicado
-          aqui. O relatório completo de cada patch tem os itens com a descrição, as probabilidades das caixas, os
-          monstros, as skills, os mapas, as quests e os arquivos do GRF.
+          A cada patch, os arquivos do cliente são comparados com os do patch anterior e o resultado é
+          publicado aqui. O relatório completo de cada patch tem os itens com a descrição, as probabilidades
+          das caixas, os monstros, as skills, os mapas, as quests e os arquivos do GRF.
         </p>
         <p>As tabelas são as que o cliente mostra; o servidor pode se comportar de outro jeito.</p>
       </ui-como-funciona>
@@ -69,7 +74,9 @@ interface LinhaPatch {
                     <span class="chave">{{ l.patch.chave }}</span>
                   </td>
                   <td>
-                    <time [attr.datetime]="l.patch.dataPatch">{{ l.patch.dataPatch | date: "dd/MM/yyyy" }}</time>
+                    <time [attr.datetime]="l.patch.dataPatch">{{
+                      l.patch.dataPatch | date: "dd/MM/yyyy"
+                    }}</time>
                   </td>
                   <td>
                     <span class="indicadores">

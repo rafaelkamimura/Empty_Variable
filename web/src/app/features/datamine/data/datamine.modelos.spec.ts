@@ -18,14 +18,14 @@ describe("datamine.modelos", () => {
     expect(urlDoRelatorio("https://eyes.exemplo.com/emptyvariable/", "abc-1")).toBe(
       "https://eyes.exemplo.com/emptyvariable/api/datamine/patches/abc-1/relatorio",
     );
-    expect(urlDoRelatorio("http://localhost:4200/", "x")).toBe("http://localhost:4200/api/datamine/patches/x/relatorio");
+    expect(urlDoRelatorio("http://localhost:4200/", "x")).toBe(
+      "http://localhost:4200/api/datamine/patches/x/relatorio",
+    );
   });
 
   it("nomesDosPatches tira o número de sequência do patch.txt", () => {
-    expect(nomesDosPatches(["1601 2026-11-24_live_client_2168_2168.gpf", "  1604 a.rgz ", "solto.gpf", ""])).toEqual([
-      "2026-11-24_live_client_2168_2168.gpf",
-      "a.rgz",
-      "solto.gpf",
-    ]);
+    expect(
+      nomesDosPatches(["1601 2026-11-24_live_client_2168_2168.gpf", "  1604 a.rgz ", "solto.gpf", ""]),
+    ).toEqual(["2026-11-24_live_client_2168_2168.gpf", "a.rgz", "solto.gpf"]);
   });
 });

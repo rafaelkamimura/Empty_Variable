@@ -70,12 +70,16 @@ export class DatamineService {
     await mkdir(pasta, { recursive: true });
     await this.gravar(join(pasta, NOME_ARQUIVO.html), entrada.relatorioHtml);
     await this.gravar(join(pasta, NOME_ARQUIVO.json), entrada.relatorioJson);
-    this.log.log(`Patch ${entrada.chave} ${existente === null ? "publicado" : "atualizado"} (${registro.id}).`);
+    this.log.log(
+      `Patch ${entrada.chave} ${existente === null ? "publicado" : "atualizado"} (${registro.id}).`,
+    );
     return { id: registro.id, criado: existente === null };
   }
 
   async listar(): Promise<PatchResumido[]> {
-    const linhas = await this.prisma.patchCliente.findMany({ orderBy: [{ dataPatch: "desc" }, { publicadoEm: "desc" }] });
+    const linhas = await this.prisma.patchCliente.findMany({
+      orderBy: [{ dataPatch: "desc" }, { publicadoEm: "desc" }],
+    });
     return linhas.map(resumir);
   }
 
@@ -123,7 +127,10 @@ function resumir(linha: {
     titulo: linha.titulo,
     dataPatch: linha.dataPatch.toISOString().slice(0, 10),
     patches: Array.isArray(linha.patches) ? linha.patches.map(String) : [],
-    resumo: linha.resumo !== null && typeof linha.resumo === "object" && !Array.isArray(linha.resumo) ? linha.resumo : {},
+    resumo:
+      linha.resumo !== null && typeof linha.resumo === "object" && !Array.isArray(linha.resumo)
+        ? linha.resumo
+        : {},
     bytesHtml: linha.bytesHtml,
     bytesJson: linha.bytesJson,
     publicadoEm: linha.publicadoEm,

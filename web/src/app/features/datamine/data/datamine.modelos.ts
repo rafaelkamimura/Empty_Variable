@@ -63,7 +63,13 @@ export function indicadoresDe(resumo: ResumoPatch | null | undefined): Indicador
 }
 
 /** Os indicadores curtos da lista: itens novos, monstros, mapas e caixas (os que mais mudam de um patch para outro). */
-export const INDICADORES_DA_LISTA: readonly string[] = ["itensNovos", "itensAlterados", "monstros", "mapas", "caixas"];
+export const INDICADORES_DA_LISTA: readonly string[] = [
+  "itensNovos",
+  "itensAlterados",
+  "monstros",
+  "mapas",
+  "caixas",
+];
 
 /** Endereço do report.html para o iframe, resolvido a partir da base da aplicação (sub-rota incluída). */
 export function urlDoRelatorio(baseURI: string, id: string): string {

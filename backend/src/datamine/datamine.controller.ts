@@ -43,7 +43,8 @@ export const CSP_RELATORIO = [
 ].join("; ");
 
 function textoGrande(valor: unknown, campo: string): string {
-  if (typeof valor !== "string" || valor.length === 0) throw new BadRequestException(`${campo} é obrigatório.`);
+  if (typeof valor !== "string" || valor.length === 0)
+    throw new BadRequestException(`${campo} é obrigatório.`);
   if (Buffer.byteLength(valor, "utf8") > MAXIMO_ARQUIVO) {
     throw new BadRequestException(`${campo} passa de ${MAXIMO_ARQUIVO / 1024 / 1024} MB.`);
   }
@@ -58,7 +59,11 @@ export function lerEntrada(corpo: unknown): EntradaPatch {
   const dataPatch = texto(b["dataPatch"], "dataPatch", 10, 10);
   if (!DATA.test(dataPatch)) throw new BadRequestException("dataPatch deve estar no formato AAAA-MM-DD.");
   const patches = b["patches"];
-  if (!Array.isArray(patches) || patches.length > MAXIMO_PATCHES || patches.some((p) => typeof p !== "string" || p.length === 0 || p.length > 200)) {
+  if (
+    !Array.isArray(patches) ||
+    patches.length > MAXIMO_PATCHES ||
+    patches.some((p) => typeof p !== "string" || p.length === 0 || p.length > 200)
+  ) {
     throw new BadRequestException(`patches deve ser uma lista de até ${MAXIMO_PATCHES} nomes de arquivo.`);
   }
   const resumo = objeto(b["resumo"]);

@@ -19,7 +19,15 @@ import { indicadoresDe, nomesDosPatches, type PatchResumido, urlDoRelatorio } fr
 @Component({
   selector: "app-patch-page",
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DecimalPipe, RouterLink, BotaoComponent, EstadoComponent, EstadoProntoDirective, PaginaComponent, ResumoComponent],
+  imports: [
+    DecimalPipe,
+    RouterLink,
+    BotaoComponent,
+    EstadoComponent,
+    EstadoProntoDirective,
+    PaginaComponent,
+    ResumoComponent,
+  ],
   providers: [DatePipe],
   template: `
     <ui-pagina [titulo]="titulo()" [subtitulo]="subtitulo()">
@@ -44,8 +52,8 @@ import { indicadoresDe, nomesDosPatches, type PatchResumido, urlDoRelatorio } fr
           <section class="relatorio" aria-labelledby="titulo-relatorio">
             <h2 id="titulo-relatorio">Relatório completo</h2>
             <p class="dica">
-              Itens com descrição, probabilidades das caixas, monstros, skills, mapas, quests, arquivos do GRF e
-              tabelas Lua. As abas e a busca ficam dentro do quadro.
+              Itens com descrição, probabilidades das caixas, monstros, skills, mapas, quests, arquivos do GRF
+              e tabelas Lua. As abas e a busca ficam dentro do quadro.
               <a [href]="urlRelatorio()" target="_blank" rel="noopener">Abrir em outra aba</a>.
             </p>
             <iframe

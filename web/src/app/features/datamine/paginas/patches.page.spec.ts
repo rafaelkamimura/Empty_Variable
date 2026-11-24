@@ -14,7 +14,9 @@ const patch = (extra: Partial<PatchResumido> = {}): PatchResumido => ({
   titulo: "Patch LATAM 2026-11-24",
   dataPatch: "2026-11-24",
   patches: ["1601 a.gpf", "1604 b.rgz"],
-  resumo: { contagens: { itensNovos: 230, itensAlterados: 122, monstros: 24, mapas: 3, caixas: 31, grfNovos: 956 } },
+  resumo: {
+    contagens: { itensNovos: 230, itensAlterados: 122, monstros: 24, mapas: 3, caixas: 31, grfNovos: 956 },
+  },
   bytesHtml: 1_000,
   bytesJson: 2_000,
   publicadoEm: "2026-11-24T01:00:00.000Z",
@@ -70,7 +72,9 @@ describe("PatchesPage", () => {
 
   it("com erro da API, mostra a mensagem e tenta de novo", async () => {
     const { http, el } = montar();
-    http.expectOne("/api/datamine/patches").flush({ message: "Banco fora do ar." }, { status: 500, statusText: "Erro" });
+    http
+      .expectOne("/api/datamine/patches")
+      .flush({ message: "Banco fora do ar." }, { status: 500, statusText: "Erro" });
     await esperar();
     expect(el.querySelector("ui-aviso")?.textContent).toContain("Banco fora do ar.");
 
