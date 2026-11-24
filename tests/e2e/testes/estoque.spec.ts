@@ -44,6 +44,7 @@ test("estoque registra as entradas e a Loja mostra o saldo do catálogo", async 
     "Instâncias",
     "Diário de farm",
     "Simulação de dano",
+    "Patches do cliente",
   ]);
   await page.getByRole("button", { name: "Menu do perfil" }).click();
   await page.getByRole("menuitem", { name: "Estoque" }).click();
